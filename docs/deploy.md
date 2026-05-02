@@ -83,6 +83,8 @@ A API tambem depende de `packages/shared`. Por isso o script `build:api` compila
 
 No `apps/api/tsconfig.json`, `@ecclesiaos/shared` aponta para `packages/shared/dist/index.d.ts` durante o build. Isso evita que o CI tente compilar a API contra o `src` do pacote compartilhado e gere erro `TS6305`.
 
+Arquivos `*.tsbuildinfo` nao devem ser versionados. Se eles entrarem no Git, o CI pode considerar o pacote compartilhado atualizado e nao emitir `packages/shared/dist/index.d.ts`, causando `TS7016` no Render.
+
 Se o provedor de hospedagem instalar apenas dependencias de producao, o TypeScript pode falhar com erros como:
 
 ```text
