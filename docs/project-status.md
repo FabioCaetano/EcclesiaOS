@@ -46,6 +46,7 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Presenca Por Evento | Concluido | `eventId` em presenca, resumo por evento e consolidacao automatica de check-ins. |
 | Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, administracao kids interna, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
+| YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 
 ## Usuarios De Desenvolvimento
 
@@ -68,6 +69,12 @@ Permissoes por modulo comecam em `canAccessModule`: `finance` e `users` sao some
 ### Sistema
 
 - `GET /health`
+
+### YouTube
+
+- `GET /youtube/videos`
+
+A tela Inicio usa esse endpoint para listar os ultimos videos do canal configurado em `youtubeChannelUrl`. O backend resolve `@handle` quando necessario e mantem cache em memoria com TTL de 10 minutos.
 
 ### Autenticacao
 
@@ -230,6 +237,7 @@ Fluxos validados:
 - Tela De Auditoria: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando.
 - Consolidar Check-in Em Presenca: `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando.
 - UX Inicial, Inicio Operacional, Agenda E Check-in: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, migration Prisma e `npm.cmd run db:verify` concluidos; 19 testes passando.
+- YouTube Real Sem Chave Oficial: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando; endpoint `GET /youtube/videos` integrado a tela Inicio.
 
 ## Riscos E Dividas Tecnicas
 
@@ -250,7 +258,7 @@ Fluxos validados:
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
 - Reservas ainda nao possuem recorrencia, solicitacao ou aprovacao.
-- A tela Inicio ainda nao consulta API oficial do YouTube; quando o canal permite derivar playlist por ID, os cards usam embed do YouTube.
+- A tela Inicio le o feed RSS publico do YouTube via backend; ainda nao usa a API oficial. Eventuais bloqueios de rate limit do YouTube no IP do servidor podem afetar a listagem; o cache em memoria de 10 minutos reduz o risco.
 - A expressao cron ainda nao gera ocorrencias automaticamente.
 - Mensagens para responsaveis ainda abrem WhatsApp/SMS; nao ha envio interno auditavel.
 
@@ -258,4 +266,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: escolher entre YouTube/Cron real, nova arquitetura de Escalas por equipes solicitadas ou Mensagens em lote na aba Pessoas.
+Proxima recomendacao: seguir para Fase 44 (Cron Real com ocorrencias materializadas) ou nova arquitetura de Escalas por equipes solicitadas.

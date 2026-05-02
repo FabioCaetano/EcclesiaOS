@@ -345,8 +345,8 @@ h2 {
 
 .youtube-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .youtube-grid iframe {
@@ -355,6 +355,49 @@ h2 {
   border: 0;
   border-radius: 8px;
   background: #172026;
+}
+
+.youtube-card {
+  display: grid;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #d8e3e0;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.youtube-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(33, 104, 105, 0.12);
+}
+
+.youtube-card img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #172026;
+}
+
+.youtube-card-body {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px 12px;
+}
+
+.youtube-card-body strong {
+  font-size: 14px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.youtube-card-body span {
+  font-size: 12px;
 }
 
 .youtube-fallback {

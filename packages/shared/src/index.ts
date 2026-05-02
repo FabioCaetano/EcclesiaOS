@@ -317,6 +317,26 @@ export interface FinancialTransaction {
 
 export type FinancialTransactionInput = Omit<FinancialTransaction, "id" | "createdAt" | "updatedAt">;
 
+export interface YouTubeVideo {
+  id: string;
+  title: string;
+  url: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+}
+
+export interface YouTubeFeed {
+  channelId: string;
+  channelTitle: string;
+  channelUrl: string;
+  videos: YouTubeVideo[];
+}
+
+export interface YouTubeFeedError {
+  error: "missing_channel_url" | "invalid_channel_url" | "channel_not_found" | "feed_unavailable";
+  message: string;
+}
+
 export interface AppModuleSummary {
   key: string;
   name: string;

@@ -1,4 +1,6 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+
+export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
 export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 export const sessionStorageKey = "ecclesiaos.session";
@@ -101,6 +103,15 @@ export const loadChurchProfile = async (token: string): Promise<ChurchProfile> =
 
   if (!response.ok) throw new Error("church-load-failed");
   return response.json() as Promise<ChurchProfile>;
+};
+
+export const loadYouTubeVideos = async (token: string): Promise<YouTubeVideosResponse> => {
+  const response = await fetch(`${apiBaseUrl}/youtube/videos`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("youtube-load-failed");
+  return response.json() as Promise<YouTubeVideosResponse>;
 };
 
 export const updateChurchProfile = async (token: string, profile: ChurchProfileUpdate): Promise<ChurchProfile> => {

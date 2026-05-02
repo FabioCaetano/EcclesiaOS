@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CurrentUser, EventCheckIn } from "@ecclesiaos/shared";
-import { loadChildCheckIns, loadChurchProfile, loadEventCheckIns, loadEvents, loadResources } from "./api";
+import type { ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CurrentUser, EventCheckIn, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import { loadChildCheckIns, loadChurchProfile, loadEventCheckIns, loadEvents, loadResources, loadYouTubeVideos } from "./api";
 import { roleLabels } from "./constants";
 
 interface Props {
@@ -8,14 +8,13 @@ interface Props {
   user: CurrentUser;
 }
 
-const channelIdFromUrl = (url: string) => {
-  const match = url.match(/youtube\.com\/channel\/([A-Za-z0-9_-]+)/);
-  return match?.[1] || "";
-};
+const isFeedError = (value: YouTubeFeed | YouTubeFeedError | null): value is YouTubeFeedError => Boolean(value && "error" in value);
 
-const uploadsPlaylistFromChannel = (url: string) => {
-  const channelId = channelIdFromUrl(url);
-  return channelId.startsWith("UC") ? `UU${channelId.slice(2)}` : "";
+const formatPublishedAt = (iso: string) => {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 };
 
 export const HomePage: React.FC<Props> = ({ token, user }) => {
@@ -24,6 +23,7 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
   const [resources, setResources] = useState<ChurchResource[]>([]);
   const [eventCheckIns, setEventCheckIns] = useState<EventCheckIn[]>([]);
   const [childCheckIns, setChildCheckIns] = useState<ChildCheckIn[]>([]);
+  const [youtube, setYoutube] = useState<YouTubeFeed | YouTubeFeedError | null>(null);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -44,11 +44,19 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
       .catch(() => setStatus("Nao foi possivel carregar o painel inicial."));
   }, [token]);
 
+  useEffect(() => {
+    loadYouTubeVideos(token)
+      .then(setYoutube)
+      .catch(() => setYoutube({ error: "feed_unavailable", message: "Nao foi possivel carregar os videos do YouTube." }));
+  }, [token]);
+
   const today = new Date().toISOString().slice(0, 10);
   const upcomingEvents = useMemo(() => events.filter((event) => event.date >= today).slice(0, 5), [events, today]);
   const openChildren = childCheckIns.filter((item) => !item.checkedOutAt);
   const activeResources = resources.filter((resource) => resource.isActive);
-  const youtubePlaylist = uploadsPlaylistFromChannel(church?.youtubeChannelUrl || "");
+  const youtubeFeed = youtube && !isFeedError(youtube) ? youtube : null;
+  const youtubeError = youtube && isFeedError(youtube) ? youtube : null;
+  const youtubeVideos = youtubeFeed?.videos.slice(0, 6) ?? [];
 
   return (
     <>
@@ -94,27 +102,35 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
           <div className="section-heading">
             <div>
               <p className="eyebrow">YouTube</p>
-              <h2>Ultimas transmissoes</h2>
+              <h2>Ultimos videos</h2>
             </div>
+            {youtubeFeed?.channelTitle && <span className="muted">{youtubeFeed.channelTitle}</span>}
           </div>
           {!church?.youtubeChannelUrl ? (
-            <p className="muted">Defina o canal do YouTube no cadastro da igreja para exibir as transmissoes aqui.</p>
-          ) : youtubePlaylist ? (
-            <div className="youtube-grid">
-              {[0, 1, 2].map((index) => (
-                <iframe
-                  key={index}
-                  title={`Video recente ${index + 1}`}
-                  src={`https://www.youtube-nocookie.com/embed/videoseries?list=${youtubePlaylist}&index=${index}`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ))}
+            <p className="muted">Defina o canal do YouTube no cadastro da igreja para exibir os videos aqui.</p>
+          ) : !youtube ? (
+            <p className="muted">Carregando videos do canal...</p>
+          ) : youtubeError ? (
+            <div className="youtube-fallback">
+              <p className="muted">{youtubeError.message}</p>
+              <a href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">Abrir canal</a>
+            </div>
+          ) : youtubeVideos.length === 0 ? (
+            <div className="youtube-fallback">
+              <p className="muted">O canal nao retornou videos no momento.</p>
+              <a href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">Abrir canal</a>
             </div>
           ) : (
-            <div className="youtube-fallback">
-              <p className="muted">O canal esta configurado, mas ainda nao foi possivel derivar automaticamente a playlist de videos.</p>
-              <a href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">Abrir canal</a>
+            <div className="youtube-grid">
+              {youtubeVideos.map((video) => (
+                <a key={video.id} className="youtube-card" href={video.url} target="_blank" rel="noreferrer">
+                  {video.thumbnailUrl && <img src={video.thumbnailUrl} alt={video.title} loading="lazy" />}
+                  <div className="youtube-card-body">
+                    <strong>{video.title}</strong>
+                    {video.publishedAt && <span className="muted">{formatPublishedAt(video.publishedAt)}</span>}
+                  </div>
+                </a>
+              ))}
             </div>
           )}
         </div>

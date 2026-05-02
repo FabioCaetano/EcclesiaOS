@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 6 - Grupos E Ministerios.
+Fase atual concluida: Fase 43 - YouTube Real Sem Chave Oficial.
 
 Estrutura:
 

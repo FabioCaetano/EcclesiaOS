@@ -791,3 +791,41 @@ Possivel escopo:
 - mensagem para responsavel de crianca ainda nao retirada.
 
 Decisao: entregar uma primeira rodada de UX sem criar novo menu lateral e sem integrar API externa do YouTube nesta fase.
+
+## Fase 43: YouTube Real Sem Chave Oficial
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos buscar os ultimos videos do canal pelo backend, sem depender de chave do Google Cloud?
+
+Possivel escopo:
+
+- endpoint proprio que le `youtubeChannelUrl` do cadastro da igreja;
+- suporte a `/channel/UC...`, `/@handle`, `/c/handle` e `/user/handle`;
+- consulta ao feed RSS publico do canal;
+- cache em memoria por URL;
+- tela Inicio renderizando cards reais (thumbnail + titulo + data + link).
+
+Decisao: usar feed RSS publico do YouTube e resolver handle pela pagina publica do canal; sem chave do Google Cloud nesta fase.
+
+## Fase 44: Cron Real Com Ocorrencias Materializadas
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos transformar a expressao cron textual em ocorrencias reais materializadas no banco?
+
+Possivel escopo:
+
+- migration adicionando `parentEventId` em `ChurchEvent`;
+- modulo de expansao de cron com `cron-parser`;
+- geracao lazy ao listar eventos;
+- geracao manual por endpoint admin;
+- `recurrenceUntil` controla o fim; teto tecnico de 12 meses quando vazio;
+- idempotencia por `(parentEventId, date, startTime)`;
+- remocao do mestre remove filhos futuros sem inscricoes/check-in.
+
+Decisao: materializar ocorrencias como eventos filhos com `parentEventId`, com geracao lazy + manual; deixar o evento (via `recurrenceUntil`) controlar o fim da recorrencia.

@@ -17,6 +17,7 @@ import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
 import { userRepository } from "./data/userRepository.js";
+import { fetchYouTubeFeed } from "./youtube.js";
 
 const port = Number(process.env.PORT || 4000);
 const tokenSecret = process.env.AUTH_TOKEN_SECRET || "ecclesiaos-development-secret";
@@ -600,6 +601,27 @@ const sanitizeChildCheckInInput = (body: ChildCheckInInput): ChildCheckInInput =
   guardianPhone: String(body.guardianPhone || "").trim(),
   notes: String(body.notes || "").trim()
 });
+
+const youtubeErrorMessages: Record<"missing_channel_url" | "invalid_channel_url" | "channel_not_found" | "feed_unavailable", string> = {
+  missing_channel_url: "A igreja ainda nao configurou o canal do YouTube.",
+  invalid_channel_url: "A URL do canal nao e reconhecida. Use /channel/UC..., /@handle, /c/handle ou /user/handle.",
+  channel_not_found: "Nao foi possivel resolver o canal a partir do handle informado.",
+  feed_unavailable: "Nao foi possivel ler o feed do YouTube no momento. Tente novamente em alguns minutos."
+};
+
+const handleListYouTubeVideos = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const profile = await churchRepository.getProfile();
+  const result = await fetchYouTubeFeed(profile.youtubeChannelUrl);
+  if (!result.ok) {
+    sendJson(res, 200, { error: result.error, message: youtubeErrorMessages[result.error] });
+    return;
+  }
+
+  sendJson(res, 200, result.feed);
+};
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
@@ -1315,6 +1337,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (groupMatch && req.method === "DELETE") {
     void handleDeleteGroup(req, res, groupMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/youtube/videos") {
+    void handleListYouTubeVideos(req, res);
     return;
   }
 

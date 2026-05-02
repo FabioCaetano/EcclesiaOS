@@ -50,6 +50,7 @@ O EcclesiaOS concluiu ate a Fase 42:
 - Eventos com expressao cron textual.
 - Check-in separado internamente em Eventos, Kids e Administracao kids.
 - Administracao kids com link de mensagem para responsavel.
+- Endpoint proprio `GET /youtube/videos` lendo o feed RSS publico do canal e cards reais na tela Inicio.
 
 ## Banco Real Validado
 
@@ -68,9 +69,9 @@ Tambem foi validado login admin e leitura de financeiro pela API compilada em mo
 
 ## Proximas Opcoes
 
-### YouTube E Cron Real
+### Cron Real
 
-Buscar ultimas lives via backend e transformar expressao cron em ocorrencias reais da agenda.
+Materializar a expressao cron textual em ocorrencias reais na agenda, com fim definido pela propria configuracao do evento (Fase 44).
 
 ### Nova Arquitetura De Escalas
 

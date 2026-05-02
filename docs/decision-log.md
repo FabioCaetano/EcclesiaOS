@@ -76,6 +76,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 70. Agenda passa a sugerir Ambientes ativos no campo Local.
 71. Eventos passam a guardar expressao cron textual para recorrencias avancadas futuras.
 72. Check-in permanece em um unico menu, mas separado internamente entre Eventos, Kids e Administracao kids.
+73. Tela Inicio passa a exibir os ultimos videos do canal usando o feed RSS publico do YouTube, sem chave do Google Cloud nesta fase.
 
 ## Decisoes Pendentes
 

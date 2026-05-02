@@ -178,7 +178,15 @@ PUT http://localhost:4000/church/profile
 
 Somente `admin` pode atualizar o cadastro da igreja nesta fase.
 
-O cadastro da igreja tambem possui `youtubeChannelUrl`. A tela Inicio usa esse campo para exibir a area de transmissoes. Quando a URL contem um ID de canal do YouTube (`/channel/UC...`), o frontend deriva a playlist de uploads para montar os cards de video. Integracao por API oficial do YouTube fica para fase futura.
+O cadastro da igreja tambem possui `youtubeChannelUrl`. A tela Inicio chama o endpoint `GET /youtube/videos` para listar os ultimos videos do canal. O backend resolve URLs `/channel/UC...`, `/@handle`, `/c/handle` e `/user/handle`, le o feed RSS publico e mantem cache em memoria com TTL de 10 minutos. Integracao por API oficial do YouTube fica para fase futura.
+
+Endpoint do YouTube:
+
+```text
+GET http://localhost:4000/youtube/videos
+```
+
+Resposta com sucesso retorna `channelId`, `channelTitle`, `channelUrl` e `videos[]`. Em caso de erro o endpoint responde `200 OK` com `{ error, message }` para o frontend exibir mensagem amigavel sem quebrar o painel.
 
 Endpoints de pessoas:
 
