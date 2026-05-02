@@ -81,6 +81,8 @@ O frontend depende dos tipos compilados de `packages/shared`. Por isso o script 
 
 A API tambem depende de `packages/shared`. Por isso o script `build:api` compila `@ecclesiaos/shared` antes de `@ecclesiaos/api`, e a API usa `tsc -b` para respeitar as referencias TypeScript do monorepo.
 
+No `apps/api/tsconfig.json`, `@ecclesiaos/shared` aponta para `packages/shared/dist/index.d.ts` durante o build. Isso evita que o CI tente compilar a API contra o `src` do pacote compartilhado e gere erro `TS6305`.
+
 Se o provedor de hospedagem instalar apenas dependencias de producao, o TypeScript pode falhar com erros como:
 
 ```text

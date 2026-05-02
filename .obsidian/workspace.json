@@ -185,6 +185,7 @@
   },
   "active": "2b9726b5e28678d7",
   "lastOpenFiles": [
+    "apps/api/tsconfig.tsbuildinfo",
     "docs/deploy.md",
     "docs/next-steps.md",
     "docs/index.md",
@@ -222,7 +223,6 @@
     "node_modules/camelcase/readme.md",
     "node_modules/color-name/README.md",
     "node_modules/color-convert/README.md",
-    "node_modules/color-convert/CHANGELOG.md",
     "node_modules/playwright-core/lib/vite/traceViewer/playwright-logo.svg",
     "node_modules/playwright-core/lib/vite/recorder/playwright-logo.svg",
     "node_modules/playwright-core/lib/tools/dashboard/appIcon.png",
