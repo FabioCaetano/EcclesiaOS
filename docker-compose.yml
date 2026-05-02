@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecclesiaos-postgres
+    environment:
+      POSTGRES_DB: ecclesiaos
+      POSTGRES_USER: ecclesiaos
+      POSTGRES_PASSWORD: ecclesiaos
+    ports:
+      - "5432:5432"
+    volumes:
+      - ecclesiaos-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecclesiaos -d ecclesiaos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ecclesiaos-postgres-data:

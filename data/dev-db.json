@@ -1,0 +1,173 @@
+{
+  "attendance": [
+    {
+      "id": "att_001",
+      "date": "2026-04-26",
+      "type": "service",
+      "groupId": "",
+      "presentPersonIds": [
+        "per_001",
+        "per_002"
+      ],
+      "notes": "Culto dominical.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    },
+    {
+      "id": "att_002",
+      "date": "2026-04-28",
+      "type": "group",
+      "groupId": "grp_001",
+      "presentPersonIds": [
+        "per_001"
+      ],
+      "notes": "Encontro do grupo pequeno.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    }
+  ],
+  "church": {
+    "id": "church_main",
+    "name": "Igreja Ecclesia",
+    "email": "contato@ecclesia.local",
+    "phone": "(00) 0000-0000",
+    "website": "https://ecclesia.local",
+    "addressLine1": "Rua Principal, 100",
+    "addressLine2": "",
+    "city": "Cidade",
+    "state": "Estado",
+    "postalCode": "00000-000",
+    "country": "Brasil"
+  },
+  "financialTransactions": [
+    {
+      "id": "fin_001",
+      "date": "2026-04-26",
+      "type": "income",
+      "amount": 850,
+      "fund": "Geral",
+      "category": "Dizimos e ofertas",
+      "paymentMethod": "cash",
+      "personId": "per_001",
+      "description": "Oferta do culto dominical.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    },
+    {
+      "id": "fin_002",
+      "date": "2026-04-27",
+      "type": "expense",
+      "amount": 120,
+      "fund": "Geral",
+      "category": "Manutencao",
+      "paymentMethod": "transfer",
+      "personId": "",
+      "description": "Compra de materiais para manutencao.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    }
+  ],
+  "groups": [
+    {
+      "id": "grp_001",
+      "name": "Grupo de Comunhao",
+      "type": "small_group",
+      "description": "Grupo pequeno semanal para comunhao e estudo.",
+      "leaderPersonId": "per_001",
+      "memberPersonIds": [
+        "per_001",
+        "per_002"
+      ],
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    },
+    {
+      "id": "grp_002",
+      "name": "Louvor",
+      "type": "ministry",
+      "description": "Ministerio responsavel pela musica dos cultos.",
+      "leaderPersonId": "per_001",
+      "memberPersonIds": [
+        "per_001"
+      ],
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    }
+  ],
+  "people": [
+    {
+      "id": "per_001",
+      "firstName": "Ana",
+      "lastName": "Silva",
+      "email": "ana.silva@ecclesia.local",
+      "phone": "(00) 90000-0001",
+      "birthDate": "1990-05-12",
+      "status": "member",
+      "notes": "Membro ativa.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    },
+    {
+      "id": "per_002",
+      "firstName": "Carlos",
+      "lastName": "Oliveira",
+      "email": "carlos.oliveira@ecclesia.local",
+      "phone": "(00) 90000-0002",
+      "birthDate": "",
+      "status": "visitor",
+      "notes": "Visitante recorrente.",
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    }
+  ],
+  "servingPlans": [
+    {
+      "id": "srv_001",
+      "date": "2026-05-03",
+      "title": "Culto Dominical",
+      "groupId": "grp_002",
+      "notes": "Escala inicial do culto.",
+      "assignments": [
+        {
+          "id": "asg_001",
+          "personId": "per_001",
+          "role": "Louvor",
+          "status": "confirmed",
+          "notes": "Vocal"
+        },
+        {
+          "id": "asg_002",
+          "personId": "per_002",
+          "role": "Recepcao",
+          "status": "pending",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2026-04-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr_admin",
+      "name": "Administrador EcclesiaOS",
+      "email": "admin@ecclesiaos.local",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "usr_leader",
+      "name": "Lider de Ministerio",
+      "email": "lider@ecclesiaos.local",
+      "password": "lider123",
+      "role": "leader"
+    },
+    {
+      "id": "usr_member",
+      "name": "Membro da Igreja",
+      "email": "membro@ecclesiaos.local",
+      "password": "membro123",
+      "role": "member"
+    }
+  ]
+}

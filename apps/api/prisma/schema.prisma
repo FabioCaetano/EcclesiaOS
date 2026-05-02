@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChurchProfileRecord {
+  id           String @id
+  name         String
+  email        String
+  phone        String
+  website      String
+  youtubeChannelUrl String @default("")
+  addressLine1 String
+  addressLine2 String
+  city         String
+  state        String
+  postalCode   String
+  country      String
+}
+
+model UserRecord {
+  id       String @id
+  name     String
+  email    String @unique
+  password String
+  role     String
+  personId String
+}
+
+model PersonRecord {
+  id        String   @id
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+  birthDate String
+  status    String
+  guardianPersonIds Json @default("[]")
+  notes     String
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+model GroupRecord {
+  id              String   @id
+  name            String
+  type            String
+  description     String
+  leaderPersonId  String
+  memberPersonIds Json
+  createdAt       DateTime
+  updatedAt       DateTime
+}
+
+model AttendanceRecord {
+  id               String   @id
+  date             String
+  type             String
+  eventId          String
+  groupId          String
+  presentPersonIds Json
+  notes            String
+  createdAt        DateTime
+  updatedAt        DateTime
+}
+
+model EventRecord {
+  id          String   @id
+  title       String
+  type        String
+  date        String
+  startTime   String
+  endTime     String
+  location    String
+  groupId     String
+  recurrence  String
+  recurrenceUntil String
+  recurrenceRule String @default("")
+  registrationEnabled Boolean @default(false)
+  registrationCapacity Int @default(0)
+  registrationPrice Float @default(0)
+  registrationCurrency String @default("BRL")
+  registrationSlug String @unique @default("")
+  description String
+  createdAt   DateTime
+  updatedAt   DateTime
+}
+
+model EventRegistrationRecord {
+  id        String   @id
+  eventId   String
+  name      String
+  email     String
+  phone     String
+  quantity  Int
+  amountDue Float
+  status    String
+  ticketCode String @default("")
+  checkedInAt String @default("")
+  checkedInByUserId String @default("")
+  notes     String
+  createdAt DateTime
+}
+
+model ChurchResourceRecord {
+  id          String   @id
+  name        String
+  location    String
+  capacity    Int
+  description String
+  isActive    Boolean
+  createdAt   DateTime
+  updatedAt   DateTime
+}
+
+model RoomReservationRecord {
+  id         String   @id
+  resourceId String
+  eventId    String
+  title      String
+  date       String
+  startTime  String
+  endTime    String
+  reservedBy String
+  status     String
+  notes      String
+  createdAt  DateTime
+  updatedAt  DateTime
+}
+
+model EventCheckInRecord {
+  id          String   @id
+  eventId     String
+  personId    String
+  checkedInAt DateTime
+  notes       String
+}
+
+model ChildCheckInRecord {
+  id            String   @id
+  eventId       String
+  childPersonId String   @default("")
+  childName     String
+  guardianPersonId String @default("")
+  guardianName  String
+  guardianPhone String
+  securityCode  String
+  checkedInAt   DateTime
+  checkedOutAt  String
+  checkedOutByPersonId String @default("")
+  notes         String
+}
+
+model ServingPlanRecord {
+  id          String   @id
+  date        String
+  title       String
+  groupId     String
+  notes       String
+  assignments Json
+  createdAt   DateTime
+  updatedAt   DateTime
+}
+
+model FinancialTransactionRecord {
+  id            String   @id
+  date          String
+  type          String
+  amount        Float
+  fund          String
+  category      String
+  paymentMethod String
+  personId      String
+  description   String
+  createdAt     DateTime
+  updatedAt     DateTime
+}
+
+model AuditLogRecord {
+  id          String   @id
+  action      String
+  entityType  String
+  entityId    String
+  actorUserId String
+  actorName   String
+  summary     String
+  createdAt   DateTime
+}
