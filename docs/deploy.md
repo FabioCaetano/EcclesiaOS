@@ -46,7 +46,7 @@ Nao usar `npm run db:migrate` em producao, porque ele usa `prisma migrate dev`, 
 ## Comando De Build Da API
 
 ```bash
-npm install && npm run build && npm run db:migrate:deploy
+npm install --include=dev && npm run build:api && npm run db:migrate:deploy
 ```
 
 ## Comando De Start Da API
@@ -66,13 +66,30 @@ VITE_API_BASE_URL=https://sua-api.onrender.com
 Build:
 
 ```bash
-npm install && npm run build:web
+npm install --include=dev && npm run build:web
 ```
 
 Publicar:
 
 ```text
 apps/web/dist
+```
+
+## Observacao Sobre Monorepo
+
+O frontend depende dos tipos compilados de `packages/shared`. Por isso o script `build:web` primeiro compila `@ecclesiaos/shared` e depois compila `@ecclesiaos/web`.
+
+Se o provedor de hospedagem instalar apenas dependencias de producao, o TypeScript pode falhar com erros como:
+
+```text
+Could not find a declaration file for module 'react'
+Output file 'packages/shared/dist/index.d.ts' has not been built
+```
+
+Para evitar isso, use `npm install --include=dev` no comando de build ou defina a variavel:
+
+```text
+NPM_CONFIG_PRODUCTION=false
 ```
 
 ## Cuidados

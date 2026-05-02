@@ -13,8 +13,8 @@
     "dev:api": "npm run dev --workspace @ecclesiaos/api",
     "postinstall": "npm run db:generate",
     "build": "npm run build --workspaces",
-    "build:web": "npm run build --workspace @ecclesiaos/web",
-    "build:api": "npm run build --workspace @ecclesiaos/api",
+    "build:web": "npm run build --workspace @ecclesiaos/shared && npm run build --workspace @ecclesiaos/web",
+    "build:api": "npm run build --workspace @ecclesiaos/shared && npm run build --workspace @ecclesiaos/api",
     "db:generate": "npm run db:generate --workspace @ecclesiaos/api",
     "db:migrate": "npm run db:migrate --workspace @ecclesiaos/api",
     "db:migrate:deploy": "npm run db:migrate:deploy --workspace @ecclesiaos/api",
@@ -29,6 +29,6 @@
     "typescript": "^5.8.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   }
 }

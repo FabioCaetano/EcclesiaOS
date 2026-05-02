@@ -370,6 +370,12 @@ Somente `admin` pode listar, criar, editar e remover lancamentos financeiros.
 npm run build
 ```
 
+Build apenas do frontend, incluindo contratos compartilhados:
+
+```powershell
+npm run build:web
+```
+
 ## Typecheck
 
 ```powershell
