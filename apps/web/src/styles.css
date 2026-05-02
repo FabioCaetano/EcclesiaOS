@@ -400,6 +400,30 @@ h2 {
   font-size: 12px;
 }
 
+.event-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.event-tag.master {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffe69c;
+}
+
+.event-tag.generated {
+  background: #e0f2f1;
+  color: #00695c;
+  border: 1px solid #b2dfdb;
+}
+
 .youtube-fallback {
   display: grid;
   gap: 10px;

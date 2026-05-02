@@ -93,6 +93,7 @@ export const emptyEventInput: ChurchEventInput = {
   recurrence: "none",
   recurrenceUntil: "",
   recurrenceRule: "",
+  parentEventId: "",
   registrationEnabled: false,
   registrationCapacity: 0,
   registrationPrice: 0,

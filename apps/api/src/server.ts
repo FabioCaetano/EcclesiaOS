@@ -542,6 +542,7 @@ const sanitizeEventInput = (body: ChurchEventInput): ChurchEventInput => ({
   recurrence: body.recurrence === "weekly" || body.recurrence === "monthly" || body.recurrence === "cron" ? body.recurrence : "none",
   recurrenceUntil: body.recurrence === "weekly" || body.recurrence === "monthly" || body.recurrence === "cron" ? String(body.recurrenceUntil || "").trim() : "",
   recurrenceRule: body.recurrence === "cron" ? String(body.recurrenceRule || "").trim() : "",
+  parentEventId: String(body.parentEventId || "").trim(),
   registrationEnabled: Boolean(body.registrationEnabled),
   registrationCapacity: Math.max(0, Number(body.registrationCapacity) || 0),
   registrationPrice: Math.max(0, Number(body.registrationPrice) || 0),
@@ -680,7 +681,22 @@ const handleListEvents = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
   if (!user) return;
 
+  await eventRepository.materializeCronOccurrences();
   sendJson(res, 200, await eventRepository.list());
+};
+
+const handleGenerateEventOccurrences = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireAdmin(req, res);
+  if (!user) return;
+
+  const result = await eventRepository.regenerateForMaster(id);
+  if (!result) {
+    sendError(res, 404, "not_found", "Evento nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "update", "event", id, `Ocorrencias geradas: ${result.generated}/${result.total}`);
+  sendJson(res, 200, result);
 };
 
 const handleGetPublicEvent = async (res: ServerResponse, slug: string) => {
@@ -1402,6 +1418,12 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/events") {
     void handleCreateEvent(req, res);
+    return;
+  }
+
+  const eventGenerateMatch = url.pathname.match(/^\/events\/([^/]+)\/generate-occurrences$/);
+  if (eventGenerateMatch && req.method === "POST") {
+    void handleGenerateEventOccurrences(req, res, eventGenerateMatch[1]);
     return;
   }
 

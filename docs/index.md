@@ -4,15 +4,17 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 43 - YouTube Real Sem Chave Oficial**.
+Fase atual concluida: **Fase 44 - Cron Real Com Ocorrencias Materializadas**.
 
 Ultimo modulo entregue:
 
-- endpoint proprio `GET /youtube/videos` lendo o feed RSS publico do canal;
-- suporte a URLs `/channel/UC...`, `/@handle`, `/c/handle` e `/user/handle`;
-- resolucao automatica de handle para `channelId` consultando a pagina publica do canal;
-- cache em memoria por URL com TTL de 10 minutos;
-- tela Inicio renderiza cards reais (thumbnail + titulo + data + link) dos ultimos videos.
+- migration Prisma adicionando `parentEventId` em `ChurchEvent` com indice;
+- modulo `cron` no backend usando `cron-parser` para expandir expressoes;
+- geracao lazy ao listar `/events` materializa ocorrencias dentro da janela;
+- endpoint `POST /events/:id/generate-occurrences` regenera ocorrencias futuras;
+- `recurrenceUntil` define o fim; teto tecnico de 12 meses quando vazio;
+- remocao do mestre cascateia para filhos futuros sem inscricoes/check-in;
+- tela Agenda mostra badges `cron`/`ocorrencia` e botao `Gerar ocorrencias`.
 
 Ambiente atual:
 
@@ -81,6 +83,7 @@ Ambiente atual:
 - [[phases/phase-41-checkin-to-attendance|Fase 41 - Consolidar Check-in Em Presenca]]
 - [[phases/phase-42-ux-home-agenda-checkin|Fase 42 - UX Inicial, Inicio Operacional, Agenda E Check-in]]
 - [[phases/phase-43-youtube-real|Fase 43 - YouTube Real Sem Chave Oficial]]
+- [[phases/phase-44-cron-real|Fase 44 - Cron Real Com Ocorrencias Materializadas]]
 
 ## Decisoes
 
@@ -128,14 +131,15 @@ Ambiente atual:
 - [[decisions/0042-checkin-to-attendance|0042 - Consolidar Check-in Em Presenca]]
 - [[decisions/0043-ux-home-agenda-checkin|0043 - UX Inicial, Inicio, Agenda E Check-in]]
 - [[decisions/0044-youtube-real-no-key|0044 - YouTube Real Sem Chave Oficial]]
+- [[decisions/0045-cron-real-occurrences|0045 - Cron Real Com Ocorrencias Materializadas]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Cron Real (Fase 44)**: materializar ocorrencias reais a partir da expressao cron textual, com fim definido pelo evento.
-2. **Escalas Por Equipe Solicitada**: evento pede equipes, lider escala pessoas e equipe confirma.
-3. **Mensagens Em Lote**: filtros dinamicos em Pessoas e registro de envio.
-4. **Check-in Kids Avancado**: painel de atraso, historico e envio auditavel.
+1. **Escalas Por Equipe Solicitada**: evento pede equipes, lider escala pessoas e equipe confirma.
+2. **Mensagens Em Lote**: filtros dinamicos em Pessoas e registro de envio.
+3. **Check-in Kids Avancado**: painel de atraso, historico e envio auditavel.
+4. **Troca/Reset De Senha**: fluxo proprio de troca e reset administrativo.
 
-Recomendacao atual: seguir para Cron Real (Fase 44).
+Recomendacao atual: nova arquitetura de Escalas por equipes solicitadas.

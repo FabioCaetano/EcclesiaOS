@@ -80,6 +80,7 @@ model EventRecord {
   recurrence  String
   recurrenceUntil String
   recurrenceRule String @default("")
+  parentEventId String @default("")
   registrationEnabled Boolean @default(false)
   registrationCapacity Int @default(0)
   registrationPrice Float @default(0)
@@ -88,6 +89,8 @@ model EventRecord {
   description String
   createdAt   DateTime
   updatedAt   DateTime
+
+  @@index([parentEventId])
 }
 
 model EventRegistrationRecord {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile } from "@ecclesiaos/shared";
-import { apiBaseUrl, checkInEventRegistration, deleteEvent, loadEventRegistrations, loadEvents, loadGroups, loadResources, saveEvent, updateEventRegistrationStatus } from "./api";
+import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEventRegistrations, loadEvents, loadGroups, loadResources, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
 
@@ -216,6 +216,18 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
     }
   };
 
+  const handleGenerateOccurrences = async () => {
+    if (!selectedEventId || user.role !== "admin") return;
+    setStatus("Gerando ocorrencias...");
+    try {
+      const result = await generateEventOccurrences(token, selectedEventId);
+      await refreshEvents();
+      setStatus(`Ocorrencias geradas: ${result.generated} novas (${result.skipped} ja existiam, ${result.total} planejadas).`);
+    } catch {
+      setStatus("Nao foi possivel gerar as ocorrencias.");
+    }
+  };
+
   const groupName = (groupId: string) => groups.find((group) => group.id === groupId)?.name || "Sem grupo";
   const registrationCount = (eventId: string) => registrations.filter((registration) => registration.eventId === eventId && registration.status !== "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
@@ -302,7 +314,11 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
         <div className="people-list" aria-label="Lista de eventos">
           {filteredEvents.map((event) => (
             <button className={event.id === selectedEventId ? "person-row selected" : "person-row"} key={event.id} type="button" onClick={() => selectEvent(event)}>
-              <strong>{event.date} - {event.title}</strong>
+              <strong>
+                {event.date} - {event.title}
+                {event.parentEventId && <span className="event-tag generated"> ocorrencia</span>}
+                {!event.parentEventId && event.recurrence === "cron" && <span className="event-tag master"> cron</span>}
+              </strong>
               <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - {event.location || "sem local"}</span>
               <span>{event.groupId ? groupName(event.groupId) : "Agenda geral"} - {recurrenceLabels[event.recurrence]} - {event.registrationEnabled ? `${registrationCount(event.id)} inscrito(s)` : "sem inscricoes"}</span>
             </button>
@@ -366,6 +382,9 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
 
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedEventId ? "Salvar evento" : "Criar evento"}</button>}
+            {user.role === "admin" && selectedEventId && eventForm.recurrence === "cron" && eventForm.recurrenceRule && !eventForm.parentEventId && (
+              <button className="secondary-button" type="button" onClick={handleGenerateOccurrences}>Gerar ocorrencias</button>
+            )}
             {user.role === "admin" && selectedEventId && <button className="danger-button" type="button" onClick={handleDelete}>Remover</button>}
             <p>{user.role === "admin" ? status : "Somente administradores podem alterar eventos."}</p>
           </div>

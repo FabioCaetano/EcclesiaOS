@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -230,6 +230,16 @@ export const saveEvent = async (token: string, input: ChurchEventInput, id?: str
 
   if (!response.ok) throw new Error("event-save-failed");
   return response.json() as Promise<ChurchEvent>;
+};
+
+export const generateEventOccurrences = async (token: string, id: string): Promise<CronGenerationResult> => {
+  const response = await fetch(`${apiBaseUrl}/events/${id}/generate-occurrences`, {
+    method: "POST",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("event-generate-failed");
+  return response.json() as Promise<CronGenerationResult>;
 };
 
 export const deleteEvent = async (token: string, id: string) => {

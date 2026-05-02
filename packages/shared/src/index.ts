@@ -186,6 +186,7 @@ export interface ChurchEvent {
   recurrence: EventRecurrence;
   recurrenceUntil: string;
   recurrenceRule: string;
+  parentEventId: string;
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;
@@ -197,6 +198,12 @@ export interface ChurchEvent {
 }
 
 export type ChurchEventInput = Omit<ChurchEvent, "id" | "createdAt" | "updatedAt">;
+
+export interface CronGenerationResult {
+  generated: number;
+  skipped: number;
+  total: number;
+}
 
 export type EventRegistrationStatus = "confirmed" | "pending_payment" | "cancelled";
 

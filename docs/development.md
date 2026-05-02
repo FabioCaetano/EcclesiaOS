@@ -240,7 +240,12 @@ Todos os usuarios autenticados podem listar eventos. Somente `admin` pode criar,
 
 Eventos possuem recorrencia pelo campo `recurrence`: `none`, `weekly`, `monthly` ou `cron`.
 
-Quando `recurrence` for `cron`, o campo `recurrenceRule` armazena a expressao textual. Nesta fase a regra fica registrada no evento, mas a geracao automatica de ocorrencias ainda nao foi implementada.
+Quando `recurrence` for `cron`, o campo `recurrenceRule` armazena a expressao textual e o backend materializa ocorrencias reais como eventos filhos com `parentEventId` apontando para o mestre. A geracao acontece em dois momentos:
+
+- lazy: ao chamar `GET /events`, o backend garante que ocorrencias dentro da janela (recurrenceUntil ou teto tecnico de 12 meses) ja foram materializadas;
+- manual: `POST /events/:id/generate-occurrences` (somente admin) regenera ocorrencias futuras de um evento mestre cron sem duplicar as ja existentes.
+
+Idempotencia e garantida pela chave `(parentEventId, date, startTime)`. Remover o evento mestre cascateia para filhos futuros sem inscricoes nem check-in.
 
 A tela Agenda sugere Ambientes ativos no campo `Local`, usando os recursos cadastrados em Ambientes.
 

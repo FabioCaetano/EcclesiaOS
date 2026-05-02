@@ -47,6 +47,7 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, administracao kids interna, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
+| Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
 
 ## Usuarios De Desenvolvimento
 
@@ -129,6 +130,9 @@ Pessoas podem possuir `guardianPersonIds`, usado para vincular criancas a respon
 - `POST /events`
 - `PUT /events/:id`
 - `DELETE /events/:id`
+- `POST /events/:id/generate-occurrences`
+
+`GET /events` materializa lazyamente ocorrencias dos eventos cron antes de listar. `POST /events/:id/generate-occurrences` regenera ocorrencias futuras de um evento mestre cron e e restrito a admin. Eventos com `parentEventId` nao vazio sao ocorrencias materializadas vinculadas ao mestre.
 
 ### Inscricoes De Eventos
 
@@ -238,6 +242,7 @@ Fluxos validados:
 - Consolidar Check-in Em Presenca: `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando.
 - UX Inicial, Inicio Operacional, Agenda E Check-in: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, migration Prisma e `npm.cmd run db:verify` concluidos; 19 testes passando.
 - YouTube Real Sem Chave Oficial: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando; endpoint `GET /youtube/videos` integrado a tela Inicio.
+- Cron Real Com Ocorrencias Materializadas: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run db:migrate:deploy`, `npm.cmd run reset-dev-data` e `npm.cmd run db:verify` concluidos; 21 testes passando.
 
 ## Riscos E Dividas Tecnicas
 
@@ -259,11 +264,11 @@ Fluxos validados:
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
 - Reservas ainda nao possuem recorrencia, solicitacao ou aprovacao.
 - A tela Inicio le o feed RSS publico do YouTube via backend; ainda nao usa a API oficial. Eventuais bloqueios de rate limit do YouTube no IP do servidor podem afetar a listagem; o cache em memoria de 10 minutos reduz o risco.
-- A expressao cron ainda nao gera ocorrencias automaticamente.
+- A expressao cron passa a gerar ocorrencias materializadas no banco; ainda nao ha worker em background, geracao acontece sob demanda (lazy ao listar e manual via endpoint admin).
 - Mensagens para responsaveis ainda abrem WhatsApp/SMS; nao ha envio interno auditavel.
 
 ## Proxima Recomendacao
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: seguir para Fase 44 (Cron Real com ocorrencias materializadas) ou nova arquitetura de Escalas por equipes solicitadas.
+Proxima recomendacao: nova arquitetura de Escalas por equipes solicitadas, mensagens em lote em Pessoas ou troca/reset de senha.

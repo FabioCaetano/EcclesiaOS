@@ -53,6 +53,7 @@ export const toEventInput = (event: ChurchEvent): ChurchEventInput => ({
   recurrence: event.recurrence,
   recurrenceUntil: event.recurrenceUntil,
   recurrenceRule: event.recurrenceRule,
+  parentEventId: event.parentEventId,
   registrationEnabled: event.registrationEnabled,
   registrationCapacity: event.registrationCapacity,
   registrationPrice: event.registrationPrice,

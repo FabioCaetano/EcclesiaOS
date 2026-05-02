@@ -77,6 +77,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 71. Eventos passam a guardar expressao cron textual para recorrencias avancadas futuras.
 72. Check-in permanece em um unico menu, mas separado internamente entre Eventos, Kids e Administracao kids.
 73. Tela Inicio passa a exibir os ultimos videos do canal usando o feed RSS publico do YouTube, sem chave do Google Cloud nesta fase.
+74. Expressao cron de eventos passa a gerar ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao e lazy ao listar e manual por endpoint admin; `recurrenceUntil` define o fim, com teto tecnico de 12 meses quando vazio.
 
 ## Decisoes Pendentes
 

@@ -9,10 +9,12 @@ process.env.ECCLESIAOS_DATA_FILE = join(testDir, "dev-db.json");
 process.env.ECCLESIAOS_DATA_PROVIDER = "json";
 
 const { readData } = await import("./dataStore.js");
+const { eventRepository } = await import("./eventRepository.js");
 const { financialTransactionRepository } = await import("./financialTransactionRepository.js");
 const { personRepository } = await import("./personRepository.js");
 const { resourceRepository } = await import("./resourceRepository.js");
 const { servingPlanRepository } = await import("./servingPlanRepository.js");
+const { planCronOccurrences } = await import("../cron.js");
 
 before(async () => {
   await rm(process.env.ECCLESIAOS_DATA_FILE || "", { force: true });
@@ -139,6 +141,75 @@ test("financialTransactionRepository normalizes money fields and sorts newest fi
   assert.equal(updated?.amount, 125.5);
   assert.equal(updated?.paymentMethod, "transfer");
   assert.equal(await financialTransactionRepository.remove(created.id), true);
+});
+
+test("planCronOccurrences expands a weekly cron up to recurrenceUntil", async () => {
+  const occurrences = planCronOccurrences({
+    id: "evt_cron",
+    title: "Teste",
+    type: "service",
+    date: "2026-05-01",
+    startTime: "19:00",
+    endTime: "20:00",
+    location: "",
+    groupId: "",
+    recurrence: "cron",
+    recurrenceUntil: "2026-05-31",
+    recurrenceRule: "0 19 * * 3",
+    parentEventId: "",
+    registrationEnabled: false,
+    registrationCapacity: 0,
+    registrationPrice: 0,
+    registrationCurrency: "BRL",
+    registrationSlug: "",
+    description: "",
+    createdAt: "2026-05-01T00:00:00.000Z",
+    updatedAt: "2026-05-01T00:00:00.000Z"
+  }, new Date("2026-05-01T00:00:00.000Z"));
+
+  assert.ok(occurrences.length >= 4);
+  assert.ok(occurrences.length <= 5);
+  assert.equal(occurrences[0].startTime, "19:00");
+  assert.ok(occurrences.every((occ) => occ.date >= "2026-05-01" && occ.date <= "2026-05-31"));
+});
+
+test("eventRepository materializes cron occurrences as children and removes them with the master", async () => {
+  const master = await eventRepository.create({
+    title: "Culto cron",
+    type: "service",
+    date: "2026-06-01",
+    startTime: "19:00",
+    endTime: "20:00",
+    location: "",
+    groupId: "",
+    recurrence: "cron",
+    recurrenceUntil: "2026-06-30",
+    recurrenceRule: "0 19 * * 3",
+    parentEventId: "",
+    registrationEnabled: false,
+    registrationCapacity: 0,
+    registrationPrice: 0,
+    registrationCurrency: "BRL",
+    registrationSlug: "",
+    description: ""
+  });
+
+  const firstResult = await eventRepository.regenerateForMaster(master.id, new Date("2026-06-01T00:00:00.000Z"));
+  assert.notEqual(firstResult, null);
+  assert.ok((firstResult?.generated || 0) >= 4);
+
+  const events = await eventRepository.list();
+  const children = events.filter((event) => event.parentEventId === master.id);
+  assert.equal(children.length, firstResult?.generated || 0);
+
+  const secondResult = await eventRepository.regenerateForMaster(master.id, new Date("2026-06-01T00:00:00.000Z"));
+  assert.equal(secondResult?.generated, 0);
+  assert.equal(secondResult?.skipped, firstResult?.generated || 0);
+
+  await eventRepository.remove(master.id);
+  const remaining = await eventRepository.list();
+  assert.equal(remaining.find((event) => event.id === master.id), undefined);
+  assert.equal(remaining.filter((event) => event.parentEventId === master.id).length, 0);
 });
 
 test("resourceRepository blocks overlapping room reservations", async () => {

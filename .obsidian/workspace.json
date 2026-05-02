@@ -11,14 +11,10 @@
             "id": "da07ccca998715b3",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "docs/index.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "index"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
             }
           }
         ]
@@ -94,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/index.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Links inversos para index"
+              "title": "Links inversos"
             }
           },
           {
@@ -113,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "docs/index.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Links de saída para index"
+              "title": "Links de saída"
             }
           },
           {
@@ -156,13 +150,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "docs/index.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Sumário de index"
+              "title": "Sumário"
             }
           }
         ]
@@ -183,28 +176,27 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "2b9726b5e28678d7",
+  "active": "da07ccca998715b3",
   "lastOpenFiles": [
-    "apps/web/dist/assets/index-sjfCdxXL.js",
-    "apps/web/dist/assets/index-Di0U7m_D.css",
-    "apps/api/dist/youtube.js",
-    "apps/api/src/youtube.ts",
+    "docs/index.md",
+    "apps/web/dist/assets/index-ERIKm4GJ.js",
+    "apps/web/dist/assets/index-B_v-t3V8.css",
+    "apps/api/dist/cron.js",
+    "apps/api/src/cron.ts",
+    "apps/api/prisma/migrations/20260502030000_event_parent_id/migration.sql",
+    "apps/api/prisma/migrations/20260502030000_event_parent_id",
+    "node_modules/luxon/build/global/luxon.min.js.map",
+    "node_modules/luxon/build/global/luxon.min.js",
+    "node_modules/luxon/build/global/luxon.js",
+    "node_modules/luxon/build/es6/luxon.mjs.map",
     "docs/phases/phase-44-cron-real.md",
     "docs/decisions/0045-cron-real-occurrences.md",
     "docs/phases/phase-43-youtube-real.md",
     "docs/decisions/0044-youtube-real-no-key.md",
-    "vercel.json",
-    "apps/web/tsconfig.tsbuildinfo",
-    "packages/shared/tsconfig.tsbuildinfo",
-    "apps/api/tsconfig.tsbuildinfo",
     "docs/deploy.md",
     "docs/next-steps.md",
-    "docs/index.md",
     "docs/decisions/0043-ux-home-agenda-checkin.md",
     "docs/phases/phase-42-ux-home-agenda-checkin.md",
-    "apps/web/dist/assets/index-CzpGLcCx.js",
-    "apps/web/dist/assets/index-n3gkeYGy.css",
-    "apps/web/src/HomePage.tsx",
     "docs/decisions/0042-checkin-to-attendance.md",
     "docs/phases/phase-41-checkin-to-attendance.md",
     "docs/decisions/0041-audit-screen.md",

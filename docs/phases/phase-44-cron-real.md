@@ -6,7 +6,7 @@ Transformar a expressao cron textual de eventos em ocorrencias reais materializa
 
 ## Status
 
-Planejada.
+Concluida.
 
 ## Escopo
 

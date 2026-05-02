@@ -76,6 +76,7 @@ const toEvent = (event: {
   recurrence: string;
   recurrenceUntil: string;
   recurrenceRule: string;
+  parentEventId?: string | null;
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;
@@ -90,6 +91,7 @@ const toEvent = (event: {
   recurrence: toEventRecurrence(event.recurrence),
   recurrenceUntil: event.recurrenceUntil || "",
   recurrenceRule: event.recurrence === "cron" ? event.recurrenceRule || "" : "",
+  parentEventId: event.parentEventId || "",
   registrationEnabled: event.registrationEnabled,
   registrationCapacity: event.registrationCapacity,
   registrationPrice: event.registrationPrice,
