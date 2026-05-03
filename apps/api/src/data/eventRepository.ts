@@ -1,6 +1,8 @@
 import type { ChurchEvent, ChurchEventInput, CronGenerationResult, EventRecurrence, EventType } from "@ecclesiaos/shared";
 import { readData, writeData } from "./dataStore.js";
 import { planCronOccurrences } from "../cron.js";
+import { removePlansForEvent, synchronizePlansForEvent } from "./servingPlanRepository.js";
+import type { DataFile } from "./dataStore.js";
 
 const createId = () => `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const createSlug = (title: string, date: string) => `${title}-${date}`.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `evento-${Date.now()}`;
@@ -11,6 +13,10 @@ const normalizeType = (type: EventType): EventType => (
 
 const normalizeRecurrence = (recurrence: EventRecurrence): EventRecurrence => (
   recurrence === "weekly" || recurrence === "monthly" || recurrence === "cron" ? recurrence : "none"
+);
+
+const normalizeRequestedTeams = (raw: unknown): string[] => (
+  Array.isArray(raw) ? raw.map((value) => String(value || "").trim()).filter(Boolean) : []
 );
 
 const normalizeInput = (input: ChurchEventInput): ChurchEventInput => ({
@@ -25,6 +31,7 @@ const normalizeInput = (input: ChurchEventInput): ChurchEventInput => ({
   recurrenceUntil: input.recurrence === "none" ? "" : String(input.recurrenceUntil || "").trim(),
   recurrenceRule: input.recurrence === "cron" ? String(input.recurrenceRule || "").trim() : "",
   parentEventId: String(input.parentEventId || "").trim(),
+  requestedTeamIds: normalizeRequestedTeams(input.requestedTeamIds),
   registrationEnabled: Boolean(input.registrationEnabled),
   registrationCapacity: Math.max(0, Number(input.registrationCapacity) || 0),
   registrationPrice: Math.max(0, Number(input.registrationPrice) || 0),
@@ -53,6 +60,7 @@ const buildChildFromMaster = (master: ChurchEvent, occurrence: { date: string; s
   recurrenceUntil: "",
   recurrenceRule: "",
   parentEventId: master.id,
+  requestedTeamIds: [...master.requestedTeamIds],
   registrationEnabled: false,
   registrationCapacity: 0,
   registrationPrice: 0,
@@ -102,6 +110,14 @@ const removeFutureChildrenWithoutEngagement = (events: ChurchEvent[], masterId: 
   });
 };
 
+const syncPlansForEvents = (data: DataFile, events: ChurchEvent[]): DataFile["servingPlans"] => {
+  let plans = data.servingPlans;
+  for (const event of events) {
+    plans = synchronizePlansForEvent(plans, event, data.groups);
+  }
+  return plans;
+};
+
 export const eventRepository = {
   async list(): Promise<ChurchEvent[]> {
     const data = await readData();
@@ -120,7 +136,9 @@ export const eventRepository = {
       updatedAt: now
     };
 
-    await writeData({ ...data, events: [...data.events, event] });
+    const nextEvents = [...data.events, event];
+    const nextPlans = syncPlansForEvents(data, [event]);
+    await writeData({ ...data, events: nextEvents, servingPlans: nextPlans });
     return event;
   },
 
@@ -137,7 +155,9 @@ export const eventRepository = {
       updatedAt: new Date().toISOString()
     };
 
-    await writeData({ ...data, events: data.events.map((event) => event.id === id ? updated : event) });
+    const nextEvents = data.events.map((event) => event.id === id ? updated : event);
+    const nextPlans = syncPlansForEvents(data, [updated]);
+    await writeData({ ...data, events: nextEvents, servingPlans: nextPlans });
     return updated;
   },
 
@@ -156,7 +176,18 @@ export const eventRepository = {
     const withoutMaster = data.events.filter((event) => event.id !== id);
     const finalEvents = removeFutureChildrenWithoutEngagement(withoutMaster, id, now, registeredEventIds);
 
-    await writeData({ ...data, events: finalEvents });
+    const removedEventIds = new Set(
+      data.events
+        .filter((event) => !finalEvents.some((kept) => kept.id === event.id))
+        .map((event) => event.id)
+    );
+
+    let nextPlans = data.servingPlans;
+    for (const removedId of removedEventIds) {
+      nextPlans = removePlansForEvent(nextPlans, removedId);
+    }
+
+    await writeData({ ...data, events: finalEvents, servingPlans: nextPlans });
     return true;
   },
 
@@ -166,6 +197,7 @@ export const eventRepository = {
     if (cronMasters.length === 0) return { generated: 0, skipped: 0, total: 0 };
 
     let allEvents = [...data.events];
+    const allNewChildren: ChurchEvent[] = [];
     let totalGenerated = 0;
     let totalSkipped = 0;
     let totalPlanned = 0;
@@ -174,6 +206,7 @@ export const eventRepository = {
       const result = expandSingleMaster(master, allEvents, now);
       if (result.newChildren.length > 0) {
         allEvents = [...allEvents, ...result.newChildren];
+        allNewChildren.push(...result.newChildren);
       }
       totalGenerated += result.generated;
       totalSkipped += result.skipped;
@@ -181,7 +214,8 @@ export const eventRepository = {
     }
 
     if (totalGenerated > 0) {
-      await writeData({ ...data, events: allEvents });
+      const nextPlans = syncPlansForEvents(data, allNewChildren);
+      await writeData({ ...data, events: allEvents, servingPlans: nextPlans });
     }
 
     return { generated: totalGenerated, skipped: totalSkipped, total: totalPlanned };
@@ -197,7 +231,8 @@ export const eventRepository = {
 
     const result = expandSingleMaster(master, data.events, now);
     if (result.newChildren.length > 0) {
-      await writeData({ ...data, events: [...data.events, ...result.newChildren] });
+      const nextPlans = syncPlansForEvents(data, result.newChildren);
+      await writeData({ ...data, events: [...data.events, ...result.newChildren], servingPlans: nextPlans });
     }
     return { generated: result.generated, skipped: result.skipped, total: result.total };
   }

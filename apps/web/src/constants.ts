@@ -94,6 +94,7 @@ export const emptyEventInput: ChurchEventInput = {
   recurrenceUntil: "",
   recurrenceRule: "",
   parentEventId: "",
+  requestedTeamIds: [],
   registrationEnabled: false,
   registrationCapacity: 0,
   registrationPrice: 0,
@@ -140,6 +141,7 @@ export const emptyServingPlanInput: ServingPlanInput = {
   date: new Date().toISOString().slice(0, 10),
   title: "",
   groupId: "",
+  eventId: "",
   notes: "",
   assignments: []
 };

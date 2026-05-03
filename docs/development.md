@@ -345,9 +345,21 @@ Admin e lider podem registrar saida infantil diretamente. Membro autenticado pod
 
 A tela Check-in possui abas internas para Eventos, Kids e Administracao kids, sem novo item no menu lateral.
 
-A tela Check-in possui painel de leitura de QR Code por camera usando `BarcodeDetector` quando o navegador oferece suporte. Se a camera ou o recurso nativo nao estiver disponivel, o operador pode colar manualmente o payload do QR Code.
+A tela Check-in possui painel de leitura de QR Code por camera. O hook `useQrScanner` tenta `BarcodeDetector` quando o navegador oferece suporte e cai para `jsqr` (decodificacao em JavaScript via canvas) caso contrario, abrindo a camera em qualquer navegador moderno. Mensagens diferenciadas explicam falhas por permissao, ausencia de camera, contexto sem HTTPS e ausencia do API. O operador tambem pode colar manualmente o payload do QR Code.
 
-Para impressora Brother, a etiqueta possui presets `Brother DK-1202 62x100mm` e `Brother 62mm continuo`. A impressao usa o dialogo do navegador; selecione a impressora Brother e o papel correspondente no driver.
+Para impressora Brother, os tamanhos de etiqueta vem dos templates cadastrados em `Igreja > Etiquetas`. Cada template define `widthMm`, `heightMm`, modelo da impressora e marca de padrao por layout. A impressao usa o dialogo do navegador com `@page` injetado dinamicamente a partir do template selecionado; selecione a impressora Brother e o papel correspondente no driver.
+
+Endpoints de templates de etiqueta:
+
+```text
+GET    http://localhost:4000/label-templates
+GET    http://localhost:4000/label-templates?layout=kids_checkin
+POST   http://localhost:4000/label-templates
+PUT    http://localhost:4000/label-templates/:id
+DELETE http://localhost:4000/label-templates/:id
+```
+
+Qualquer autenticado pode listar; somente admin cria, edita ou remove. Marcar `isDefault = true` em um template desmarca automaticamente os outros do mesmo layout.
 
 A tela Check-in tambem permite selecionar varias criancas e imprimir etiquetas infantis em lote. Use `Selecionar ativos` para marcar todas as criancas ainda sem saida registrada e `Imprimir lote` para gerar as etiquetas sequenciais.
 
@@ -357,6 +369,7 @@ Endpoints de escalas:
 
 ```text
 GET    http://localhost:4000/serving-plans
+GET    http://localhost:4000/serving-plans?groupId=<id>
 POST   http://localhost:4000/serving-plans
 PUT    http://localhost:4000/serving-plans/:id
 DELETE http://localhost:4000/serving-plans/:id
@@ -364,7 +377,9 @@ PATCH  http://localhost:4000/serving-plans/:planId/assignments/:assignmentId/sta
 GET    http://localhost:4000/serving-notifications
 ```
 
-Todos os usuarios autenticados podem listar escalas. Somente `admin` pode criar, editar e remover planos. Admin pode alterar qualquer status de pessoa escalada; lider/membro pode responder somente escalas vinculadas ao proprio `personId`.
+Todos os usuarios autenticados podem listar escalas. O parametro `?groupId=` filtra por equipe. Somente `admin` pode criar e remover planos. `PUT /serving-plans/:id` aceita admin ou lider do `groupId` do plano: lider so pode escalar pessoas que estao em `memberPersonIds` da propria equipe; admin escala qualquer pessoa. Admin pode alterar qualquer status de pessoa escalada; lider/membro pode responder somente escalas vinculadas ao proprio `personId`.
+
+Eventos passam a ter `requestedTeamIds: string[]` aceitando apenas grupos do tipo `ministry` ou `team`. Quando definido, o backend sincroniza automaticamente um plano de escala vinculado por equipe (`ServingPlan.eventId`). Desmarcar uma equipe remove o plano correspondente apenas se nao tiver atribuicoes; com atribuicoes, o plano permanece. Remover o evento cascateia para os planos vinculados. Eventos cron filhos herdam `requestedTeamIds` do mestre e tambem geram seus planos quando materializados.
 
 Endpoints financeiros:
 

@@ -11,6 +11,7 @@ process.env.ECCLESIAOS_DATA_PROVIDER = "json";
 const { readData } = await import("./dataStore.js");
 const { eventRepository } = await import("./eventRepository.js");
 const { financialTransactionRepository } = await import("./financialTransactionRepository.js");
+const { labelTemplateRepository } = await import("./labelTemplateRepository.js");
 const { personRepository } = await import("./personRepository.js");
 const { resourceRepository } = await import("./resourceRepository.js");
 const { servingPlanRepository } = await import("./servingPlanRepository.js");
@@ -96,6 +97,7 @@ test("servingPlanRepository normalizes assignment status and ignores empty rows"
     date: "2026-05-03",
     title: " Culto da noite ",
     groupId: "",
+    eventId: "",
     notes: "",
     assignments: [
       { id: "", personId: " per_001 ", role: " Louvor ", status: "confirmed", notes: " ok " },
@@ -157,6 +159,7 @@ test("planCronOccurrences expands a weekly cron up to recurrenceUntil", async ()
     recurrenceUntil: "2026-05-31",
     recurrenceRule: "0 19 * * 3",
     parentEventId: "",
+    requestedTeamIds: [],
     registrationEnabled: false,
     registrationCapacity: 0,
     registrationPrice: 0,
@@ -186,6 +189,7 @@ test("eventRepository materializes cron occurrences as children and removes them
     recurrenceUntil: "2026-06-30",
     recurrenceRule: "0 19 * * 3",
     parentEventId: "",
+    requestedTeamIds: [],
     registrationEnabled: false,
     registrationCapacity: 0,
     registrationPrice: 0,
@@ -210,6 +214,53 @@ test("eventRepository materializes cron occurrences as children and removes them
   const remaining = await eventRepository.list();
   assert.equal(remaining.find((event) => event.id === master.id), undefined);
   assert.equal(remaining.filter((event) => event.parentEventId === master.id).length, 0);
+});
+
+test("labelTemplateRepository enforces single default per layout", async () => {
+  const created = await labelTemplateRepository.create({
+    name: "Visitante 50x30",
+    printerModel: "Brother QL-700",
+    widthMm: 50,
+    heightMm: 30,
+    isContinuous: false,
+    layout: "visitor",
+    isDefault: true
+  });
+  assert.equal(created.isDefault, true);
+
+  const second = await labelTemplateRepository.create({
+    name: "Visitante 60x30",
+    printerModel: "Brother QL-820NWB",
+    widthMm: 60,
+    heightMm: 30,
+    isContinuous: false,
+    layout: "visitor",
+    isDefault: true
+  });
+  assert.equal(second.isDefault, true);
+
+  const visitorTemplates = await labelTemplateRepository.listByLayout("visitor");
+  const defaults = visitorTemplates.filter((template) => template.isDefault);
+  assert.equal(defaults.length, 1);
+  assert.equal(defaults[0]?.id, second.id);
+
+  const updated = await labelTemplateRepository.update(created.id, {
+    name: created.name,
+    printerModel: created.printerModel,
+    widthMm: created.widthMm,
+    heightMm: created.heightMm,
+    isContinuous: created.isContinuous,
+    layout: created.layout,
+    isDefault: true
+  });
+  assert.equal(updated?.isDefault, true);
+
+  const reloaded = await labelTemplateRepository.listByLayout("visitor");
+  assert.equal(reloaded.filter((template) => template.isDefault).length, 1);
+  assert.equal(reloaded.find((template) => template.isDefault)?.id, created.id);
+
+  await labelTemplateRepository.remove(created.id);
+  await labelTemplateRepository.remove(second.id);
 });
 
 test("resourceRepository blocks overlapping room reservations", async () => {

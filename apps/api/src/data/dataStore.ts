@@ -1,11 +1,12 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
 import { defaultGroups } from "./defaultGroups.js";
+import { defaultLabelTemplates } from "./defaultLabelTemplates.js";
 import { defaultPeople } from "./defaultPeople.js";
 import { defaultEvents } from "./defaultEvents.js";
 import { defaultServingPlans } from "./defaultServingPlans.js";
@@ -23,6 +24,7 @@ export interface DataFile {
   events: ChurchEvent[];
   financialTransactions: FinancialTransaction[];
   groups: GroupProfile[];
+  labelTemplates: LabelTemplate[];
   people: PersonProfile[];
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
@@ -43,6 +45,7 @@ const defaultData = (): DataFile => ({
   events: defaultEvents,
   financialTransactions: defaultFinancialTransactions,
   groups: defaultGroups,
+  labelTemplates: defaultLabelTemplates,
   people: defaultPeople,
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
@@ -76,6 +79,7 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     recurrenceUntil: event.recurrenceUntil || "",
     recurrenceRule: event.recurrence === "cron" ? event.recurrenceRule || "" : "",
     parentEventId: event.parentEventId || "",
+    requestedTeamIds: Array.isArray(event.requestedTeamIds) ? event.requestedTeamIds : [],
     registrationEnabled: event.registrationEnabled || false,
     registrationCapacity: event.registrationCapacity || 0,
     registrationPrice: event.registrationPrice || 0,
@@ -84,10 +88,22 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
   })),
   financialTransactions: data.financialTransactions || defaultFinancialTransactions,
   groups: data.groups || defaultGroups,
+  labelTemplates: (data.labelTemplates || defaultLabelTemplates).map((template) => ({
+    ...template,
+    layout: template.layout === "visitor" ? "visitor" : "kids_checkin",
+    isContinuous: Boolean(template.isContinuous),
+    isDefault: Boolean(template.isDefault),
+    widthMm: Number(template.widthMm) || 0,
+    heightMm: Number(template.heightMm) || 0,
+    printerModel: template.printerModel || ""
+  })),
   people: (data.people || defaultPeople).map((person) => ({ ...person, guardianPersonIds: person.guardianPersonIds || [] })),
   resources: data.resources || defaultResources,
   roomReservations: (data.roomReservations || defaultRoomReservations).map((reservation) => ({ ...reservation, status: reservation.status === "cancelled" ? "cancelled" : "confirmed" })),
-  servingPlans: data.servingPlans || defaultServingPlans,
+  servingPlans: (data.servingPlans || defaultServingPlans).map((plan) => ({
+    ...plan,
+    eventId: plan.eventId || ""
+  })),
   users: (data.users || defaultUsers).map((user) => ({ ...user, personId: user.personId || "" }))
 });
 

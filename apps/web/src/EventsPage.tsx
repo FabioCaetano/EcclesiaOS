@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile } from "@ecclesiaos/shared";
 import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEventRegistrations, loadEvents, loadGroups, loadResources, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
+import { useQrScanner } from "./useQrScanner";
 
 interface Props {
   token: string;
@@ -15,12 +16,6 @@ const registrationStatusLabels: Record<EventRegistrationStatus, string> = {
   pending_payment: "Pagamento pendente",
   cancelled: "Cancelada"
 };
-
-type BarcodeDetectorShape = {
-  detect(source: CanvasImageSource): Promise<Array<{ rawValue: string }>>;
-};
-
-type BarcodeDetectorConstructor = new (options: { formats: string[] }) => BarcodeDetectorShape;
 
 const ticketPayload = (registration: EventRegistration) => `ecclesiaos-event-ticket:${registration.id}:${registration.ticketCode || registration.id}`;
 
@@ -60,13 +55,9 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const [registrationStatusFilter, setRegistrationStatusFilter] = useState<EventRegistrationStatus | "all">("all");
   const [ticketScanInput, setTicketScanInput] = useState("");
   const [ticketScannerActive, setTicketScannerActive] = useState(false);
-  const [ticketScannerStatus, setTicketScannerStatus] = useState("");
   const [eventForm, setEventForm] = useState<ChurchEventInput>(emptyEventInput);
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
   const [status, setStatus] = useState("");
-  const ticketVideoRef = useRef<HTMLVideoElement | null>(null);
-  const ticketCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const ticketStreamRef = useRef<MediaStream | null>(null);
 
   const upcomingEvents = useMemo(() => events.filter((event) => event.date >= new Date().toISOString().slice(0, 10)), [events]);
   const filteredEvents = useMemo(() => events.filter((event) => !monthFilter || event.date.startsWith(monthFilter)), [events, monthFilter]);
@@ -94,68 +85,16 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
     refreshEvents().catch(() => setStatus("Nao foi possivel carregar eventos."));
   }, [token]);
 
-  useEffect(() => {
-    if (!ticketScannerActive) {
-      ticketStreamRef.current?.getTracks().forEach((track) => track.stop());
-      ticketStreamRef.current = null;
-      return;
-    }
+  const handleTicketScan = async (rawValue: string) => {
+    setTicketScanInput(rawValue);
+    await completeTicketCheckIn(rawValue);
+    setTicketScannerActive(false);
+  };
 
-    let cancelled = false;
-    let scanTimer = 0;
-    const BarcodeDetector = (window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-
-    const startScanner = async () => {
-      if (!BarcodeDetector) {
-        setTicketScannerStatus("Leitura por camera indisponivel neste navegador. Use o campo manual.");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        ticketStreamRef.current = stream;
-        if (ticketVideoRef.current) {
-          ticketVideoRef.current.srcObject = stream;
-          await ticketVideoRef.current.play();
-        }
-
-        const detector = new BarcodeDetector({ formats: ["qr_code"] });
-        const scanFrame = async () => {
-          if (cancelled || !ticketVideoRef.current || !ticketCanvasRef.current) return;
-          const video = ticketVideoRef.current;
-          const canvas = ticketCanvasRef.current;
-          if (video.readyState >= 2 && video.videoWidth > 0) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const codes = await detector.detect(canvas);
-            const rawValue = codes[0]?.rawValue;
-            if (rawValue) {
-              setTicketScanInput(rawValue);
-              await completeTicketCheckIn(rawValue);
-              setTicketScannerActive(false);
-              return;
-            }
-          }
-          scanTimer = window.setTimeout(scanFrame, 500);
-        };
-
-        setTicketScannerStatus("Aponte a camera para o QR Code do ingresso.");
-        scanTimer = window.setTimeout(scanFrame, 500);
-      } catch {
-        setTicketScannerStatus("Nao foi possivel acessar a camera. Use o campo manual.");
-      }
-    };
-
-    void startScanner();
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(scanTimer);
-      ticketStreamRef.current?.getTracks().forEach((track) => track.stop());
-      ticketStreamRef.current = null;
-    };
-  }, [ticketScannerActive, registrations]);
+  const { videoRef: ticketVideoRef, canvasRef: ticketCanvasRef, message: ticketScannerStatus } = useQrScanner({
+    active: ticketScannerActive,
+    onDecode: handleTicketScan
+  });
 
   const selectEvent = (event: ChurchEvent) => {
     setSelectedEventId(event.id);
@@ -185,6 +124,20 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
       ...(field === "recurrence" && value === "none" ? { recurrenceUntil: "" } : {})
     }));
   };
+
+  const toggleRequestedTeam = (groupId: string) => {
+    setEventForm((current) => {
+      const has = current.requestedTeamIds.includes(groupId);
+      return {
+        ...current,
+        requestedTeamIds: has
+          ? current.requestedTeamIds.filter((id) => id !== groupId)
+          : [...current.requestedTeamIds, groupId]
+      };
+    });
+  };
+
+  const teamGroups = useMemo(() => groups.filter((group) => group.type === "ministry" || group.type === "team"), [groups]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -256,7 +209,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const completeTicketCheckIn = async (value: string) => {
     const parsed = parseTicketPayload(value);
     if (!parsed) {
-      setTicketScannerStatus("QR Code invalido para ingresso.");
+      setStatus("QR Code invalido para ingresso.");
       return;
     }
 
@@ -264,9 +217,9 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
       const updated = await checkInEventRegistration(token, parsed.id, { ticketCode: parsed.ticketCode });
       await refreshEvents();
       setSelectedRegistrationId(updated.id);
-      setTicketScannerStatus(updated.checkedInAt ? "Check-in do participante registrado." : "Ingresso validado.");
+      setStatus(updated.checkedInAt ? "Check-in do participante registrado." : "Ingresso validado.");
     } catch {
-      setTicketScannerStatus("Nao foi possivel validar este ingresso.");
+      setStatus("Nao foi possivel validar este ingresso.");
     }
   };
 
@@ -369,6 +322,26 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
               {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
             </select>
           </label>
+          <fieldset className="wide-field requested-teams">
+            <legend>Equipes que servem</legend>
+            {teamGroups.length === 0 ? (
+              <p className="muted">Nenhum ministerio ou equipe cadastrado em Grupos.</p>
+            ) : (
+              <div className="checkbox-grid">
+                {teamGroups.map((group) => (
+                  <label key={group.id}>
+                    <input
+                      type="checkbox"
+                      disabled={user.role !== "admin"}
+                      checked={eventForm.requestedTeamIds.includes(group.id)}
+                      onChange={() => toggleRequestedTeam(group.id)}
+                    />
+                    {group.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
           <label className="wide-field">Descricao<textarea disabled={user.role !== "admin"} value={eventForm.description} onChange={(event) => updateField("description", event.target.value)} /></label>
           <label className="wide-field">Slug publico<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} value={eventForm.registrationSlug} onChange={(event) => updateField("registrationSlug", event.target.value)} /></label>
 

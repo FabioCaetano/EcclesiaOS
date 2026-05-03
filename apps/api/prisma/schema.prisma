@@ -81,6 +81,7 @@ model EventRecord {
   recurrenceUntil String
   recurrenceRule String @default("")
   parentEventId String @default("")
+  requestedTeamIds Json @default("[]")
   registrationEnabled Boolean @default(false)
   registrationCapacity Int @default(0)
   registrationPrice Float @default(0)
@@ -163,10 +164,14 @@ model ServingPlanRecord {
   date        String
   title       String
   groupId     String
+  eventId     String   @default("")
   notes       String
   assignments Json
   createdAt   DateTime
   updatedAt   DateTime
+
+  @@index([eventId])
+  @@index([groupId])
 }
 
 model FinancialTransactionRecord {
@@ -181,6 +186,21 @@ model FinancialTransactionRecord {
   description   String
   createdAt     DateTime
   updatedAt     DateTime
+}
+
+model LabelTemplateRecord {
+  id           String   @id
+  name         String
+  printerModel String   @default("")
+  widthMm      Float    @default(62)
+  heightMm     Float    @default(100)
+  isContinuous Boolean  @default(false)
+  layout       String   @default("kids_checkin")
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime
+  updatedAt    DateTime
+
+  @@index([layout])
 }
 
 model AuditLogRecord {

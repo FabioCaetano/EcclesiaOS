@@ -54,6 +54,7 @@ export const toEventInput = (event: ChurchEvent): ChurchEventInput => ({
   recurrenceUntil: event.recurrenceUntil,
   recurrenceRule: event.recurrenceRule,
   parentEventId: event.parentEventId,
+  requestedTeamIds: [...event.requestedTeamIds],
   registrationEnabled: event.registrationEnabled,
   registrationCapacity: event.registrationCapacity,
   registrationPrice: event.registrationPrice,
@@ -66,6 +67,7 @@ export const toServingPlanInput = (plan: ServingPlan): ServingPlanInput => ({
   date: plan.date,
   title: plan.title,
   groupId: plan.groupId,
+  eventId: plan.eventId,
   notes: plan.notes,
   assignments: plan.assignments
 });

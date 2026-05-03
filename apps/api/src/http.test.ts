@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after, before } from "node:test";
-import type { AuthSession } from "@ecclesiaos/shared";
+import type { AuthSession, ChurchEvent, GroupProfile, ServingPlan } from "@ecclesiaos/shared";
 
 const testDir = await mkdtemp(join(tmpdir(), "ecclesiaos-http-"));
 process.env.ECCLESIAOS_DATA_FILE = join(testDir, "dev-db.json");
@@ -521,6 +521,100 @@ test("admin can create finance records while member cannot", async () => {
   assert.equal(created.response.status, 201);
   assert.equal(created.body?.amount, 300);
   assert.equal(created.body?.category, "Oferta");
+});
+
+test("requested teams sync serving plans and leader can only schedule members of own team", async () => {
+  const team = await requestJson<GroupProfile>("/groups", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      name: "Time de Recepcao",
+      type: "team",
+      description: "Equipe de recepcao",
+      leaderPersonId: leaderSession.user.personId,
+      memberPersonIds: [leaderSession.user.personId, memberSession.user.personId]
+    })
+  });
+  assert.equal(team.response.status, 201);
+  const teamId = team.body!.id;
+
+  const event = await requestJson<ChurchEvent>("/events", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      title: "Culto teste escala",
+      type: "service",
+      date: "2026-08-01",
+      startTime: "10:00",
+      endTime: "11:30",
+      location: "",
+      groupId: "",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      parentEventId: "",
+      requestedTeamIds: [teamId],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: ""
+    })
+  });
+  assert.equal(event.response.status, 201);
+  const eventId = event.body!.id;
+
+  const filteredPlans = await requestJson<ServingPlan[]>(`/serving-plans?groupId=${teamId}`, {
+    headers: authHeaders(leaderSession)
+  });
+  assert.equal(filteredPlans.response.status, 200);
+  const plan = filteredPlans.body?.find((item) => item.eventId === eventId);
+  assert.ok(plan, "plan was created for the requested team");
+
+  const updateOk = await requestJson<ServingPlan>(`/serving-plans/${plan!.id}`, {
+    method: "PUT",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      date: plan!.date,
+      title: plan!.title,
+      groupId: plan!.groupId,
+      eventId: plan!.eventId,
+      notes: "Escalado pelo lider",
+      assignments: [
+        { id: "", personId: memberSession.user.personId, role: "Recepcao", status: "pending", notes: "" }
+      ]
+    })
+  });
+  assert.equal(updateOk.response.status, 200);
+  assert.equal(updateOk.body?.assignments.length, 1);
+
+  const updateForbidden = await requestJson<{ error: string }>(`/serving-plans/${plan!.id}`, {
+    method: "PUT",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      date: plan!.date,
+      title: plan!.title,
+      groupId: plan!.groupId,
+      eventId: plan!.eventId,
+      notes: "",
+      assignments: [
+        { id: "", personId: adminSession.user.personId, role: "Outro", status: "pending", notes: "" }
+      ]
+    })
+  });
+  assert.equal(updateForbidden.response.status, 403);
+
+  const removed = await requestJson<{ ok: boolean }>(`/events/${eventId}`, {
+    method: "DELETE",
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(removed.response.status, 200);
+
+  const remainingPlans = await requestJson<ServingPlan[]>(`/serving-plans?groupId=${teamId}`, {
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(remainingPlans.body?.find((item) => item.eventId === eventId), undefined);
 });
 
 test("leaders and members can only respond to their own serving assignments", async () => {

@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 43 - YouTube Real Sem Chave Oficial.
+Fase atual concluida: Fase 46 - Templates De Etiqueta E Camera QR Universal.
 
 Estrutura:
 

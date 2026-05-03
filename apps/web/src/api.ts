@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -103,6 +103,34 @@ export const loadChurchProfile = async (token: string): Promise<ChurchProfile> =
 
   if (!response.ok) throw new Error("church-load-failed");
   return response.json() as Promise<ChurchProfile>;
+};
+
+export const loadLabelTemplates = async (token: string, layout?: LabelLayout): Promise<LabelTemplate[]> => {
+  const url = layout ? `${apiBaseUrl}/label-templates?layout=${layout}` : `${apiBaseUrl}/label-templates`;
+  const response = await fetch(url, { headers: authHeaders(token) });
+
+  if (!response.ok) throw new Error("label-templates-load-failed");
+  return response.json() as Promise<LabelTemplate[]>;
+};
+
+export const saveLabelTemplate = async (token: string, input: LabelTemplateInput, id?: string): Promise<LabelTemplate> => {
+  const response = await fetch(id ? `${apiBaseUrl}/label-templates/${id}` : `${apiBaseUrl}/label-templates`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error("label-template-save-failed");
+  return response.json() as Promise<LabelTemplate>;
+};
+
+export const deleteLabelTemplate = async (token: string, id: string) => {
+  const response = await fetch(`${apiBaseUrl}/label-templates/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("label-template-delete-failed");
 };
 
 export const loadYouTubeVideos = async (token: string): Promise<YouTubeVideosResponse> => {
@@ -418,8 +446,9 @@ export const checkOutChild = async (token: string, id: string, input?: ChildChec
   return response.json() as Promise<ChildCheckIn>;
 };
 
-export const loadServingPlans = async (token: string): Promise<ServingPlan[]> => {
-  const response = await fetch(`${apiBaseUrl}/serving-plans`, {
+export const loadServingPlans = async (token: string, groupId?: string): Promise<ServingPlan[]> => {
+  const url = groupId ? `${apiBaseUrl}/serving-plans?groupId=${encodeURIComponent(groupId)}` : `${apiBaseUrl}/serving-plans`;
+  const response = await fetch(url, {
     headers: authHeaders(token)
   });
 

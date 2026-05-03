@@ -1,4 +1,4 @@
-import type { ServingAssignment, ServingAssignmentStatus, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
+import type { ChurchEvent, GroupProfile, ServingAssignment, ServingAssignmentStatus, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
 import { readData, writeData } from "./dataStore.js";
 
 const createId = (prefix: string) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -21,6 +21,7 @@ const normalizeInput = (input: ServingPlanInput): ServingPlanInput => ({
   date: String(input.date || "").trim(),
   title: String(input.title || "").trim(),
   groupId: String(input.groupId || "").trim(),
+  eventId: String(input.eventId || "").trim(),
   notes: String(input.notes || "").trim(),
   assignments: normalizeAssignments(input.assignments)
 });
@@ -29,6 +30,15 @@ export const servingPlanRepository = {
   async list(): Promise<ServingPlan[]> {
     const data = await readData();
     return [...data.servingPlans].sort((a, b) => b.date.localeCompare(a.date));
+  },
+
+  async listByGroupIds(groupIds: string[]): Promise<ServingPlan[]> {
+    if (groupIds.length === 0) return [];
+    const data = await readData();
+    const allowed = new Set(groupIds);
+    return data.servingPlans
+      .filter((plan) => allowed.has(plan.groupId))
+      .sort((a, b) => b.date.localeCompare(a.date));
   },
 
   async create(input: ServingPlanInput): Promise<ServingPlan> {
@@ -113,3 +123,64 @@ export const servingPlanRepository = {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 };
+
+export const isTeamGroup = (group: GroupProfile | undefined) => Boolean(group && (group.type === "ministry" || group.type === "team"));
+
+export const buildPlanForEventTeam = (event: ChurchEvent, group: GroupProfile, nowIso: string): ServingPlan => ({
+  id: `srv_${event.id}_${group.id}`,
+  date: event.date,
+  title: `${event.title} - ${group.name}`,
+  groupId: group.id,
+  eventId: event.id,
+  notes: "",
+  assignments: [],
+  createdAt: nowIso,
+  updatedAt: nowIso
+});
+
+export const synchronizePlansForEvent = (
+  plans: ServingPlan[],
+  event: ChurchEvent,
+  groups: GroupProfile[]
+): ServingPlan[] => {
+  const groupById = new Map(groups.map((group) => [group.id, group] as const));
+  const requested = (event.requestedTeamIds || []).filter((groupId) => isTeamGroup(groupById.get(groupId)));
+  const requestedSet = new Set(requested);
+  const nowIso = new Date().toISOString();
+
+  const linkedPlansByGroupId = new Map<string, ServingPlan>();
+  for (const plan of plans) {
+    if (plan.eventId === event.id) {
+      linkedPlansByGroupId.set(plan.groupId, plan);
+    }
+  }
+
+  const result: ServingPlan[] = [];
+  for (const plan of plans) {
+    if (plan.eventId !== event.id) {
+      result.push(plan);
+      continue;
+    }
+    if (requestedSet.has(plan.groupId)) {
+      result.push(plan);
+      continue;
+    }
+    if (plan.assignments.length > 0) {
+      result.push({ ...plan, eventId: "", updatedAt: nowIso });
+      continue;
+    }
+  }
+
+  for (const groupId of requested) {
+    if (linkedPlansByGroupId.has(groupId)) continue;
+    const group = groupById.get(groupId);
+    if (!group) continue;
+    result.push(buildPlanForEventTeam(event, group, nowIso));
+  }
+
+  return result;
+};
+
+export const removePlansForEvent = (plans: ServingPlan[], eventId: string): ServingPlan[] => (
+  plans.filter((plan) => plan.eventId !== eventId)
+);

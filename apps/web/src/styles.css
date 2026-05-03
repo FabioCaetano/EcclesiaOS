@@ -424,6 +424,122 @@ h2 {
   border: 1px solid #b2dfdb;
 }
 
+.requested-teams {
+  border: 1px solid #d8e3e0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fafdfb;
+}
+
+.requested-teams legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #216869;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.checkbox-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.checkbox-grid input {
+  width: auto;
+}
+
+.serving-plan-summary {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #44615e;
+  margin-top: 6px;
+}
+
+.serving-plan-summary strong {
+  color: #1f2c2a;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.serving-plan-summary .declined-count {
+  color: #c1412c;
+}
+
+.label-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.label-template-card {
+  border: 1px solid #d8e3e0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fafdfb;
+  display: grid;
+  gap: 8px;
+}
+
+.label-template-card.selected {
+  border-color: #216869;
+  box-shadow: 0 0 0 2px #d6efe6;
+}
+
+.label-template-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.label-template-card header strong {
+  font-size: 15px;
+}
+
+.label-template-card .response-actions {
+  margin-top: 6px;
+}
+
+.label-template-form .checkbox-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-test-print {
+  display: none;
+}
+
+@media print {
+  .label-test-print {
+    display: block;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .label-test-print, .label-test-print * {
+    visibility: visible;
+  }
+  .label-test-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
+
 .youtube-fallback {
   display: grid;
   gap: 10px;

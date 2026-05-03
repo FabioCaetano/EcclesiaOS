@@ -814,6 +814,46 @@ Decisao: usar feed RSS publico do YouTube e resolver handle pela pagina publica 
 
 Status atual: concluida.
 
+## Fase 45: Eventos Solicitam Equipes E Lider Escala A Propria
+
+Status atual: concluida.
+
+## Fase 46: Templates De Etiqueta E Camera QR Universal
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos consertar a camera de QR Code em todos os navegadores e permitir cadastrar a impressora Brother da igreja?
+
+Possivel escopo:
+
+- jsqr como fallback quando o navegador nao tem `BarcodeDetector`;
+- `facingMode: { ideal: "environment" }` para laptops sem camera traseira;
+- mensagens de diagnostico amigaveis;
+- entidade `LabelTemplate` com nome, modelo de impressora, tamanho, layout e padrao por layout;
+- secao "Etiquetas" no cadastro da igreja com CRUD e teste de impressao;
+- Check-in usando templates da API com fallback fixo;
+- tela Pessoas com etiqueta de visitante.
+
+Decisao: layouts iniciais limitados a `kids_checkin` e `visitor`; impressao continua via dialogo do navegador; sem designer visual nesta fase.
+
+Antes de desenvolver, perguntar:
+
+> Vamos conectar Agenda e Escalas para que o evento solicite equipes e o lider escale a propria?
+
+Possivel escopo:
+
+- evento com `requestedTeamIds`;
+- plano vinculado a evento por `eventId`;
+- sincronizacao automatica de planos no `eventRepository`;
+- filtro por `groupId` em `GET /serving-plans`;
+- lider edita atribuicoes do proprio plano com pessoas da equipe;
+- UI Agenda com multi-select de equipes;
+- UI Escalas com filtro automatico para lideres e contagem de recusas.
+
+Decisao: limitar equipes a tipos `ministry`/`team`; cascatear delete do evento; remover plano vazio quando equipe e desmarcada; manter plano com atribuicoes; lider valida pertencimento de pessoas a equipe; admin sem essa restricao.
+
 Antes de desenvolver, perguntar:
 
 > Vamos transformar a expressao cron textual em ocorrencias reais materializadas no banco?

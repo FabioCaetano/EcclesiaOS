@@ -51,6 +51,9 @@ O EcclesiaOS concluiu ate a Fase 42:
 - Check-in separado internamente em Eventos, Kids e Administracao kids.
 - Administracao kids com link de mensagem para responsavel.
 - Endpoint proprio `GET /youtube/videos` lendo o feed RSS publico do canal e cards reais na tela Inicio.
+- Cron real com ocorrencias materializadas como eventos filhos (`parentEventId`), geracao lazy ao listar e manual via `POST /events/:id/generate-occurrences`.
+- Eventos solicitando equipes via `requestedTeamIds`, sincronizacao automatica de planos por equipe vinculada ao evento, lider editando atribuicoes do proprio plano com pessoas da equipe.
+- Camera QR universal via `jsqr` quando `BarcodeDetector` nao existe; templates de etiqueta cadastraveis com layouts `kids_checkin` e `visitor` na nova secao "Etiquetas" em Igreja.
 
 ## Banco Real Validado
 
@@ -71,11 +74,11 @@ Tambem foi validado login admin e leitura de financeiro pela API compilada em mo
 
 ### Cron Real
 
-Materializar a expressao cron textual em ocorrencias reais na agenda, com fim definido pela propria configuracao do evento (Fase 44).
+Concluido na Fase 44: ocorrencias materializadas como eventos filhos com `parentEventId`, geracao lazy ao listar `/events` e manual via `POST /events/:id/generate-occurrences`. Falta para futuro: worker em background para regerar periodicamente fora de uma chamada de listagem.
 
 ### Nova Arquitetura De Escalas
 
-Permitir que a pessoa que cria o evento indique quais equipes servirao, que lideres visualizem eventos da sua equipe, montem a escala e acompanhem aceite/recusa mensal.
+Concluido na Fase 45: evento solicita equipes (`requestedTeamIds`), planos sao sincronizados automaticamente, lider escala pessoas da propria equipe, contagem de recusas exibida no plano. Falta para fase futura: substituto automatico, mensagens externas ao lider, funcoes/cargos como entidade propria.
 
 ### Mensagens Em Lote Em Pessoas
 

@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LoginRequest, PersonInput, RegisterRequest, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PersonInput, RegisterRequest, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -13,6 +13,7 @@ import { eventRepository } from "./data/eventRepository.js";
 import { eventRegistrationRepository } from "./data/eventRegistrationRepository.js";
 import { checkInRepository } from "./data/checkInRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
+import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
@@ -543,6 +544,7 @@ const sanitizeEventInput = (body: ChurchEventInput): ChurchEventInput => ({
   recurrenceUntil: body.recurrence === "weekly" || body.recurrence === "monthly" || body.recurrence === "cron" ? String(body.recurrenceUntil || "").trim() : "",
   recurrenceRule: body.recurrence === "cron" ? String(body.recurrenceRule || "").trim() : "",
   parentEventId: String(body.parentEventId || "").trim(),
+  requestedTeamIds: Array.isArray(body.requestedTeamIds) ? body.requestedTeamIds.map((value) => String(value || "").trim()).filter(Boolean) : [],
   registrationEnabled: Boolean(body.registrationEnabled),
   registrationCapacity: Math.max(0, Number(body.registrationCapacity) || 0),
   registrationPrice: Math.max(0, Number(body.registrationPrice) || 0),
@@ -622,6 +624,80 @@ const handleListYouTubeVideos = async (req: IncomingMessage, res: ServerResponse
   }
 
   sendJson(res, 200, result.feed);
+};
+
+const sanitizeLabelTemplateInput = (body: LabelTemplateInput): LabelTemplateInput => ({
+  name: String(body.name || "").trim(),
+  printerModel: String(body.printerModel || "").trim(),
+  widthMm: Math.max(0, Number(body.widthMm) || 0),
+  heightMm: Math.max(0, Number(body.heightMm) || 0),
+  isContinuous: Boolean(body.isContinuous),
+  layout: body.layout === "visitor" ? "visitor" : "kids_checkin",
+  isDefault: Boolean(body.isDefault)
+});
+
+const handleListLabelTemplates = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const layoutParam = (url.searchParams.get("layout") || "").trim();
+
+  if (layoutParam === "kids_checkin" || layoutParam === "visitor") {
+    sendJson(res, 200, await labelTemplateRepository.listByLayout(layoutParam as LabelLayout));
+    return;
+  }
+
+  sendJson(res, 200, await labelTemplateRepository.list());
+};
+
+const handleCreateLabelTemplate = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireAdmin(req, res);
+  if (!user) return;
+
+  const body = await readJson<LabelTemplateInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome do template.");
+    return;
+  }
+
+  const template = await labelTemplateRepository.create(sanitizeLabelTemplateInput(body));
+  await recordAudit(user, "create", "label_template", template.id, `Template criado: ${template.name}`);
+  sendJson(res, 201, template);
+};
+
+const handleUpdateLabelTemplate = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireAdmin(req, res);
+  if (!user) return;
+
+  const body = await readJson<LabelTemplateInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome do template.");
+    return;
+  }
+
+  const template = await labelTemplateRepository.update(id, sanitizeLabelTemplateInput(body));
+  if (!template) {
+    sendError(res, 404, "not_found", "Template nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "update", "label_template", template.id, `Template atualizado: ${template.name}`);
+  sendJson(res, 200, template);
+};
+
+const handleDeleteLabelTemplate = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireAdmin(req, res);
+  if (!user) return;
+
+  const removed = await labelTemplateRepository.remove(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Template nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "delete", "label_template", id, `Template removido: ${id}`);
+  sendJson(res, 200, { ok: true });
 };
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1085,6 +1161,7 @@ const sanitizeServingPlanInput = (body: ServingPlanInput): ServingPlanInput => (
   date: String(body.date || "").trim(),
   title: String(body.title || "").trim(),
   groupId: String(body.groupId || "").trim(),
+  eventId: String(body.eventId || "").trim(),
   notes: String(body.notes || "").trim(),
   assignments: Array.isArray(body.assignments) ? body.assignments : []
 });
@@ -1092,6 +1169,14 @@ const sanitizeServingPlanInput = (body: ServingPlanInput): ServingPlanInput => (
 const handleListServingPlans = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
   if (!user) return;
+
+  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const groupId = (url.searchParams.get("groupId") || "").trim();
+
+  if (groupId) {
+    sendJson(res, 200, await servingPlanRepository.listByGroupIds([groupId]));
+    return;
+  }
 
   sendJson(res, 200, await servingPlanRepository.list());
 };
@@ -1111,13 +1196,41 @@ const handleCreateServingPlan = async (req: IncomingMessage, res: ServerResponse
 };
 
 const handleUpdateServingPlan = async (req: IncomingMessage, res: ServerResponse, id: string) => {
-  const user = await requireAdmin(req, res);
+  const user = await requireUser(req, res);
   if (!user) return;
 
   const body = await readJson<ServingPlanInput>(req);
   if (!body?.date || !body?.title) {
     sendError(res, 400, "invalid_json", "Informe data e titulo do plano.");
     return;
+  }
+
+  const existingPlans = await servingPlanRepository.list();
+  const existingPlan = existingPlans.find((plan) => plan.id === id);
+  if (!existingPlan) {
+    sendError(res, 404, "not_found", "Plano nao encontrado.");
+    return;
+  }
+
+  if (user.role !== "admin") {
+    const groups = await groupRepository.list();
+    const planGroup = groups.find((group) => group.id === existingPlan.groupId);
+    const isLeader = Boolean(planGroup && user.personId && planGroup.leaderPersonId === user.personId);
+    if (!isLeader) {
+      sendError(res, 403, "forbidden", "Apenas admin ou lider da equipe pode editar este plano.");
+      return;
+    }
+
+    const memberSet = new Set(planGroup?.memberPersonIds || []);
+    const incomingAssignments = Array.isArray(body.assignments) ? body.assignments : [];
+    const invalidAssignment = incomingAssignments.find((assignment) => {
+      const personId = String(assignment.personId || "").trim();
+      return personId && !memberSet.has(personId);
+    });
+    if (invalidAssignment) {
+      sendError(res, 403, "forbidden", "Lider so pode escalar pessoas da propria equipe.");
+      return;
+    }
   }
 
   const plan = await servingPlanRepository.update(id, sanitizeServingPlanInput(body));
@@ -1358,6 +1471,27 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/youtube/videos") {
     void handleListYouTubeVideos(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/label-templates") {
+    void handleListLabelTemplates(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/label-templates") {
+    void handleCreateLabelTemplate(req, res);
+    return;
+  }
+
+  const labelTemplateMatch = url.pathname.match(/^\/label-templates\/([^/]+)$/);
+  if (labelTemplateMatch && req.method === "PUT") {
+    void handleUpdateLabelTemplate(req, res, labelTemplateMatch[1]);
+    return;
+  }
+
+  if (labelTemplateMatch && req.method === "DELETE") {
+    void handleDeleteLabelTemplate(req, res, labelTemplateMatch[1]);
     return;
   }
 

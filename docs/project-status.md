@@ -48,6 +48,8 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 | Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
+| Equipes Por Evento | Concluido | Evento solicita equipes (`requestedTeamIds`); planos de escala sao sincronizados com `eventId`; lider edita atribuicoes do proprio plano com pessoas da equipe. |
+| Etiquetas E Camera | Concluido | Camera QR funciona em qualquer navegador via `jsqr` fallback; templates de etiqueta cadastraveis com layouts `kids_checkin` e `visitor`; secao "Etiquetas" no cadastro da igreja. |
 
 ## Usuarios De Desenvolvimento
 
@@ -70,6 +72,16 @@ Permissoes por modulo comecam em `canAccessModule`: `finance` e `users` sao some
 ### Sistema
 
 - `GET /health`
+
+### Etiquetas
+
+- `GET /label-templates`
+- `GET /label-templates?layout=kids_checkin|visitor`
+- `POST /label-templates`
+- `PUT /label-templates/:id`
+- `DELETE /label-templates/:id`
+
+Qualquer autenticado pode listar templates. Apenas admin cria, edita ou remove. Marcar `isDefault=true` em um template desmarca os outros do mesmo layout.
 
 ### YouTube
 
@@ -170,13 +182,14 @@ Admin e lider podem registrar saida infantil diretamente. Membro autenticado pod
 ### Escalas
 
 - `GET /serving-plans`
+- `GET /serving-plans?groupId=<id>` (filtro por equipe; usado por lideres)
 - `POST /serving-plans`
 - `PUT /serving-plans/:id`
 - `DELETE /serving-plans/:id`
 - `PATCH /serving-plans/:planId/assignments/:assignmentId/status`
 - `GET /serving-notifications`
 
-As pessoas escaladas possuem status `pending`, `confirmed` ou `declined`.
+As pessoas escaladas possuem status `pending`, `confirmed` ou `declined`. `PUT /serving-plans/:id` aceita admin ou lider do `groupId` do plano. Lider so pode atribuir pessoas da `memberPersonIds` da equipe; admin escala qualquer pessoa.
 
 ### Financeiro
 
@@ -243,6 +256,8 @@ Fluxos validados:
 - UX Inicial, Inicio Operacional, Agenda E Check-in: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, migration Prisma e `npm.cmd run db:verify` concluidos; 19 testes passando.
 - YouTube Real Sem Chave Oficial: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 19 testes passando; endpoint `GET /youtube/videos` integrado a tela Inicio.
 - Cron Real Com Ocorrencias Materializadas: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run db:migrate:deploy`, `npm.cmd run reset-dev-data` e `npm.cmd run db:verify` concluidos; 21 testes passando.
+- Eventos Solicitam Equipes E Lider Escala A Propria: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run db:migrate:deploy`, `npm.cmd run reset-dev-data` e `npm.cmd run db:verify` concluidos; 22 testes passando.
+- Templates De Etiqueta E Camera QR Universal: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 23 testes passando. Migration `20260502050000_label_templates` deve ser aplicada com `npm.cmd run db:migrate:deploy` quando o Postgres estiver acessivel; em producao roda automaticamente no comando de build do Render.
 
 ## Riscos E Dividas Tecnicas
 
@@ -255,8 +270,8 @@ Fluxos validados:
 - A matriz completa de permissoes ainda nao existe; apenas Financeiro foi restringido granularmente.
 - Ainda nao existe troca propria ou reset de senha por email.
 - Registro publico ainda nao tem confirmacao de email nem aprovacao manual antes do primeiro login.
-- Impressao Brother depende do driver instalado e do dialogo do navegador.
-- Leitura de QR Code por camera depende de suporte do navegador a `BarcodeDetector`; ha fallback manual.
+- Impressao Brother depende do driver instalado e do dialogo do navegador. Tamanhos sao injetados via `@page` na hora da impressao a partir do template selecionado.
+- Leitura de QR Code por camera funciona em qualquer navegador moderno: usa `BarcodeDetector` quando disponivel e cai para `jsqr` quando nao; ainda depende de HTTPS/localhost e permissao de camera.
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
 - Eventos ainda nao geram ocorrencias recorrentes automaticamente.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
@@ -271,4 +286,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: nova arquitetura de Escalas por equipes solicitadas, mensagens em lote em Pessoas ou troca/reset de senha.
+Proxima recomendacao: troca/reset de senha (fecha risco operacional) ou mensagens em lote em Pessoas.

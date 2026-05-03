@@ -78,6 +78,9 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 72. Check-in permanece em um unico menu, mas separado internamente entre Eventos, Kids e Administracao kids.
 73. Tela Inicio passa a exibir os ultimos videos do canal usando o feed RSS publico do YouTube, sem chave do Google Cloud nesta fase.
 74. Expressao cron de eventos passa a gerar ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao e lazy ao listar e manual por endpoint admin; `recurrenceUntil` define o fim, com teto tecnico de 12 meses quando vazio.
+75. Eventos passam a solicitar equipes (`requestedTeamIds`, somente grupos `ministry`/`team`); planos de escala sao sincronizados automaticamente com vinculo `eventId` opcional; lider edita atribuicoes do proprio plano com pessoas da equipe; admin edita qualquer plano; remover evento cascateia para os planos.
+76. Camera de QR Code passa a ter fallback `jsqr` quando o navegador nao oferece `BarcodeDetector`; `facingMode` torna-se ideal e nao obrigatorio; mensagens de diagnostico explicam o motivo do erro.
+77. Templates de etiqueta viram entidade propria (`LabelTemplate`) com layouts `kids_checkin` e `visitor`; admin cadastra modelo, tamanho e marca padrao por layout; Check-in e Pessoas leem os templates da API.
 
 ## Decisoes Pendentes
 

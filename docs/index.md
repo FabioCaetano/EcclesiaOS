@@ -4,17 +4,17 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 44 - Cron Real Com Ocorrencias Materializadas**.
+Fase atual concluida: **Fase 46 - Templates De Etiqueta E Camera QR Universal**.
 
 Ultimo modulo entregue:
 
-- migration Prisma adicionando `parentEventId` em `ChurchEvent` com indice;
-- modulo `cron` no backend usando `cron-parser` para expandir expressoes;
-- geracao lazy ao listar `/events` materializa ocorrencias dentro da janela;
-- endpoint `POST /events/:id/generate-occurrences` regenera ocorrencias futuras;
-- `recurrenceUntil` define o fim; teto tecnico de 12 meses quando vazio;
-- remocao do mestre cascateia para filhos futuros sem inscricoes/check-in;
-- tela Agenda mostra badges `cron`/`ocorrencia` e botao `Gerar ocorrencias`.
+- camera QR Code agora abre em qualquer navegador moderno via fallback `jsqr` (alem do `BarcodeDetector` quando disponivel);
+- `facingMode` da camera passa a ser ideal e nao obrigatorio para suportar laptops sem camera traseira;
+- mensagens de diagnostico amigaveis para permissao negada, sem suporte e sem cameras disponiveis;
+- entidade `LabelTemplate` com layouts `kids_checkin` e `visitor`;
+- secao "Etiquetas" no cadastro da igreja com CRUD, marca de padrao por layout e botao "Imprimir teste";
+- Check-in usa templates de Kids da API com fallback fixo;
+- Pessoas ganha botao "Imprimir etiqueta visitante" usando o template `visitor` padrao.
 
 Ambiente atual:
 
@@ -84,6 +84,8 @@ Ambiente atual:
 - [[phases/phase-42-ux-home-agenda-checkin|Fase 42 - UX Inicial, Inicio Operacional, Agenda E Check-in]]
 - [[phases/phase-43-youtube-real|Fase 43 - YouTube Real Sem Chave Oficial]]
 - [[phases/phase-44-cron-real|Fase 44 - Cron Real Com Ocorrencias Materializadas]]
+- [[phases/phase-45-event-team-requests-leader-scheduling|Fase 45 - Eventos Solicitam Equipes E Lider Escala A Propria]]
+- [[phases/phase-46-label-templates-camera|Fase 46 - Templates De Etiqueta E Camera QR Universal]]
 
 ## Decisoes
 
@@ -132,14 +134,16 @@ Ambiente atual:
 - [[decisions/0043-ux-home-agenda-checkin|0043 - UX Inicial, Inicio, Agenda E Check-in]]
 - [[decisions/0044-youtube-real-no-key|0044 - YouTube Real Sem Chave Oficial]]
 - [[decisions/0045-cron-real-occurrences|0045 - Cron Real Com Ocorrencias Materializadas]]
+- [[decisions/0046-event-team-requests-and-leader-scheduling|0046 - Eventos Solicitam Equipes E Lider Escala A Propria]]
+- [[decisions/0047-label-templates-and-universal-qr-camera|0047 - Templates De Etiqueta E Camera QR Universal]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Escalas Por Equipe Solicitada**: evento pede equipes, lider escala pessoas e equipe confirma.
-2. **Mensagens Em Lote**: filtros dinamicos em Pessoas e registro de envio.
-3. **Check-in Kids Avancado**: painel de atraso, historico e envio auditavel.
-4. **Troca/Reset De Senha**: fluxo proprio de troca e reset administrativo.
+1. **Mensagens Em Lote**: filtros dinamicos em Pessoas e registro de envio.
+2. **Troca/Reset De Senha**: fluxo proprio de troca e reset administrativo.
+3. **Substituto Automatico Para Recusas**: continuar evolucao da Fase 45.
+4. **Check-in Kids Avancado**: painel de atraso e historico.
 
-Recomendacao atual: nova arquitetura de Escalas por equipes solicitadas.
+Recomendacao atual: Troca/Reset de senha (fecha risco operacional) ou Mensagens em lote.

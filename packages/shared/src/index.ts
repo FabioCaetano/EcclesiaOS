@@ -187,6 +187,7 @@ export interface ChurchEvent {
   recurrenceUntil: string;
   recurrenceRule: string;
   parentEventId: string;
+  requestedTeamIds: string[];
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;
@@ -280,6 +281,7 @@ export interface ServingPlan {
   date: string;
   title: string;
   groupId: string;
+  eventId: string;
   notes: string;
   assignments: ServingAssignment[];
   createdAt: string;
@@ -323,6 +325,23 @@ export interface FinancialTransaction {
 }
 
 export type FinancialTransactionInput = Omit<FinancialTransaction, "id" | "createdAt" | "updatedAt">;
+
+export type LabelLayout = "kids_checkin" | "visitor";
+
+export interface LabelTemplate {
+  id: string;
+  name: string;
+  printerModel: string;
+  widthMm: number;
+  heightMm: number;
+  isContinuous: boolean;
+  layout: LabelLayout;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LabelTemplateInput = Omit<LabelTemplate, "id" | "createdAt" | "updatedAt">;
 
 export interface YouTubeVideo {
   id: string;

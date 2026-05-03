@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import type { CurrentUser, PersonInput, PersonProfile } from "@ecclesiaos/shared";
-import { deletePerson, loadPeople, savePerson } from "./api";
+import type { CurrentUser, LabelTemplate, PersonInput, PersonProfile } from "@ecclesiaos/shared";
+import { deletePerson, loadLabelTemplates, loadPeople, savePerson } from "./api";
 import { emptyPersonInput } from "./constants";
 import { toPersonInput } from "./mappers";
 
@@ -9,17 +9,48 @@ interface Props {
   user: CurrentUser;
 }
 
+const labelPageStyle = (template: LabelTemplate): string => {
+  const width = Math.max(10, Number(template.widthMm) || 62);
+  if (template.isContinuous) {
+    return `@page { size: ${width}mm auto; margin: 0; }`;
+  }
+  const height = Math.max(10, Number(template.heightMm) || 100);
+  return `@page { size: ${width}mm ${height}mm; margin: 0; }`;
+};
+
 export const PeoplePage: React.FC<Props> = ({ token, user }) => {
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [personForm, setPersonForm] = useState<PersonInput>(emptyPersonInput);
   const [peopleStatus, setPeopleStatus] = useState("");
+  const [visitorTemplate, setVisitorTemplate] = useState<LabelTemplate | null>(null);
+  const [printingPerson, setPrintingPerson] = useState<PersonProfile | null>(null);
 
   const refreshPeople = async () => setPeople(await loadPeople(token));
 
   useEffect(() => {
     refreshPeople().catch(() => setPeopleStatus("Nao foi possivel carregar pessoas."));
   }, [token]);
+
+  useEffect(() => {
+    loadLabelTemplates(token, "visitor")
+      .then((templates) => {
+        const preferred = templates.find((template) => template.isDefault) || templates[0] || null;
+        setVisitorTemplate(preferred);
+      })
+      .catch(() => setVisitorTemplate(null));
+  }, [token]);
+
+  useEffect(() => {
+    if (!printingPerson) return;
+    const onAfterPrint = () => setPrintingPerson(null);
+    window.addEventListener("afterprint", onAfterPrint);
+    const timer = window.setTimeout(() => window.print(), 50);
+    return () => {
+      window.removeEventListener("afterprint", onAfterPrint);
+      window.clearTimeout(timer);
+    };
+  }, [printingPerson]);
 
   const selectPerson = (person: PersonProfile) => {
     setSelectedPersonId(person.id);
@@ -131,10 +162,35 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedPersonId ? "Salvar pessoa" : "Criar pessoa"}</button>}
             {user.role === "admin" && selectedPersonId && <button className="danger-button" type="button" onClick={handleDeletePerson}>Remover</button>}
+            {selectedPersonId && visitorTemplate && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  const target = people.find((person) => person.id === selectedPersonId);
+                  if (target) setPrintingPerson(target);
+                }}
+              >
+                Imprimir etiqueta visitante
+              </button>
+            )}
             <p>{user.role === "admin" ? peopleStatus : "Somente administradores podem alterar pessoas."}</p>
           </div>
         </form>
       </div>
+
+      {printingPerson && visitorTemplate && (
+        <div className="label-test-print">
+          <style>{labelPageStyle(visitorTemplate)}</style>
+          <div className="child-label-card child-label-print-area single-label-print-area">
+            <p className="eyebrow">EcclesiaOS Visitante</p>
+            <h3>{printingPerson.firstName} {printingPerson.lastName}</h3>
+            <p>{printingPerson.email || "Sem email"}</p>
+            <p>{printingPerson.phone || "Sem telefone"}</p>
+            <p>Bem-vindo!</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

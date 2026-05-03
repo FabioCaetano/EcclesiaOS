@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { canManageModule } from "@ecclesiaos/shared";
-import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, PersonProfile } from "@ecclesiaos/shared";
-import { checkOutChild, deleteEventCheckIn, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadPeople, saveChildCheckIn, saveEventCheckIn } from "./api";
+import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
+import { checkOutChild, deleteEventCheckIn, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn } from "./api";
+import { useQrScanner } from "./useQrScanner";
 
 interface Props {
   token: string;
@@ -25,15 +26,48 @@ const emptyChildCheckIn: ChildCheckInInput = {
   notes: ""
 };
 
-type LabelPreset = "brother-62x100" | "brother-62-continuous";
 type PrintMode = "single" | "batch" | null;
 type CheckInView = "events" | "kids" | "admin";
 
-type BarcodeDetectorShape = {
-  detect(source: CanvasImageSource): Promise<Array<{ rawValue: string }>>;
-};
+const FALLBACK_TEMPLATES: LabelTemplate[] = [
+  {
+    id: "lbl_kids_dk1202",
+    name: "Kids - Brother DK-1202 62x100mm",
+    printerModel: "Brother DK-1202",
+    widthMm: 62,
+    heightMm: 100,
+    isContinuous: false,
+    layout: "kids_checkin",
+    isDefault: true,
+    createdAt: "",
+    updatedAt: ""
+  },
+  {
+    id: "lbl_kids_continuous",
+    name: "Kids - Brother 62mm continuo",
+    printerModel: "Brother QL serie",
+    widthMm: 62,
+    heightMm: 0,
+    isContinuous: true,
+    layout: "kids_checkin",
+    isDefault: false,
+    createdAt: "",
+    updatedAt: ""
+  }
+];
 
-type BarcodeDetectorConstructor = new (options: { formats: string[] }) => BarcodeDetectorShape;
+const labelPresetClass = (template: LabelTemplate): string => (
+  template.isContinuous ? "brother-62-continuous" : "brother-62x100"
+);
+
+const labelPageStyle = (template: LabelTemplate): string => {
+  const width = Math.max(10, Number(template.widthMm) || 62);
+  if (template.isContinuous) {
+    return `@page { size: ${width}mm auto; margin: 0; }`;
+  }
+  const height = Math.max(10, Number(template.heightMm) || 100);
+  return `@page { size: ${width}mm ${height}mm; margin: 0; }`;
+};
 
 const parseChildQrPayload = (value: string) => {
   const parts = value.trim().split(":");
@@ -72,16 +106,13 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [childForm, setChildForm] = useState<ChildCheckInInput>(emptyChildCheckIn);
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
-  const [labelPreset, setLabelPreset] = useState<LabelPreset>("brother-62x100");
+  const [kidsTemplates, setKidsTemplates] = useState<LabelTemplate[]>(FALLBACK_TEMPLATES);
+  const [labelTemplateId, setLabelTemplateId] = useState<string>(FALLBACK_TEMPLATES[0]!.id);
   const [printMode, setPrintMode] = useState<PrintMode>(null);
   const [activeView, setActiveView] = useState<CheckInView>("events");
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
-  const [scannerStatus, setScannerStatus] = useState("");
   const [status, setStatus] = useState("");
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const scannerStreamRef = useRef<MediaStream | null>(null);
 
   const canManage = canManageModule(user.role, "checkin");
   const serviceEvents = useMemo(() => events.filter((event) => event.type === "service"), [events]);
@@ -107,73 +138,34 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   }, [token]);
 
   useEffect(() => {
+    loadLabelTemplates(token, "kids_checkin")
+      .then((templates) => {
+        if (templates.length === 0) return;
+        setKidsTemplates(templates);
+        const preferred = templates.find((template) => template.isDefault) || templates[0];
+        if (preferred) setLabelTemplateId(preferred.id);
+      })
+      .catch(() => {
+        // mantem fallback fixo
+      });
+  }, [token]);
+
+  useEffect(() => {
     const clearPrintMode = () => setPrintMode(null);
     window.addEventListener("afterprint", clearPrintMode);
     return () => window.removeEventListener("afterprint", clearPrintMode);
   }, []);
 
-  useEffect(() => {
-    if (!scannerActive) {
-      scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
-      scannerStreamRef.current = null;
-      return;
-    }
+  const handleQrDecoded = async (rawValue: string) => {
+    setScanInput(rawValue);
+    await completeCheckoutFromQr(rawValue);
+    setScannerActive(false);
+  };
 
-    let cancelled = false;
-    let scanTimer = 0;
-    const BarcodeDetector = (window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-
-    const startScanner = async () => {
-      if (!BarcodeDetector) {
-        setScannerStatus("Leitura por camera indisponivel neste navegador. Use o campo manual.");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        scannerStreamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        const detector = new BarcodeDetector({ formats: ["qr_code"] });
-        const scanFrame = async () => {
-          if (cancelled || !videoRef.current || !canvasRef.current) return;
-          const video = videoRef.current;
-          const canvas = canvasRef.current;
-          if (video.readyState >= 2 && video.videoWidth > 0) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const codes = await detector.detect(canvas);
-            const rawValue = codes[0]?.rawValue;
-            if (rawValue) {
-              setScanInput(rawValue);
-              await completeCheckoutFromQr(rawValue);
-              setScannerActive(false);
-              return;
-            }
-          }
-          scanTimer = window.setTimeout(scanFrame, 500);
-        };
-
-        setScannerStatus("Aponte a camera para o QR Code da etiqueta.");
-        scanTimer = window.setTimeout(scanFrame, 500);
-      } catch {
-        setScannerStatus("Nao foi possivel acessar a camera. Use o campo manual.");
-      }
-    };
-
-    void startScanner();
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(scanTimer);
-      scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
-      scannerStreamRef.current = null;
-    };
-  }, [scannerActive, childCheckIns, people, user.personId, user.role]);
+  const { videoRef, canvasRef, status: scannerCameraStatus, message: scannerStatus } = useQrScanner({
+    active: scannerActive,
+    onDecode: handleQrDecoded
+  });
 
   const eventName = (eventId: string) => events.find((event) => event.id === eventId)?.title || "Evento nao encontrado";
   const personName = (personId: string) => {
@@ -183,6 +175,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const selectedLabel = childCheckIns.find((item) => item.id === selectedLabelId) || null;
   const selectedLabelQrValue = selectedLabel ? `ecclesiaos-child-checkout:${selectedLabel.id}:${selectedLabel.securityCode}` : "";
   const selectedBatchLabels = childCheckIns.filter((item) => selectedBatchIds.includes(item.id));
+  const selectedTemplate = kidsTemplates.find((template) => template.id === labelTemplateId) || kidsTemplates[0] || null;
   const consolidatedAttendance = attendance.filter((record) => record.eventId);
   const consolidatedPeopleCount = consolidatedAttendance.reduce((sum, record) => sum + record.presentPersonIds.length, 0);
   const linkedGuardians = childForm.childPersonId
@@ -282,30 +275,30 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const completeCheckoutFromQr = async (value: string) => {
     const parsed = parseChildQrPayload(value);
     if (!parsed) {
-      setScannerStatus("QR Code invalido para retirada infantil.");
+      setStatus("QR Code invalido para retirada infantil.");
       return;
     }
 
     const item = childCheckIns.find((checkIn) => checkIn.id === parsed.id);
     if (!item) {
-      setScannerStatus("Check-in infantil nao encontrado nesta sessao.");
+      setStatus("Check-in infantil nao encontrado nesta sessao.");
       return;
     }
     if (item.checkedOutAt) {
-      setScannerStatus("Esta crianca ja teve saida registrada.");
+      setStatus("Esta crianca ja teve saida registrada.");
       return;
     }
     if (!canManage && !isGuardianAllowed(item)) {
-      setScannerStatus("Usuario logado nao e responsavel desta crianca.");
+      setStatus("Usuario logado nao e responsavel desta crianca.");
       return;
     }
 
     try {
       await checkOutChild(token, item.id, { securityCode: parsed.securityCode });
       await refresh();
-      setScannerStatus("Retirada registrada pelo QR Code.");
+      setStatus("Retirada registrada pelo QR Code.");
     } catch {
-      setScannerStatus("Nao foi possivel registrar a retirada pelo QR Code.");
+      setStatus("Nao foi possivel registrar a retirada pelo QR Code.");
     }
   };
 
@@ -481,7 +474,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </div>
       </div>}
 
-      {selectedLabel && (
+      {selectedLabel && selectedTemplate && (
         <div className="child-label-preview">
           <div className="section-heading">
             <div>
@@ -489,14 +482,16 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               <h2>{selectedLabel.childName}</h2>
             </div>
             <div className="response-actions">
-              <select value={labelPreset} onChange={(event) => setLabelPreset(event.target.value as LabelPreset)}>
-                <option value="brother-62x100">Brother DK-1202 62x100mm</option>
-                <option value="brother-62-continuous">Brother 62mm continuo</option>
+              <select value={labelTemplateId} onChange={(event) => setLabelTemplateId(event.target.value)}>
+                {kidsTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>{template.name}</option>
+                ))}
               </select>
               <button className="secondary-button" type="button" onClick={() => printLabels("single")}>Imprimir Brother</button>
             </div>
           </div>
-          <div className={`child-label-card child-label-print-area single-label-print-area ${labelPreset}`}>
+          {printMode && <style>{labelPageStyle(selectedTemplate)}</style>}
+          <div className={`child-label-card child-label-print-area single-label-print-area ${labelPresetClass(selectedTemplate)}`}>
             <p className="eyebrow">EcclesiaOS Kids</p>
             <h3>{selectedLabel.childName}</h3>
             <div className="child-label-code-row">
@@ -512,10 +507,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </div>
       )}
 
-      {selectedBatchLabels.length > 0 && (
+      {selectedBatchLabels.length > 0 && selectedTemplate && (
         <div className="batch-label-preview">
+          {printMode === "batch" && <style>{labelPageStyle(selectedTemplate)}</style>}
           {selectedBatchLabels.map((label) => (
-            <div className={`child-label-card child-label-print-area batch-label-print-area ${labelPreset}`} key={label.id}>
+            <div className={`child-label-card child-label-print-area batch-label-print-area ${labelPresetClass(selectedTemplate)}`} key={label.id}>
               <p className="eyebrow">EcclesiaOS Kids</p>
               <h3>{label.childName}</h3>
               <div className="child-label-code-row">

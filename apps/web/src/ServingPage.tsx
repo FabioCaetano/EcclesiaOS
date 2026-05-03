@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { CurrentUser, GroupProfile, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
 import { deleteServingPlan, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
@@ -75,7 +75,8 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const handlePlanSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (user.role !== "admin") return;
+    if (user.role !== "admin" && !canEditAssignments) return;
+    if (!selectedPlanId && user.role !== "admin") return;
 
     setServingStatus("Salvando...");
     try {
@@ -107,6 +108,38 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const personName = (personId: string) => people.find((person) => person.id === personId)?.firstName || "Pessoa";
   const groupName = (groupId: string) => groups.find((group) => group.id === groupId)?.name || "Sem grupo";
+
+  const myLeadingGroupIds = useMemo(() => {
+    if (!user.personId) return [] as string[];
+    return groups.filter((group) => group.leaderPersonId === user.personId).map((group) => group.id);
+  }, [groups, user.personId]);
+
+  const isLeaderOfGroup = (groupId: string) => myLeadingGroupIds.includes(groupId);
+  const visiblePlans = useMemo(() => {
+    if (user.role === "admin") return plans;
+    if (myLeadingGroupIds.length === 0) return plans;
+    return plans.filter((plan) => isLeaderOfGroup(plan.groupId));
+  }, [plans, user.role, myLeadingGroupIds]);
+
+  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
+  const canManagePlan = (plan: ServingPlan | null) => {
+    if (user.role === "admin") return true;
+    if (!plan) return false;
+    return isLeaderOfGroup(plan.groupId);
+  };
+  const canEditMeta = user.role === "admin";
+  const canEditAssignments = canManagePlan(selectedPlan);
+  const eligiblePeople = useMemo(() => {
+    if (user.role === "admin" || !selectedPlan) return people;
+    const group = groups.find((item) => item.id === selectedPlan.groupId);
+    if (!group) return [];
+    const memberSet = new Set(group.memberPersonIds);
+    return people.filter((person) => memberSet.has(person.id));
+  }, [people, groups, selectedPlan, user.role]);
+  const declinedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "declined").length;
+  const confirmedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "confirmed").length;
+  const pendingCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "pending").length;
+
   const pendingAssignments = plans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment }))).filter((item) => item.assignment.status === "pending");
   const declinedAssignments = plans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment }))).filter((item) => item.assignment.status === "declined");
   const myAssignments = user.personId ? plans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment }))).filter((item) => item.assignment.personId === user.personId) : [];
@@ -178,51 +211,57 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de escalas">
-          {plans.map((plan) => (
+          {visiblePlans.length === 0 ? <p className="muted">Nenhuma escala visivel para o seu perfil.</p> : visiblePlans.map((plan) => (
             <button className={plan.id === selectedPlanId ? "person-row selected" : "person-row"} key={plan.id} type="button" onClick={() => selectPlan(plan)}>
               <strong>{plan.date} - {plan.title}</strong>
               <span>{groupName(plan.groupId)} - {plan.assignments.length} pessoa(s)</span>
+              <div className="serving-plan-summary">
+                <span>Confirmados <strong>{confirmedCount(plan)}</strong></span>
+                <span>Pendentes <strong>{pendingCount(plan)}</strong></span>
+                <span className="declined-count">Recusados <strong>{declinedCount(plan)}</strong></span>
+                {plan.eventId && <span className="event-tag generated"> evento</span>}
+              </div>
             </button>
           ))}
         </div>
 
         <form className="person-form" onSubmit={handlePlanSubmit}>
-          <label>Data<input disabled={user.role !== "admin"} type="date" value={planForm.date} onChange={(event) => updatePlanField("date", event.target.value)} /></label>
-          <label>Titulo<input disabled={user.role !== "admin"} value={planForm.title} onChange={(event) => updatePlanField("title", event.target.value)} /></label>
+          <label>Data<input disabled={!canEditMeta} type="date" value={planForm.date} onChange={(event) => updatePlanField("date", event.target.value)} /></label>
+          <label>Titulo<input disabled={!canEditMeta} value={planForm.title} onChange={(event) => updatePlanField("title", event.target.value)} /></label>
           <label>
             Grupo/ministerio
-            <select disabled={user.role !== "admin"} value={planForm.groupId} onChange={(event) => updatePlanField("groupId", event.target.value)}>
+            <select disabled={!canEditMeta} value={planForm.groupId} onChange={(event) => updatePlanField("groupId", event.target.value)}>
               <option value="">Sem grupo</option>
               {groups.map((group) => (
                 <option value={group.id} key={group.id}>{group.name}</option>
               ))}
             </select>
           </label>
-          <label className="wide-field">Observacoes<textarea disabled={user.role !== "admin"} value={planForm.notes} onChange={(event) => updatePlanField("notes", event.target.value)} /></label>
+          <label className="wide-field">Observacoes<textarea disabled={!canEditAssignments} value={planForm.notes} onChange={(event) => updatePlanField("notes", event.target.value)} /></label>
 
           <fieldset className="member-picker">
             <legend>Escalados</legend>
             {planForm.assignments.map((assignment, index) => (
               <div className="assignment-row" key={`${assignment.id}-${index}`}>
-                <select disabled={user.role !== "admin"} value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
+                <select disabled={!canEditAssignments} value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
                   <option value="">Pessoa</option>
-                  {people.map((person) => (
+                  {eligiblePeople.map((person) => (
                     <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
                   ))}
                 </select>
-                <input disabled={user.role !== "admin"} placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
-                <select disabled={user.role !== "admin"} value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
+                <input disabled={!canEditAssignments} placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
+                <select disabled={!canEditAssignments} value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
                   <option value="pending">Pendente</option>
                   <option value="confirmed">Confirmado</option>
                   <option value="declined">Recusado</option>
                 </select>
-                <input disabled={user.role !== "admin"} placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
-                {user.role === "admin" && <button className="icon-button" type="button" onClick={() => removeAssignment(index)}>Remover</button>}
+                <input disabled={!canEditAssignments} placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
+                {canEditAssignments && <button className="icon-button" type="button" onClick={() => removeAssignment(index)}>Remover</button>}
               </div>
             ))}
-            {user.role === "admin" && <button className="secondary-button" type="button" onClick={addAssignment}>Adicionar pessoa</button>}
-            {user.role !== "admin" && planForm.assignments.length === 0 && <p className="muted">Nenhuma pessoa escalada.</p>}
-            {user.role !== "admin" && planForm.assignments.map((assignment, index) => (
+            {canEditAssignments && <button className="secondary-button" type="button" onClick={addAssignment}>Adicionar pessoa</button>}
+            {!canEditAssignments && planForm.assignments.length === 0 && <p className="muted">Nenhuma pessoa escalada.</p>}
+            {!canEditAssignments && planForm.assignments.map((assignment, index) => (
               <div className="response-row" key={`${assignment.personId}-${index}`}>
                 <p className="report-row">
                   <span>{personName(assignment.personId)} - {assignment.role}</span>
@@ -239,9 +278,9 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           </fieldset>
 
           <div className="form-footer">
-            {user.role === "admin" && <button type="submit">{selectedPlanId ? "Salvar escala" : "Criar escala"}</button>}
+            {(canEditAssignments && (user.role === "admin" || selectedPlanId)) && <button type="submit">{selectedPlanId ? "Salvar escala" : "Criar escala"}</button>}
             {user.role === "admin" && selectedPlanId && <button className="danger-button" type="button" onClick={handleDeletePlan}>Remover</button>}
-            <p>{user.role === "admin" ? servingStatus : "Somente administradores podem alterar escalas."}</p>
+            <p>{canEditAssignments ? servingStatus : "Apenas admin ou lider da equipe pode alterar esta escala."}</p>
           </div>
         </form>
       </div>

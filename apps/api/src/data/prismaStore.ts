@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
 import type { DataFile } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -77,6 +77,7 @@ const toEvent = (event: {
   recurrenceUntil: string;
   recurrenceRule: string;
   parentEventId?: string | null;
+  requestedTeamIds?: Prisma.JsonValue;
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;
@@ -92,6 +93,7 @@ const toEvent = (event: {
   recurrenceUntil: event.recurrenceUntil || "",
   recurrenceRule: event.recurrence === "cron" ? event.recurrenceRule || "" : "",
   parentEventId: event.parentEventId || "",
+  requestedTeamIds: asStringArray(event.requestedTeamIds ?? []),
   registrationEnabled: event.registrationEnabled,
   registrationCapacity: event.registrationCapacity,
   registrationPrice: event.registrationPrice,
@@ -106,12 +108,14 @@ const toServingPlan = (plan: {
   date: string;
   title: string;
   groupId: string;
+  eventId?: string | null;
   notes: string;
   assignments: Prisma.JsonValue;
   createdAt: Date;
   updatedAt: Date;
 }): ServingPlan => ({
   ...plan,
+  eventId: plan.eventId || "",
   assignments: asAssignments(plan.assignments),
   createdAt: plan.createdAt.toISOString(),
   updatedAt: plan.updatedAt.toISOString()
@@ -147,8 +151,30 @@ const toRoomReservationStatus = (status: string): RoomReservationStatus => (
   status === "cancelled" ? "cancelled" : "confirmed"
 );
 
+const toLabelLayout = (layout: string): LabelLayout => (
+  layout === "visitor" ? "visitor" : "kids_checkin"
+);
+
+const toLabelTemplate = (template: {
+  id: string;
+  name: string;
+  printerModel: string;
+  widthMm: number;
+  heightMm: number;
+  isContinuous: boolean;
+  layout: string;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): LabelTemplate => ({
+  ...template,
+  layout: toLabelLayout(template.layout),
+  createdAt: template.createdAt.toISOString(),
+  updatedAt: template.updatedAt.toISOString()
+});
+
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -162,7 +188,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.roomReservationRecord.findMany(),
     prisma.servingPlanRecord.findMany(),
     prisma.financialTransactionRecord.findMany(),
-    prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } })
+    prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.labelTemplateRecord.findMany()
   ]);
 
   if (!church) {
@@ -218,7 +245,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
       ...log,
       action: log.action === "update" || log.action === "delete" ? log.action as AuditAction : "create",
       createdAt: log.createdAt.toISOString()
-    }))
+    })),
+    labelTemplates: labelTemplates.map(toLabelTemplate)
   };
 };
 
@@ -226,6 +254,7 @@ export const writePrismaData = async (data: DataFile) => {
   await prisma.$transaction(async (tx) => {
     await tx.financialTransactionRecord.deleteMany();
     await tx.auditLogRecord.deleteMany();
+    await tx.labelTemplateRecord.deleteMany();
     await tx.roomReservationRecord.deleteMany();
     await tx.churchResourceRecord.deleteMany();
     await tx.eventRegistrationRecord.deleteMany();
@@ -282,6 +311,7 @@ export const writePrismaData = async (data: DataFile) => {
       await tx.eventRecord.create({
         data: {
           ...event,
+          requestedTeamIds: event.requestedTeamIds as unknown as Prisma.InputJsonValue,
           createdAt: new Date(event.createdAt),
           updatedAt: new Date(event.updatedAt)
         }
@@ -361,6 +391,16 @@ export const writePrismaData = async (data: DataFile) => {
         data: {
           ...log,
           createdAt: new Date(log.createdAt)
+        }
+      });
+    }
+
+    for (const template of data.labelTemplates) {
+      await tx.labelTemplateRecord.create({
+        data: {
+          ...template,
+          createdAt: new Date(template.createdAt),
+          updatedAt: new Date(template.updatedAt)
         }
       });
     }

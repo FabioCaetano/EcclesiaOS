@@ -8,6 +8,7 @@ export const defaultServingPlans: ServingPlan[] = [
     date: "2026-05-03",
     title: "Culto Dominical",
     groupId: "grp_002",
+    eventId: "",
     notes: "Escala inicial do culto.",
     assignments: [
       { id: "asg_001", personId: "per_001", role: "Louvor", status: "confirmed", notes: "Vocal" },
