@@ -1,6 +1,23 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { canAccessModule } from "@ecclesiaos/shared";
 import type { AppModuleKey, CurrentUser } from "@ecclesiaos/shared";
+import {
+  CalendarDays,
+  CalendarRange,
+  ClipboardCheck,
+  ClipboardList,
+  Heart,
+  Home,
+  LogOut,
+  Menu,
+  ScrollText,
+  Sparkles,
+  Users,
+  UsersRound,
+  Wallet,
+  X
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { roleLabels } from "./constants";
 import type { AppView } from "./types";
 
@@ -10,52 +27,133 @@ interface Props {
   onNavigate: (view: AppView) => void;
   onLogout: () => void;
   user: CurrentUser;
+  churchName?: string;
 }
 
-const navItems: Array<{ label: string; module: AppModuleKey; view: AppView }> = [
-  { label: "Inicio", module: "home", view: "home" },
-  { label: "Igreja", module: "church", view: "church" },
-  { label: "Pessoas", module: "people", view: "people" },
-  { label: "Grupos", module: "groups", view: "groups" },
-  { label: "Agenda", module: "events", view: "events" },
-  { label: "Check-in", module: "checkin", view: "checkin" },
-  { label: "Ambientes", module: "resources", view: "resources" },
-  { label: "Calendario", module: "calendar", view: "calendar" },
-  { label: "Escalas", module: "serving", view: "serving" },
-  { label: "Financeiro", module: "finance", view: "finance" },
-  { label: "Usuarios", module: "users", view: "users" },
-  { label: "Auditoria", module: "audit", view: "audit" }
+interface NavItem {
+  label: string;
+  module: AppModuleKey;
+  view: AppView;
+  icon: LucideIcon;
+  group: "Operacao" | "Cadastros" | "Sistema";
+}
+
+const navItems: NavItem[] = [
+  { label: "Inicio", module: "home", view: "home", icon: Home, group: "Operacao" },
+  { label: "Agenda", module: "events", view: "events", icon: CalendarDays, group: "Operacao" },
+  { label: "Calendario", module: "calendar", view: "calendar", icon: CalendarRange, group: "Operacao" },
+  { label: "Check-in", module: "checkin", view: "checkin", icon: ClipboardCheck, group: "Operacao" },
+  { label: "Escalas", module: "serving", view: "serving", icon: ClipboardList, group: "Operacao" },
+  { label: "Pessoas", module: "people", view: "people", icon: Users, group: "Cadastros" },
+  { label: "Grupos", module: "groups", view: "groups", icon: UsersRound, group: "Cadastros" },
+  { label: "Ambientes", module: "resources", view: "resources", icon: Sparkles, group: "Cadastros" },
+  { label: "Igreja", module: "church", view: "church", icon: Heart, group: "Cadastros" },
+  { label: "Financeiro", module: "finance", view: "finance", icon: Wallet, group: "Sistema" },
+  { label: "Usuarios", module: "users", view: "users", icon: UsersRound, group: "Sistema" },
+  { label: "Auditoria", module: "audit", view: "audit", icon: ScrollText, group: "Sistema" }
 ];
 
-export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, onLogout, user }) => {
+const groupOrder: NavItem["group"][] = ["Operacao", "Cadastros", "Sistema"];
+
+const initials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0]?.[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return `${first}${last}`.toUpperCase();
+};
+
+export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, onLogout, user, churchName }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const visibleNavItems = navItems.filter((item) => canAccessModule(user.role, item.module));
+  const grouped = groupOrder
+    .map((group) => ({ group, items: visibleNavItems.filter((item) => item.group === group) }))
+    .filter((entry) => entry.items.length > 0);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [currentView]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [sidebarOpen]);
 
   return (
-    <main className="app-frame">
-      <aside className="sidebar">
-        <div>
-          <p className="eyebrow">EcclesiaOS</p>
-          <h1>Painel</h1>
+    <div className="app-shell">
+      <div className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`} aria-label="Navegacao">
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-mark">E</div>
+          <div className="sidebar-brand-text">
+            <strong>EcclesiaOS</strong>
+            <span>{churchName || "Painel"}</span>
+          </div>
         </div>
-
-        <nav className="main-nav" aria-label="Navegacao principal">
-          {visibleNavItems.map((item) => (
-            <button className={currentView === item.view ? "active" : ""} key={item.view} type="button" onClick={() => onNavigate(item.view)}>
-              {item.label}
-            </button>
+        <div className="sidebar-scroll">
+          {grouped.map(({ group, items }) => (
+            <div className="nav-group" key={group}>
+              <span className="nav-group-label">{group}</span>
+              {items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.view}
+                    type="button"
+                    className={`nav-item ${currentView === item.view ? "active" : ""}`}
+                    onClick={() => {
+                      onNavigate(item.view);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <Icon strokeWidth={2} />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           ))}
-        </nav>
-
-        <div className="sidebar-user">
-          <strong>{user.name}</strong>
-          <span>{roleLabels[user.role]}</span>
-          <button type="button" onClick={onLogout}>Sair</button>
+        </div>
+        <div className="sidebar-footer">
+          <button type="button" className="secondary-button" onClick={onLogout}>
+            <LogOut /> Sair
+          </button>
         </div>
       </aside>
 
-      <section className="workspace">
-        {children}
-      </section>
-    </main>
+      <header className="app-header">
+        <div className="app-header-brand">
+          <button
+            type="button"
+            className="menu-toggle"
+            onClick={() => setSidebarOpen((current) => !current)}
+            aria-label={sidebarOpen ? "Fechar menu" : "Abrir menu"}
+          >
+            {sidebarOpen ? <X /> : <Menu />}
+          </button>
+          <div className="app-header-brand-mark">E</div>
+          <div className="app-header-brand-text">
+            <strong>{churchName || "EcclesiaOS"}</strong>
+            <small>Painel administrativo</small>
+          </div>
+        </div>
+        <div className="app-header-actions">
+          <div className="app-header-user">
+            <div className="app-header-user-avatar">{initials(user.name)}</div>
+            <div className="app-header-user-text">
+              <strong>{user.name}</strong>
+              <span>{roleLabels[user.role]}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="workspace">{children}</main>
+    </div>
   );
 };

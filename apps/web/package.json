@@ -14,6 +14,7 @@
     "@ecclesiaos/shared": "file:../../packages/shared",
     "@vitejs/plugin-react": "^4.6.0",
     "jsqr": "^1.4.0",
+    "lucide-react": "^1.14.0",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

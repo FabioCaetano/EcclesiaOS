@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Baby, CalendarDays, ExternalLink, Home, Sparkles, PlayCircle } from "lucide-react";
 import type { ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CurrentUser, EventCheckIn, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 import { loadChildCheckIns, loadChurchProfile, loadEventCheckIns, loadEvents, loadResources, loadYouTubeVideos } from "./api";
-import { roleLabels } from "./constants";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -23,7 +24,7 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
   const [resources, setResources] = useState<ChurchResource[]>([]);
   const [eventCheckIns, setEventCheckIns] = useState<EventCheckIn[]>([]);
   const [childCheckIns, setChildCheckIns] = useState<ChildCheckIn[]>([]);
-  const [youtube, setYoutube] = useState<YouTubeFeed | YouTubeFeedError | null>(null);
+  const [youtube, setPlayCircle] = useState<YouTubeFeed | YouTubeFeedError | null>(null);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -46,8 +47,8 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
 
   useEffect(() => {
     loadYouTubeVideos(token)
-      .then(setYoutube)
-      .catch(() => setYoutube({ error: "feed_unavailable", message: "Nao foi possivel carregar os videos do YouTube." }));
+      .then(setPlayCircle)
+      .catch(() => setPlayCircle({ error: "feed_unavailable", message: "Nao foi possivel carregar os videos do YouTube." }));
   }, [token]);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -58,68 +59,93 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
   const youtubeError = youtube && isFeedError(youtube) ? youtube : null;
   const youtubeVideos = youtubeFeed?.videos.slice(0, 6) ?? [];
 
+  const description = church?.name
+    ? `Visao operacional de ${church.name}. Acompanhe agenda, check-in e ambientes em tempo real.`
+    : "Visao operacional da igreja. Acompanhe agenda, check-in e ambientes em tempo real.";
+
   return (
     <>
-      <section className="home-hero">
-        <div>
-          <p className="eyebrow">Painel inicial</p>
-          <h1>{church?.name || "EcclesiaOS"}</h1>
-          <p className="lead">Visao rapida da operacao da igreja: agenda, check-in, ambientes e transmissao.</p>
-        </div>
-        <div className="status-panel" aria-label="Usuario atual">
-          <span className="status-dot" />
-          <div>
-            <strong>{user.name}</strong>
-            <p>{roleLabels[user.role]} conectado como {user.email}</p>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Painel inicial"
+        icon={Home}
+        title={`Ola, ${user.name.split(" ")[0]}`}
+        description={description}
+      />
 
-      <section className="home-kpis">
-        <article><span>Proximos eventos</span><strong>{upcomingEvents.length}</strong></article>
-        <article><span>Check-ins hoje</span><strong>{eventCheckIns.length}</strong></article>
-        <article><span>Criancas ativas</span><strong>{openChildren.length}</strong></article>
-        <article><span>Ambientes ativos</span><strong>{activeResources.length}</strong></article>
-      </section>
+      {status && <p className="muted">{status}</p>}
 
-      <section className="home-grid">
-        <div className="panel">
+      <div className="home-kpis">
+        <article>
+          <span><CalendarDays size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Proximos eventos</span>
+          <strong>{upcomingEvents.length}</strong>
+        </article>
+        <article>
+          <span>Check-ins hoje</span>
+          <strong>{eventCheckIns.length}</strong>
+        </article>
+        <article>
+          <span><Baby size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Criancas ativas</span>
+          <strong>{openChildren.length}</strong>
+        </article>
+        <article>
+          <span><Sparkles size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Ambientes ativos</span>
+          <strong>{activeResources.length}</strong>
+        </article>
+      </div>
+
+      <div className="home-grid">
+        <Card>
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Agenda</p>
+              <p className="eyebrow"><CalendarDays size={12} />Agenda</p>
               <h2>Proximos compromissos</h2>
             </div>
           </div>
-          {upcomingEvents.length === 0 ? <p className="muted">Nenhum evento futuro cadastrado.</p> : upcomingEvents.map((event) => (
-            <p className="report-row" key={event.id}>
-              <span>{event.date} {event.startTime} - {event.title}</span>
-              <strong>{event.location || "Sem local"}</strong>
-            </p>
-          ))}
-        </div>
+          {upcomingEvents.length === 0 ? (
+            <EmptyState
+              icon={CalendarDays}
+              title="Nenhum evento futuro"
+              description="Cadastre eventos na Agenda para que eles aparecam aqui."
+            />
+          ) : (
+            upcomingEvents.map((event) => (
+              <p className="report-row" key={event.id}>
+                <span>{event.date} {event.startTime} - {event.title}</span>
+                <strong>{event.location || "Sem local"}</strong>
+              </p>
+            ))
+          )}
+        </Card>
 
-        <div className="panel">
+        <Card>
           <div className="section-heading">
             <div>
-              <p className="eyebrow">YouTube</p>
+              <p className="eyebrow"><PlayCircle size={12} />YouTube</p>
               <h2>Ultimos videos</h2>
             </div>
             {youtubeFeed?.channelTitle && <span className="muted">{youtubeFeed.channelTitle}</span>}
           </div>
           {!church?.youtubeChannelUrl ? (
-            <p className="muted">Defina o canal do YouTube no cadastro da igreja para exibir os videos aqui.</p>
+            <EmptyState
+              icon={PlayCircle}
+              title="Canal nao configurado"
+              description="Adicione a URL do canal no cadastro da igreja para ver os videos aqui."
+            />
           ) : !youtube ? (
             <p className="muted">Carregando videos do canal...</p>
           ) : youtubeError ? (
             <div className="youtube-fallback">
               <p className="muted">{youtubeError.message}</p>
-              <a href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">Abrir canal</a>
+              <a className="secondary-link" href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} /> Abrir canal
+              </a>
             </div>
           ) : youtubeVideos.length === 0 ? (
-            <div className="youtube-fallback">
-              <p className="muted">O canal nao retornou videos no momento.</p>
-              <a href={church.youtubeChannelUrl} target="_blank" rel="noreferrer">Abrir canal</a>
-            </div>
+            <EmptyState
+              icon={PlayCircle}
+              title="Sem videos no momento"
+              description="O canal nao retornou videos recentes."
+            />
           ) : (
             <div className="youtube-grid">
               {youtubeVideos.map((video) => (
@@ -127,16 +153,14 @@ export const HomePage: React.FC<Props> = ({ token, user }) => {
                   {video.thumbnailUrl && <img src={video.thumbnailUrl} alt={video.title} loading="lazy" />}
                   <div className="youtube-card-body">
                     <strong>{video.title}</strong>
-                    {video.publishedAt && <span className="muted">{formatPublishedAt(video.publishedAt)}</span>}
+                    {video.publishedAt && <span>{formatPublishedAt(video.publishedAt)}</span>}
                   </div>
                 </a>
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      {status && <p className="muted">{status}</p>}
+        </Card>
+      </div>
     </>
   );
 };

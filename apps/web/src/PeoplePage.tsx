@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Plus, Printer, Users } from "lucide-react";
 import type { CurrentUser, LabelTemplate, PersonInput, PersonProfile } from "@ecclesiaos/shared";
 import { deletePerson, loadLabelTemplates, loadPeople, savePerson } from "./api";
 import { emptyPersonInput } from "./constants";
 import { toPersonInput } from "./mappers";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -111,18 +113,29 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel people-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Pessoas</p>
-          <h2>Cadastro de pessoas</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewPerson}>Nova pessoa</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Cadastro"
+        icon={Users}
+        title="Pessoas"
+        description="Cadastro central de membros, visitantes e responsaveis vinculados a criancas."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewPerson}>
+            <Plus size={16} /> Nova pessoa
+          </button>
+        )}
+      />
 
+      <Card className="people-panel">
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de pessoas">
-          {people.map((person) => (
+          {people.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Nenhuma pessoa cadastrada"
+              description={user.role === "admin" ? "Use o botao Nova pessoa para comecar." : "Aguarde o admin cadastrar pessoas."}
+            />
+          ) : people.map((person) => (
             <button className={person.id === selectedPersonId ? "person-row selected" : "person-row"} key={person.id} type="button" onClick={() => selectPerson(person)}>
               <strong>{person.firstName} {person.lastName}</strong>
               <span>{person.status === "member" ? "Membro" : "Visitante"} - {person.email || "sem email"}</span>
@@ -171,7 +184,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
                   if (target) setPrintingPerson(target);
                 }}
               >
-                Imprimir etiqueta visitante
+                <Printer size={14} /> Imprimir etiqueta visitante
               </button>
             )}
             <p>{user.role === "admin" ? peopleStatus : "Somente administradores podem alterar pessoas."}</p>
@@ -191,6 +204,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
           </div>
         </div>
       )}
-    </section>
+      </Card>
+    </>
   );
 };

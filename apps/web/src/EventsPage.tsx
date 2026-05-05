@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
+import { CalendarDays, Plus } from "lucide-react";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile } from "@ecclesiaos/shared";
 import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEventRegistrations, loadEvents, loadGroups, loadResources, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
 import { useQrScanner } from "./useQrScanner";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -228,15 +230,20 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel events-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Agenda</p>
-          <h2>Eventos e cultos</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewEvent}>Novo evento</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Operacao"
+        icon={CalendarDays}
+        title="Agenda"
+        description="Eventos, cultos, inscricoes publicas e check-in de ingressos."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewEvent}>
+            <Plus size={16} /> Novo evento
+          </button>
+        )}
+      />
 
+      <Card className="events-panel">
       <div className="report-grid">
         <article><span>Eventos</span><strong>{events.length}</strong></article>
         <article><span>Proximos</span><strong>{upcomingEvents.length}</strong></article>
@@ -265,12 +272,18 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
 
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de eventos">
-          {filteredEvents.map((event) => (
+          {filteredEvents.length === 0 ? (
+            <EmptyState
+              icon={CalendarDays}
+              title="Sem eventos no periodo"
+              description={user.role === "admin" ? "Crie um novo evento ou troque o filtro de mes." : "Nenhum evento cadastrado para o filtro atual."}
+            />
+          ) : filteredEvents.map((event) => (
             <button className={event.id === selectedEventId ? "person-row selected" : "person-row"} key={event.id} type="button" onClick={() => selectEvent(event)}>
               <strong>
                 {event.date} - {event.title}
-                {event.parentEventId && <span className="event-tag generated"> ocorrencia</span>}
-                {!event.parentEventId && event.recurrence === "cron" && <span className="event-tag master"> cron</span>}
+                {event.parentEventId && <span className="event-tag generated">ocorrencia</span>}
+                {!event.parentEventId && event.recurrence === "cron" && <span className="event-tag master">cron</span>}
               </strong>
               <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - {event.location || "sem local"}</span>
               <span>{event.groupId ? groupName(event.groupId) : "Agenda geral"} - {recurrenceLabels[event.recurrence]} - {event.registrationEnabled ? `${registrationCount(event.id)} inscrito(s)` : "sem inscricoes"}</span>
@@ -442,6 +455,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
           )}
         </div>
       )}
-    </section>
+      </Card>
+    </>
   );
 };

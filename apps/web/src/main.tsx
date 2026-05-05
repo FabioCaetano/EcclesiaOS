@@ -5,7 +5,7 @@ import { AppLayout } from "./AppLayout";
 import { AttendancePage } from "./AttendancePage";
 import { AuditPage } from "./AuditPage";
 import { CalendarPage } from "./CalendarPage";
-import { clearSession, loadCurrentUser, loadStoredSession, saveSession } from "./api";
+import { clearSession, loadChurchProfile, loadCurrentUser, loadStoredSession, saveSession } from "./api";
 import { ChurchPage } from "./ChurchPage";
 import { CheckInPage } from "./CheckInPage";
 import { FinancePage } from "./FinancePage";
@@ -27,6 +27,7 @@ const App = () => {
 
   const [session, setSession] = useState<AuthSession | null>(() => loadStoredSession());
   const [currentView, setCurrentView] = useState<AppView>("home");
+  const [churchName, setChurchName] = useState<string>("");
 
   useEffect(() => {
     if (!session?.token) return;
@@ -41,6 +42,16 @@ const App = () => {
         setSession(null);
         clearSession();
       });
+  }, [session?.token]);
+
+  useEffect(() => {
+    if (!session?.token) {
+      setChurchName("");
+      return;
+    }
+    loadChurchProfile(session.token)
+      .then((profile) => setChurchName(profile.name))
+      .catch(() => setChurchName(""));
   }, [session?.token]);
 
   const handleLogin = (nextSession: AuthSession) => {
@@ -58,7 +69,7 @@ const App = () => {
   if (!session?.user) return <LoginPage onLogin={handleLogin} />;
 
   return (
-    <AppLayout currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} user={session.user}>
+    <AppLayout currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} user={session.user} churchName={churchName}>
       {currentView === "home" && <HomePage token={session.token} user={session.user} />}
       {currentView === "church" && <ChurchPage token={session.token} user={session.user} />}
       {currentView === "people" && <PeoplePage token={session.token} user={session.user} />}

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { Heart, Plus, Printer, Tag } from "lucide-react";
 import type { ChurchProfile, ChurchProfileUpdate, CurrentUser, LabelLayout, LabelTemplate, LabelTemplateInput } from "@ecclesiaos/shared";
 import { deleteLabelTemplate, loadChurchProfile, loadLabelTemplates, saveLabelTemplate, updateChurchProfile } from "./api";
 import { toChurchUpdate } from "./mappers";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -153,15 +155,16 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel church-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Igreja unica</p>
-          <h2>Cadastro da igreja</h2>
-        </div>
-        {church && <span className="profile-pill">{church.name}</span>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Cadastro"
+        icon={Heart}
+        title="Igreja"
+        description="Dados gerais da igreja, canal de transmissao e configuracao operacional."
+        actions={church && <span className="profile-pill">{church.name}</span>}
+      />
 
+      <Card className="church-panel">
       {churchForm ? (
         <form className="church-form" onSubmit={handleChurchSubmit}>
           <label>Nome<input disabled={!isAdmin} value={churchForm.name} onChange={(event) => updateChurchField("name", event.target.value)} /></label>
@@ -184,17 +187,29 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
       ) : (
         <p className="muted">{churchStatus || "Carregando cadastro..."}</p>
       )}
+      </Card>
 
-      <div className="section-heading" style={{ marginTop: "32px" }}>
+      <Card className="church-panel">
+      <div className="section-heading">
         <div>
-          <p className="eyebrow">Etiquetas e impressoras</p>
+          <p className="eyebrow"><Tag size={12} />Etiquetas e impressoras</p>
           <h2>Templates de etiqueta</h2>
         </div>
-        {isAdmin && <button className="secondary-button" type="button" onClick={startNewTemplate}>Novo template</button>}
+        {isAdmin && (
+          <button className="secondary-button" type="button" onClick={startNewTemplate}>
+            <Plus size={16} /> Novo template
+          </button>
+        )}
       </div>
 
       <div className="label-templates-grid">
-        {templates.length === 0 && <p className="muted">Nenhum template cadastrado.</p>}
+        {templates.length === 0 && (
+          <EmptyState
+            icon={Tag}
+            title="Nenhum template cadastrado"
+            description={isAdmin ? "Cadastre o modelo da impressora Brother que voce usa." : "Peça ao admin para cadastrar."}
+          />
+        )}
         {templates.map((template) => (
           <article key={template.id} className={editingTemplateId === template.id ? "label-template-card selected" : "label-template-card"}>
             <header>
@@ -204,7 +219,9 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
             <p className="muted">{template.printerModel || "Sem modelo"}</p>
             <p className="muted">{template.isContinuous ? `${template.widthMm}mm continuo` : `${template.widthMm} x ${template.heightMm} mm`}{template.isDefault ? " - padrao" : ""}</p>
             <div className="response-actions">
-              <button className="secondary-button" type="button" onClick={() => printTestLabel(template)}>Imprimir teste</button>
+              <button className="secondary-button" type="button" onClick={() => printTestLabel(template)}>
+                <Printer size={14} /> Imprimir teste
+              </button>
               {isAdmin && <button className="secondary-button" type="button" onClick={() => editTemplate(template)}>Editar</button>}
               {isAdmin && <button className="danger-outline-button" type="button" onClick={() => handleDeleteTemplate(template)}>Remover</button>}
             </div>
@@ -256,6 +273,7 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </div>
       )}
-    </section>
+      </Card>
+    </>
   );
 };

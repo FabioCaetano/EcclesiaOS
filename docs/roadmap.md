@@ -822,6 +822,25 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 47: Sistema De Design E Redesenho Do Layout
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos resolver o "muito confuso" trazido pela igreja com sistema de design e layout estilo Planning Center?
+
+Possivel escopo:
+
+- tokens CSS (cores, espacamento, tipografia, sombras, bordas);
+- header + sidebar no desktop, bottom nav no mobile;
+- primitivos `PageHeader`, `Card`, `EmptyState`, `Button`;
+- adicionar `lucide-react` para icones;
+- aplicar nas 4 telas criticas: Inicio, Igreja, Pessoas, Agenda;
+- demais telas herdam tokens, refinadas em 48 e 49.
+
+Decisao: redesenho completo de tokens + layout, sem trocar por lib de UI; aplicar em 4 telas; preservar funcionalidade existente.
+
 Antes de desenvolver, perguntar:
 
 > Vamos consertar a camera de QR Code em todos os navegadores e permitir cadastrar a impressora Brother da igreja?

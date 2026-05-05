@@ -82,6 +82,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 76. Camera de QR Code passa a ter fallback `jsqr` quando o navegador nao oferece `BarcodeDetector`; `facingMode` torna-se ideal e nao obrigatorio; mensagens de diagnostico explicam o motivo do erro.
 77. Templates de etiqueta viram entidade propria (`LabelTemplate`) com layouts `kids_checkin` e `visitor`; admin cadastra modelo, tamanho e marca padrao por layout; Check-in e Pessoas leem os templates da API.
 
+78. Sistema de design proprio com tokens CSS, primitivos `PageHeader`/`Card`/`EmptyState` e ícones `lucide-react`; `AppLayout` ganha header fixo, sidebar agrupada por dominio e drawer mobile; novo design aplicado em Inicio, Igreja, Pessoas e Agenda; demais telas herdam tokens nas fases 48 e 49.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.
