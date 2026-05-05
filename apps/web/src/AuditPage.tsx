@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Lock, ScrollText } from "lucide-react";
 import type { AuditAction, AuditLogEntry, CurrentUser } from "@ecclesiaos/shared";
 import { loadAuditLogs } from "./api";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -46,24 +48,30 @@ export const AuditPage: React.FC<Props> = ({ token, user }) => {
 
   if (user.role !== "admin") {
     return (
-      <section className="panel">
-        <p className="eyebrow">Auditoria</p>
-        <h2>Acesso restrito</h2>
-        <p>Somente administradores podem consultar auditoria.</p>
-      </section>
+      <>
+        <PageHeader eyebrow="Sistema" icon={ScrollText} title="Auditoria" />
+        <Card>
+          <EmptyState
+            icon={Lock}
+            title="Acesso restrito"
+            description="Somente administradores podem consultar auditoria."
+          />
+        </Card>
+      </>
     );
   }
 
   return (
-    <section className="panel audit-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Auditoria</p>
-          <h2>Historico de alteracoes</h2>
-        </div>
-        <span className="profile-pill">{filteredLogs.length} registro(s)</span>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Sistema"
+        icon={ScrollText}
+        title="Auditoria"
+        description="Historico de criacoes, edicoes e remocoes registradas pelo sistema."
+        actions={<span className="profile-pill">{filteredLogs.length} registro(s)</span>}
+      />
 
+      <Card className="audit-panel">
       <div className="report-grid">
         <article><span>Total</span><strong>{logs.length}</strong></article>
         <article><span>Hoje</span><strong>{todayCount}</strong></article>
@@ -109,7 +117,13 @@ export const AuditPage: React.FC<Props> = ({ token, user }) => {
       {status && <p className="muted">{status}</p>}
 
       <div className="audit-list">
-        {filteredLogs.length === 0 ? <p className="muted">Sem registros para os filtros atuais.</p> : filteredLogs.map((log) => (
+        {filteredLogs.length === 0 ? (
+          <EmptyState
+            icon={ScrollText}
+            title="Sem registros"
+            description="Nenhuma acao corresponde aos filtros atuais."
+          />
+        ) : filteredLogs.map((log) => (
           <article className={`audit-row ${log.action}`} key={log.id}>
             <div>
               <strong>{actionLabels[log.action]} - {log.entityType}</strong>
@@ -123,6 +137,7 @@ export const AuditPage: React.FC<Props> = ({ token, user }) => {
           </article>
         ))}
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

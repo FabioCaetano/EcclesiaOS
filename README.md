@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 47 - Sistema De Design E Redesenho Do Layout.
+Fase atual concluida: Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes.
 
 Estrutura:
 

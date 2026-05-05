@@ -4,7 +4,7 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 47 - Sistema De Design E Redesenho Do Layout**.
+Fase atual concluida: **Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes**.
 
 Ultimo modulo entregue:
 
@@ -87,6 +87,8 @@ Ambiente atual:
 - [[phases/phase-45-event-team-requests-leader-scheduling|Fase 45 - Eventos Solicitam Equipes E Lider Escala A Propria]]
 - [[phases/phase-46-label-templates-camera|Fase 46 - Templates De Etiqueta E Camera QR Universal]]
 - [[phases/phase-47-design-system-and-layout|Fase 47 - Sistema De Design E Redesenho Do Layout]]
+- [[phases/phase-48-design-system-operational|Fase 48 - Aplicar Sistema De Design Aos Modulos Operacionais]]
+- [[phases/phase-49-design-system-remaining|Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes]]
 
 ## Decisoes
 
@@ -138,6 +140,8 @@ Ambiente atual:
 - [[decisions/0046-event-team-requests-and-leader-scheduling|0046 - Eventos Solicitam Equipes E Lider Escala A Propria]]
 - [[decisions/0047-label-templates-and-universal-qr-camera|0047 - Templates De Etiqueta E Camera QR Universal]]
 - [[decisions/0048-design-system-and-layout-redesign|0048 - Sistema De Design E Redesenho Do Layout]]
+- [[decisions/0049-design-system-applied-to-operational-modules|0049 - Aplicar Sistema De Design Aos Modulos Operacionais]]
+- [[decisions/0050-design-system-applied-to-remaining-modules|0050 - Aplicar Sistema De Design Aos Modulos Restantes]]
 
 ## Proximos Caminhos
 

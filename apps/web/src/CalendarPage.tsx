@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { CalendarRange } from "lucide-react";
 import type { ChurchEvent, ChurchResource, CurrentUser, EventRegistration, RoomReservation } from "@ecclesiaos/shared";
 import { loadEventRegistrations, loadEvents, loadResources, loadRoomReservations } from "./api";
 import { eventTypeLabels, roomReservationStatusLabels } from "./constants";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -150,14 +152,15 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel calendar-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Calendario</p>
-          <h2>{monthLabel(monthFilter)}</h2>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Operacao"
+        icon={CalendarRange}
+        title="Calendario"
+        description={monthLabel(monthFilter)}
+      />
 
+      <Card className="calendar-panel">
       <div className="report-grid">
         <article><span>Itens</span><strong>{calendarItems.length}</strong></article>
         <article><span>Eventos</span><strong>{eventCount}</strong></article>
@@ -225,7 +228,13 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
               <small>{item.detail}</small>
             </button>
           ))}
-          {selectedItems.length === 0 && <p className="muted">Sem itens neste dia.</p>}
+          {selectedItems.length === 0 && (
+            <EmptyState
+              icon={CalendarRange}
+              title="Sem itens neste dia"
+              description="Selecione outro dia ou ajuste os filtros."
+            />
+          )}
         </div>
         <div>
           <h3>Proximos no periodo</h3>
@@ -242,6 +251,7 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
         <p><span>Reserva</span><strong>Ambientes</strong></p>
         <p><span>Cancelada</span><strong>Sem bloqueio</strong></p>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

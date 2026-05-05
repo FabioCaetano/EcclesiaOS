@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Plus, UsersRound } from "lucide-react";
 import type { CurrentUser, PersonProfile, UserInput } from "@ecclesiaos/shared";
 import { deleteUser, loadPeople, loadUsers, saveUser } from "./api";
 import { emptyUserInput, roleLabels } from "./constants";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -86,18 +88,29 @@ export const UsersPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel users-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Usuarios</p>
-          <h2>Usuarios e permissoes</h2>
-        </div>
-        <button className="secondary-button" type="button" onClick={startNewUser}>Novo usuario</button>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Sistema"
+        icon={UsersRound}
+        title="Usuarios"
+        description="Gestao de contas administrativas, lideres e membros."
+        actions={(
+          <button className="secondary-button" type="button" onClick={startNewUser}>
+            <Plus size={16} /> Novo usuario
+          </button>
+        )}
+      />
 
+      <Card className="users-panel">
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de usuarios">
-          {users.map((item) => (
+          {users.length === 0 ? (
+            <EmptyState
+              icon={UsersRound}
+              title="Nenhum usuario cadastrado"
+              description="Use o botao Novo usuario para comecar."
+            />
+          ) : users.map((item) => (
             <button className={item.id === selectedUserId ? "person-row selected" : "person-row"} key={item.id} type="button" onClick={() => selectUser(item)}>
               <strong>{item.name}</strong>
               <span>{roleLabels[item.role]} - {item.email}</span>
@@ -138,6 +151,7 @@ export const UsersPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

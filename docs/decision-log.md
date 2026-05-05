@@ -84,6 +84,10 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 78. Sistema de design proprio com tokens CSS, primitivos `PageHeader`/`Card`/`EmptyState` e ícones `lucide-react`; `AppLayout` ganha header fixo, sidebar agrupada por dominio e drawer mobile; novo design aplicado em Inicio, Igreja, Pessoas e Agenda; demais telas herdam tokens nas fases 48 e 49.
 
+79. Sistema de design aplicado aos modulos operacionais (Check-in, Calendario, Escalas) com `PageHeader`, `Card`, `EmptyState` e icones lucide; logica e endpoints inalterados; demais telas (Financeiro, Usuarios, Auditoria, Ambientes, Grupos, Presenca) ficam para Fase 49.
+
+80. Sistema de design aplicado aos modulos restantes (Financeiro, Usuarios, Auditoria, Ambientes, Grupos, Presenca); produto inteiro com mesmo padrao visual; sem alteracoes em logica, dados ou endpoints.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

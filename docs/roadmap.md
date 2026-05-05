@@ -826,6 +826,34 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 48: Aplicar Sistema De Design Aos Modulos Operacionais
+
+Status atual: concluida.
+
+## Fase 49: Aplicar Sistema De Design Aos Modulos Restantes
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos fechar a consistencia aplicando o novo design em Financeiro, Usuarios, Auditoria, Ambientes, Grupos e Presenca?
+
+Decisao: aplicar PageHeader + Card + EmptyState + icones; sem mudar logica.
+
+Antes de desenvolver, perguntar:
+
+> Vamos estender o novo design para Check-in, Calendario e Escalas?
+
+Possivel escopo:
+
+- PageHeader nas tres telas;
+- Card substituindo `.panel`;
+- EmptyState para listas vazias;
+- icones lucide em botoes de acao;
+- preservar logica e endpoints.
+
+Decisao: aplicar so estrutura visual; sem mudar regras; outras telas em Fase 49.
+
 Antes de desenvolver, perguntar:
 
 > Vamos resolver o "muito confuso" trazido pela igreja com sistema de design e layout estilo Planning Center?

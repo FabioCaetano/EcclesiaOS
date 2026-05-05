@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { ClipboardList, Plus } from "lucide-react";
 import type { CurrentUser, GroupProfile, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
 import { deleteServingPlan, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
 import { toServingPlanInput } from "./mappers";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -158,15 +160,20 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel serving-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Escalas e cultos</p>
-          <h2>Planos de servico</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewPlan}>Nova escala</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Operacao"
+        icon={ClipboardList}
+        title="Escalas"
+        description="Planos de servico por equipe, com confirmacoes de cada voluntario."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewPlan}>
+            <Plus size={16} /> Nova escala
+          </button>
+        )}
+      />
 
+      <Card className="serving-panel">
       <div className="report-grid">
         <article>
           <span>Escalas</span>
@@ -189,7 +196,13 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
       <div className="report-columns">
         <div>
           <h3>{user.role === "admin" ? "Pendencias da equipe" : "Minhas escalas"}</h3>
-          {(user.role === "admin" ? notifications : myAssignments).length === 0 ? <p className="muted">Nenhuma pendencia de escala.</p> : null}
+          {(user.role === "admin" ? notifications : myAssignments).length === 0 ? (
+            <EmptyState
+              icon={ClipboardList}
+              title="Nenhuma pendencia"
+              description={user.role === "admin" ? "Toda a equipe ja respondeu suas escalas." : "Voce nao possui escalas pendentes no momento."}
+            />
+          ) : null}
           {user.role === "admin" && notifications.map((notification) => (
             <p className="report-row" key={notification.id}>
               <span>{notification.date} - {personName(notification.personId)} - {notification.title}</span>
@@ -284,6 +297,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

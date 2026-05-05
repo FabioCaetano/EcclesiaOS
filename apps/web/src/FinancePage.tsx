@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Plus, Wallet } from "lucide-react";
 import type { CurrentUser, FinancialTransaction, FinancialTransactionInput, PersonProfile } from "@ecclesiaos/shared";
 import { deleteFinancialTransaction, loadFinancialTransactions, loadPeople, saveFinancialTransaction } from "./api";
 import { emptyFinancialTransactionInput, financialTypeLabels, paymentMethodLabels } from "./constants";
 import { toFinancialTransactionInput } from "./mappers";
+import { Card, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -123,15 +125,20 @@ export const FinancePage: React.FC<Props> = ({ token, user }) => {
     .filter((item) => item.income > 0 || item.expense > 0);
 
   return (
-    <section className="panel finance-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Financeiro</p>
-          <h2>Receitas e despesas</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewTransaction}>Novo lancamento</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Sistema"
+        icon={Wallet}
+        title="Financeiro"
+        description="Receitas, despesas, fundos e relatorios consolidados."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewTransaction}>
+            <Plus size={16} /> Novo lancamento
+          </button>
+        )}
+      />
 
+      <Card className="finance-panel">
       <div className="filter-bar">
         <label>Inicio<input type="date" value={filters.startDate} onChange={(event) => setFilters((current) => ({ ...current, startDate: event.target.value }))} /></label>
         <label>Fim<input type="date" value={filters.endDate} onChange={(event) => setFilters((current) => ({ ...current, endDate: event.target.value }))} /></label>
@@ -270,6 +277,7 @@ export const FinancePage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

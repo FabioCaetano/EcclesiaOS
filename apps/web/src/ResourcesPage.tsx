@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Plus, Sparkles } from "lucide-react";
 import type { ChurchEvent, ChurchResource, ChurchResourceInput, CurrentUser, RoomReservation, RoomReservationInput } from "@ecclesiaos/shared";
 import { deleteResource, deleteRoomReservation, loadEvents, loadResources, loadRoomReservations, saveResource, saveRoomReservation } from "./api";
 import { emptyResourceInput, emptyRoomReservationInput, roomReservationStatusLabels } from "./constants";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -158,15 +160,20 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel events-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Ambientes</p>
-          <h2>Reservas da igreja</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewReservation}>Nova reserva</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Cadastro"
+        icon={Sparkles}
+        title="Ambientes"
+        description="Salas e espacos da igreja com reservas e bloqueio de conflito por horario."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewReservation}>
+            <Plus size={16} /> Nova reserva
+          </button>
+        )}
+      />
 
+      <Card className="events-panel">
       <div className="report-grid">
         <article><span>Ambientes</span><strong>{resources.length}</strong></article>
         <article><span>Ativos</span><strong>{activeResources.length}</strong></article>
@@ -270,6 +277,7 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

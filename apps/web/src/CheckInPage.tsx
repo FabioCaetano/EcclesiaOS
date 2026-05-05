@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
+import { Camera, ClipboardCheck, MessageCircle, Printer, ScanLine } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
 import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
 import { checkOutChild, deleteEventCheckIn, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn } from "./api";
 import { useQrScanner } from "./useQrScanner";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -316,15 +318,16 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className={`panel checkin-panel ${printMode ? `print-mode-${printMode}` : ""}`}>
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Check-in</p>
-          <h2>Eventos e ministerio infantil</h2>
-        </div>
-        <span className="profile-pill">{canManage ? "Operacao liberada" : "Somente leitura"}</span>
-      </div>
+    <div className={printMode ? `print-mode-${printMode}` : ""}>
+      <PageHeader
+        eyebrow="Operacao"
+        icon={ClipboardCheck}
+        title="Check-in"
+        description="Eventos, ministerio infantil e administracao kids."
+        actions={<span className="profile-pill">{canManage ? "Operacao liberada" : "Somente leitura"}</span>}
+      />
 
+      <Card className="checkin-panel">
       <div className="report-grid">
         <article><span>Check-ins evento</span><strong>{eventCheckIns.length}</strong></article>
         <article><span>Criancas no culto</span><strong>{openChildren.length}</strong></article>
@@ -344,9 +347,13 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           <p className="muted">Use a camera para ler a etiqueta ou cole o conteudo do QR Code.</p>
         </div>
         <div className="scanner-actions">
-          <button className="secondary-button" type="button" onClick={() => setScannerActive((current) => !current)}>{scannerActive ? "Parar camera" : "Abrir camera"}</button>
+          <button className="secondary-button" type="button" onClick={() => setScannerActive((current) => !current)}>
+            <Camera size={16} /> {scannerActive ? "Parar camera" : "Abrir camera"}
+          </button>
           <input value={scanInput} onChange={(event) => setScanInput(event.target.value)} placeholder="ecclesiaos-child-checkout:..." />
-          <button className="secondary-button" type="button" onClick={() => completeCheckoutFromQr(scanInput)}>Validar QR</button>
+          <button className="secondary-button" type="button" onClick={() => completeCheckoutFromQr(scanInput)}>
+            <ScanLine size={16} /> Validar QR
+          </button>
         </div>
         {scannerActive && <video className="scanner-video" ref={videoRef} muted playsInline />}
         <canvas className="scanner-canvas" ref={canvasRef} />
@@ -454,7 +461,9 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
             <div className="batch-toolbar">
               <button className="secondary-button" type="button" onClick={selectOpenBatchLabels}>Selecionar ativos</button>
               <button className="secondary-button" type="button" onClick={() => setSelectedBatchIds([])}>Limpar</button>
-              <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={selectedBatchLabels.length === 0}>Imprimir lote</button>
+              <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={selectedBatchLabels.length === 0}>
+                <Printer size={14} /> Imprimir lote
+              </button>
               <span>{selectedBatchLabels.length} selecionada(s)</span>
             </div>
           )}
@@ -466,7 +475,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               </span>
               <span className="response-actions">
                 <button className="secondary-button" type="button" onClick={() => setSelectedLabelId(item.id)}>Etiqueta</button>
-                {!item.checkedOutAt && <a className="secondary-link" href={guardianMessageLink(item)} target="_blank" rel="noreferrer">Mensagem</a>}
+                {!item.checkedOutAt && <a className="secondary-link" href={guardianMessageLink(item)} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Mensagem</a>}
                 {item.checkedOutAt ? <strong>Saiu</strong> : canManage ? <button className="secondary-button" type="button" onClick={() => handleChildCheckout(item.id)}>Saida</button> : isGuardianAllowed(item) ? <button className="secondary-button" type="button" onClick={() => handleGuardianChildCheckout(item)}>Retirar</button> : <strong>Ativo</strong>}
               </span>
             </p>
@@ -487,7 +496,9 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                   <option key={template.id} value={template.id}>{template.name}</option>
                 ))}
               </select>
-              <button className="secondary-button" type="button" onClick={() => printLabels("single")}>Imprimir Brother</button>
+              <button className="secondary-button" type="button" onClick={() => printLabels("single")}>
+                <Printer size={14} /> Imprimir Brother
+              </button>
             </div>
           </div>
           {printMode && <style>{labelPageStyle(selectedTemplate)}</style>}
@@ -526,6 +537,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           ))}
         </div>
       )}
-    </section>
+      </Card>
+    </div>
   );
 };

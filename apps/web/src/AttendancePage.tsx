@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { ClipboardList, Plus } from "lucide-react";
 import type { AttendanceInput, AttendanceRecord, ChurchEvent, CurrentUser, GroupProfile, PersonProfile } from "@ecclesiaos/shared";
 import { deleteAttendance, loadAttendance, loadEvents, loadGroups, loadPeople, saveAttendance } from "./api";
 import { attendanceTypeLabels, emptyAttendanceInput } from "./constants";
 import { toAttendanceInput } from "./mappers";
+import { Card, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -123,15 +125,20 @@ export const AttendancePage: React.FC<Props> = ({ token, user }) => {
     .sort((a, b) => b.count - a.count);
 
   return (
-    <section className="panel attendance-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Presenca</p>
-          <h2>Registros de frequencia</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewAttendance}>Nova presenca</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Historico"
+        icon={ClipboardList}
+        title="Presenca"
+        description="Registros consolidados de frequencia por evento e grupo."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewAttendance}>
+            <Plus size={16} /> Nova presenca
+          </button>
+        )}
+      />
 
+      <Card className="attendance-panel">
       <div className="report-grid">
         <article>
           <span>Registros</span>
@@ -237,6 +244,7 @@ export const AttendancePage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };

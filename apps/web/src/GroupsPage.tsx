@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Plus, UsersRound } from "lucide-react";
 import type { CurrentUser, GroupInput, GroupProfile, PersonProfile } from "@ecclesiaos/shared";
 import { deleteGroup, loadGroups, loadPeople, saveGroup } from "./api";
 import { emptyGroupInput, groupTypeLabels } from "./constants";
 import { toGroupInput } from "./mappers";
+import { Card, EmptyState, PageHeader } from "./ui";
 
 interface Props {
   token: string;
@@ -78,18 +80,29 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
   };
 
   return (
-    <section className="panel groups-panel">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Grupos e ministerios</p>
-          <h2>Organizacao da igreja</h2>
-        </div>
-        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewGroup}>Novo grupo</button>}
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Cadastro"
+        icon={UsersRound}
+        title="Grupos e ministerios"
+        description="Pequenos grupos, ministerios, classes e equipes."
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={startNewGroup}>
+            <Plus size={16} /> Novo grupo
+          </button>
+        )}
+      />
 
+      <Card className="groups-panel">
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de grupos">
-          {groups.map((group) => (
+          {groups.length === 0 ? (
+            <EmptyState
+              icon={UsersRound}
+              title="Sem grupos cadastrados"
+              description={user.role === "admin" ? "Crie pequenos grupos, ministerios ou equipes." : "Aguarde o admin cadastrar grupos."}
+            />
+          ) : groups.map((group) => (
             <button className={group.id === selectedGroupId ? "person-row selected" : "person-row"} key={group.id} type="button" onClick={() => selectGroup(group)}>
               <strong>{group.name}</strong>
               <span>{groupTypeLabels[group.type]} - {group.memberPersonIds.length} pessoa(s)</span>
@@ -136,6 +149,7 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
       </div>
-    </section>
+      </Card>
+    </>
   );
 };
