@@ -203,6 +203,19 @@ model LabelTemplateRecord {
   @@index([layout])
 }
 
+model PeopleMessageRecord {
+  id                 String   @id
+  subject            String
+  body               String
+  channel            String   @default("manual")
+  recipientPersonIds Json     @default("[]")
+  createdAt          DateTime
+  createdByUserId    String   @default("")
+  createdByName      String   @default("")
+
+  @@index([createdAt])
+}
+
 model AuditLogRecord {
   id          String   @id
   action      String

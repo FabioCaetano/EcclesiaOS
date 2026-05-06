@@ -4,7 +4,7 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 52 - Check-in E Escalas Estilo Planning Center**.
+Fase atual concluida: **Fase 53 - Mensagens Em Lote Para Pessoas**.
 
 Ultimo modulo entregue:
 
@@ -92,6 +92,7 @@ Ambiente atual:
 - [[phases/phase-50-mobile-polish-and-accessibility|Fase 50 - Polimento Mobile E Acessibilidade]]
 - [[phases/phase-51-password-self-service|Fase 51 - Troca De Senha Pelo Usuario E Reset Administrativo]]
 - [[phases/phase-52-checkin-and-serving-planning-center|Fase 52 - Check-in E Escalas Estilo Planning Center]]
+- [[phases/phase-53-bulk-people-messages|Fase 53 - Mensagens Em Lote Para Pessoas]]
 
 ## Decisoes
 
@@ -148,6 +149,7 @@ Ambiente atual:
 - [[decisions/0051-mobile-polish-and-accessibility|0051 - Polimento Mobile E Acessibilidade]]
 - [[decisions/0052-self-service-password-and-admin-reset|0052 - Troca De Senha Pelo Usuario E Reset Administrativo]]
 - [[decisions/0053-checkin-and-serving-planning-center-style|0053 - Check-in E Escalas Estilo Planning Center]]
+- [[decisions/0054-bulk-people-messages|0054 - Mensagens Em Lote Para Pessoas]]
 
 ## Proximos Caminhos
 

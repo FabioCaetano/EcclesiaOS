@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, PeopleMessage, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
 import type { DataFile } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -155,6 +155,26 @@ const toLabelLayout = (layout: string): LabelLayout => (
   layout === "visitor" ? "visitor" : "kids_checkin"
 );
 
+const toMessageChannel = (channel: string): MessageChannel => (
+  channel === "email" || channel === "whatsapp" ? channel : "manual"
+);
+
+const toPeopleMessage = (message: {
+  id: string;
+  subject: string;
+  body: string;
+  channel: string;
+  recipientPersonIds: Prisma.JsonValue;
+  createdAt: Date;
+  createdByUserId: string;
+  createdByName: string;
+}): PeopleMessage => ({
+  ...message,
+  channel: toMessageChannel(message.channel),
+  recipientPersonIds: asStringArray(message.recipientPersonIds),
+  createdAt: message.createdAt.toISOString()
+});
+
 const toLabelTemplate = (template: {
   id: string;
   name: string;
@@ -174,7 +194,7 @@ const toLabelTemplate = (template: {
 });
 
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates, peopleMessages] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -189,7 +209,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.servingPlanRecord.findMany(),
     prisma.financialTransactionRecord.findMany(),
     prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.labelTemplateRecord.findMany()
+    prisma.labelTemplateRecord.findMany(),
+    prisma.peopleMessageRecord.findMany({ orderBy: { createdAt: "desc" } })
   ]);
 
   if (!church) {
@@ -246,7 +267,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
       action: log.action === "update" || log.action === "delete" ? log.action as AuditAction : "create",
       createdAt: log.createdAt.toISOString()
     })),
-    labelTemplates: labelTemplates.map(toLabelTemplate)
+    labelTemplates: labelTemplates.map(toLabelTemplate),
+    peopleMessages: peopleMessages.map(toPeopleMessage)
   };
 };
 
@@ -254,6 +276,7 @@ export const writePrismaData = async (data: DataFile) => {
   await prisma.$transaction(async (tx) => {
     await tx.financialTransactionRecord.deleteMany();
     await tx.auditLogRecord.deleteMany();
+    await tx.peopleMessageRecord.deleteMany();
     await tx.labelTemplateRecord.deleteMany();
     await tx.roomReservationRecord.deleteMany();
     await tx.churchResourceRecord.deleteMany();
@@ -401,6 +424,16 @@ export const writePrismaData = async (data: DataFile) => {
           ...template,
           createdAt: new Date(template.createdAt),
           updatedAt: new Date(template.updatedAt)
+        }
+      });
+    }
+
+    for (const message of data.peopleMessages) {
+      await tx.peopleMessageRecord.create({
+        data: {
+          ...message,
+          recipientPersonIds: message.recipientPersonIds as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(message.createdAt)
         }
       });
     }

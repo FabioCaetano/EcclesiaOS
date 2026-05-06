@@ -23,7 +23,22 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit" | "account";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit" | "account" | "messages";
+
+export type MessageChannel = "email" | "whatsapp" | "manual";
+
+export interface PeopleMessage {
+  id: string;
+  subject: string;
+  body: string;
+  channel: MessageChannel;
+  recipientPersonIds: string[];
+  createdAt: string;
+  createdByUserId: string;
+  createdByName: string;
+}
+
+export type PeopleMessageInput = Pick<PeopleMessage, "subject" | "body" | "channel" | "recipientPersonIds">;
 
 export interface ChangePasswordRequest {
   currentPassword: string;
@@ -44,6 +59,7 @@ export const canAccessModule = (role: UserRole, module: AppModuleKey) => !adminO
 
 export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   if (module === "checkin") return role === "admin" || role === "leader";
+  if (module === "messages") return role === "admin" || role === "leader";
   if (module === "serving") return role === "admin";
   return role === "admin";
 };

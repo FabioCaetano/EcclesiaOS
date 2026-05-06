@@ -14,6 +14,7 @@ import { EventsPage } from "./EventsPage";
 import { GroupsPage } from "./GroupsPage";
 import { HomePage } from "./HomePage";
 import { LoginPage } from "./LoginPage";
+import { MessagesPage } from "./MessagesPage";
 import { PeoplePage } from "./PeoplePage";
 import { PublicRegistrationPage } from "./PublicRegistrationPage";
 import { ResourcesPage } from "./ResourcesPage";
@@ -85,6 +86,7 @@ const App = () => {
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}
       {currentView === "audit" && <AuditPage token={session.token} user={session.user} />}
       {currentView === "account" && <AccountPage token={session.token} user={session.user} />}
+      {currentView === "messages" && <MessagesPage token={session.token} user={session.user} />}
     </AppLayout>
   );
 };

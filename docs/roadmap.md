@@ -846,6 +846,16 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 53: Mensagens Em Lote Para Pessoas
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos criar mensagens em lote com filtros dinamicos e registro de envio?
+
+Decisao: novo modulo `messages` (admin/lider envia, autenticado le); filtros + selecao + composicao + historico; sem provedor de email/SMS nesta fase (usa `mailto:` e `wa.me`).
+
 Antes de desenvolver, perguntar:
 
 > Vamos aproximar Check-in e Escalas visualmente do Planning Center?

@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -154,6 +154,27 @@ export const deleteLabelTemplate = async (token: string, id: string) => {
   });
 
   if (!response.ok) throw new Error("label-template-delete-failed");
+};
+
+export const loadPeopleMessages = async (token: string): Promise<PeopleMessage[]> => {
+  const response = await fetch(`${apiBaseUrl}/people-messages`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("people-messages-load-failed");
+  return response.json() as Promise<PeopleMessage[]>;
+};
+
+export const sendPeopleMessage = async (token: string, input: PeopleMessageInput): Promise<PeopleMessage> => {
+  const response = await fetch(`${apiBaseUrl}/people-messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (response.status === 403) throw new Error("forbidden");
+  if (!response.ok) throw new Error("people-message-create-failed");
+  return response.json() as Promise<PeopleMessage>;
 };
 
 export const loadYouTubeVideos = async (token: string): Promise<YouTubeVideosResponse> => {

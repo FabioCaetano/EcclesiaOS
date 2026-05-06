@@ -617,6 +617,62 @@ test("requested teams sync serving plans and leader can only schedule members of
   assert.equal(remainingPlans.body?.find((item) => item.eventId === eventId), undefined);
 });
 
+test("admin and leader can send people messages while member can only read", async () => {
+  const memberPerson = memberSession.user.personId;
+  const adminPerson = adminSession.user.personId;
+
+  const memberCannotSend = await requestJson<{ error: string }>("/people-messages", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({
+      subject: "Aviso",
+      body: "Bom dia",
+      channel: "manual",
+      recipientPersonIds: [adminPerson]
+    })
+  });
+  assert.equal(memberCannotSend.response.status, 403);
+
+  const leaderSend = await requestJson<{ id: string; recipientPersonIds: string[] }>("/people-messages", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      subject: "Convite ensaio",
+      body: "Hoje as 19h",
+      channel: "whatsapp",
+      recipientPersonIds: [memberPerson]
+    })
+  });
+  assert.equal(leaderSend.response.status, 201);
+  assert.equal(leaderSend.body?.recipientPersonIds.length, 1);
+
+  const adminSend = await requestJson<{ id: string }>("/people-messages", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      subject: "Reuniao mensal",
+      body: "Domingo",
+      channel: "email",
+      recipientPersonIds: [memberPerson, adminPerson]
+    })
+  });
+  assert.equal(adminSend.response.status, 201);
+
+  const memberCanRead = await requestJson<unknown[]>("/people-messages", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(memberCanRead.response.status, 200);
+  assert.ok(Array.isArray(memberCanRead.body));
+  assert.ok((memberCanRead.body || []).length >= 2);
+
+  const noRecipients = await requestJson<{ error: string }>("/people-messages", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ subject: "Vazio", body: "", channel: "manual", recipientPersonIds: [] })
+  });
+  assert.equal(noRecipients.response.status, 400);
+});
+
 test("members can change their own password and admin can reset others", async () => {
   const wrongPassword = await requestJson<{ error: string }>("/auth/change-password", {
     method: "POST",

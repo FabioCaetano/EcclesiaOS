@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 52 - Check-in E Escalas Estilo Planning Center.
+Fase atual concluida: Fase 53 - Mensagens Em Lote Para Pessoas.
 
 Estrutura:
 

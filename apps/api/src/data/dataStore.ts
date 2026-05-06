@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PeopleMessage, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -25,6 +25,7 @@ export interface DataFile {
   financialTransactions: FinancialTransaction[];
   groups: GroupProfile[];
   labelTemplates: LabelTemplate[];
+  peopleMessages: PeopleMessage[];
   people: PersonProfile[];
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
@@ -46,6 +47,7 @@ const defaultData = (): DataFile => ({
   financialTransactions: defaultFinancialTransactions,
   groups: defaultGroups,
   labelTemplates: defaultLabelTemplates,
+  peopleMessages: [],
   people: defaultPeople,
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
@@ -100,6 +102,13 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
   people: (data.people || defaultPeople).map((person) => ({ ...person, guardianPersonIds: person.guardianPersonIds || [] })),
   resources: data.resources || defaultResources,
   roomReservations: (data.roomReservations || defaultRoomReservations).map((reservation) => ({ ...reservation, status: reservation.status === "cancelled" ? "cancelled" : "confirmed" })),
+  peopleMessages: (data.peopleMessages || []).map((message) => ({
+    ...message,
+    channel: message.channel === "email" || message.channel === "whatsapp" ? message.channel : "manual",
+    recipientPersonIds: Array.isArray(message.recipientPersonIds) ? message.recipientPersonIds.map(String) : [],
+    createdByUserId: message.createdByUserId || "",
+    createdByName: message.createdByName || ""
+  })),
   servingPlans: (data.servingPlans || defaultServingPlans).map((plan) => ({
     ...plan,
     eventId: plan.eventId || ""

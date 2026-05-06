@@ -3,8 +3,8 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { canAccessModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
+import { canAccessModule, canManageModule } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -14,6 +14,7 @@ import { eventRegistrationRepository } from "./data/eventRegistrationRepository.
 import { checkInRepository } from "./data/checkInRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
+import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
 import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
@@ -245,8 +246,7 @@ const requireModuleAccess = async (req: IncomingMessage, res: ServerResponse, mo
 const requireModuleManage = async (req: IncomingMessage, res: ServerResponse, module: AppModuleKey) => {
   const user = await requireUser(req, res);
   if (!user) return null;
-  const canManage = module === "checkin" ? user.role === "admin" || user.role === "leader" : user.role === "admin";
-  if (!canManage) {
+  if (!canManageModule(user.role, module)) {
     sendError(res, 403, "forbidden", "Seu perfil nao pode gerenciar este modulo.");
     return null;
   }
@@ -772,6 +772,33 @@ const handleDeleteLabelTemplate = async (req: IncomingMessage, res: ServerRespon
 
   await recordAudit(user, "delete", "label_template", id, `Template removido: ${id}`);
   sendJson(res, 200, { ok: true });
+};
+
+const handleListPeopleMessages = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  sendJson(res, 200, await peopleMessageRepository.list());
+};
+
+const handleCreatePeopleMessage = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireModuleManage(req, res, "messages");
+  if (!user) return;
+
+  const body = await readJson<PeopleMessageInput>(req);
+  if (!body?.subject || !Array.isArray(body?.recipientPersonIds)) {
+    sendError(res, 400, "invalid_json", "Informe assunto e destinatarios.");
+    return;
+  }
+
+  const message = await peopleMessageRepository.create(body, toPublicUser(user));
+  if (message === "invalid") {
+    sendError(res, 400, "invalid_json", "Mensagem invalida ou sem destinatarios.");
+    return;
+  }
+
+  await recordAudit(user, "create", "people_message", message.id, `Mensagem para ${message.recipientPersonIds.length} pessoa(s): ${message.subject}`);
+  sendJson(res, 201, message);
 };
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1556,6 +1583,16 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/youtube/videos") {
     void handleListYouTubeVideos(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/people-messages") {
+    void handleListPeopleMessages(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/people-messages") {
+    void handleCreatePeopleMessage(req, res);
     return;
   }
 

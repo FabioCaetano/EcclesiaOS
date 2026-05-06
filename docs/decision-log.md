@@ -94,6 +94,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 83. Check-in e Escalas redesenhados em estilo Planning Center: novos primitivos `Avatar` e `StatusPill`, busca proeminente nas abas de Check-in, cards com avatar + horario relativo, sidebar "No momento" na administracao kids, plan view de Escalas com cards de posicao + status pills coloridos; sem drag-drop, fotos reais, email/SMS, real-time ou multi-week view nesta fase.
 
+84. Mensagens em lote para pessoas: novo modulo `messages`, entidade `PeopleMessage` com `recipientPersonIds`/`channel`/`subject`/`body`/`createdByName`; filtros dinamicos (status, email/telefone, grupo, registrado depois); admin e lider enviam (`canManageModule`), todos leem; envio gera `mailto:` ou `wa.me` no dispositivo do operador; sem provedor de email/SMS nesta fase.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.
