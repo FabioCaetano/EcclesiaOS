@@ -850,6 +850,16 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 54: Bloqueios De Data E Sugestao De Substitutos
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos permitir que pessoas marquem indisponibilidade e o lider receba sugestao de substitutos?
+
+Decisao: nova entidade `PersonBlockOut`; algoritmo de substituto ranqueia por carga recente; sem recorrencia, sem notificacao automatica.
+
 Antes de desenvolver, perguntar:
 
 > Vamos criar mensagens em lote com filtros dinamicos e registro de envio?

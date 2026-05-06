@@ -96,6 +96,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 84. Mensagens em lote para pessoas: novo modulo `messages`, entidade `PeopleMessage` com `recipientPersonIds`/`channel`/`subject`/`body`/`createdByName`; filtros dinamicos (status, email/telefone, grupo, registrado depois); admin e lider enviam (`canManageModule`), todos leem; envio gera `mailto:` ou `wa.me` no dispositivo do operador; sem provedor de email/SMS nesta fase.
 
+85. Bloqueios de data + sugestao de substitutos: nova entidade `PersonBlockOut` (start, end, motivo); pessoa marca os proprios via "Minha conta", admin marca para qualquer um; ServingPage alerta visualmente quando pessoa selecionada esta bloqueada na data; `GET /serving-plans/:planId/substitutes/:assignmentId` retorna candidatos da equipe nao bloqueados ranqueados por carga recente; sem recorrencia de bloqueios, sem notificacao automatica.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

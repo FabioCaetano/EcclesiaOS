@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -154,6 +154,44 @@ export const deleteLabelTemplate = async (token: string, id: string) => {
   });
 
   if (!response.ok) throw new Error("label-template-delete-failed");
+};
+
+export const loadBlockOuts = async (token: string, personId?: string): Promise<PersonBlockOut[]> => {
+  const url = personId ? `${apiBaseUrl}/block-outs?personId=${encodeURIComponent(personId)}` : `${apiBaseUrl}/block-outs`;
+  const response = await fetch(url, { headers: authHeaders(token) });
+
+  if (!response.ok) throw new Error("block-outs-load-failed");
+  return response.json() as Promise<PersonBlockOut[]>;
+};
+
+export const createBlockOut = async (token: string, input: PersonBlockOutInput): Promise<PersonBlockOut> => {
+  const response = await fetch(`${apiBaseUrl}/block-outs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (response.status === 403) throw new Error("forbidden");
+  if (!response.ok) throw new Error("block-out-create-failed");
+  return response.json() as Promise<PersonBlockOut>;
+};
+
+export const deleteBlockOut = async (token: string, id: string): Promise<void> => {
+  const response = await fetch(`${apiBaseUrl}/block-outs/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("block-out-delete-failed");
+};
+
+export const loadSubstituteSuggestions = async (token: string, planId: string, assignmentId: string): Promise<SubstituteSuggestion[]> => {
+  const response = await fetch(`${apiBaseUrl}/serving-plans/${planId}/substitutes/${assignmentId}`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("substitutes-load-failed");
+  return response.json() as Promise<SubstituteSuggestion[]>;
 };
 
 export const loadPeopleMessages = async (token: string): Promise<PeopleMessage[]> => {

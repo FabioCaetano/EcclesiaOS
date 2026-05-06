@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Check, ClipboardList, Plus, X } from "lucide-react";
-import type { CurrentUser, GroupProfile, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
-import { deleteServingPlan, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, saveServingPlan, updateServingAssignmentStatus } from "./api";
+import { AlertTriangle, Check, ClipboardList, Plus, UserPlus, X } from "lucide-react";
+import type { CurrentUser, GroupProfile, PersonBlockOut, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion } from "@ecclesiaos/shared";
+import { deleteServingPlan, loadBlockOuts, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, loadSubstituteSuggestions, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
 import { toServingPlanInput } from "./mappers";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
@@ -37,9 +37,11 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [notifications, setNotifications] = useState<ServingNotification[]>([]);
+  const [blockOuts, setBlockOuts] = useState<PersonBlockOut[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [planForm, setPlanForm] = useState<ServingPlanInput>(emptyServingPlanInput);
   const [servingStatus, setServingStatus] = useState("");
+  const [substitutesByAssignment, setSubstitutesByAssignment] = useState<Record<string, SubstituteSuggestion[]>>({});
 
   const refreshPlans = async () => setPlans(await loadServingPlans(token));
   const refreshNotifications = async () => setNotifications(await loadServingNotifications(token));
@@ -47,6 +49,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   useEffect(() => {
     loadPeople(token).then(setPeople).catch(() => setServingStatus("Nao foi possivel carregar pessoas."));
     loadGroups(token).then(setGroups).catch(() => setServingStatus("Nao foi possivel carregar grupos."));
+    loadBlockOuts(token).then(setBlockOuts).catch(() => setServingStatus("Nao foi possivel carregar bloqueios."));
     refreshPlans().catch(() => setServingStatus("Nao foi possivel carregar escalas."));
     refreshNotifications().catch(() => setServingStatus("Nao foi possivel carregar notificacoes de escala."));
   }, [token]);
@@ -117,6 +120,45 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const personName = (personId: string) => people.find((person) => person.id === personId)?.firstName || "Pessoa";
   const groupName = (groupId: string) => groups.find((group) => group.id === groupId)?.name || "Sem grupo";
+
+  const isBlockedOnDate = (personId: string, date: string) => {
+    if (!personId || !date) return false;
+    return blockOuts.some((blockOut) =>
+      blockOut.personId === personId && date >= blockOut.startDate && date <= blockOut.endDate
+    );
+  };
+
+  const fetchSubstitutes = async (assignmentId: string) => {
+    if (!selectedPlanId) return;
+    setServingStatus("Buscando substitutos...");
+    try {
+      const list = await loadSubstituteSuggestions(token, selectedPlanId, assignmentId);
+      setSubstitutesByAssignment((current) => ({ ...current, [assignmentId]: list }));
+      setServingStatus(list.length === 0 ? "Sem candidatos disponiveis." : `${list.length} candidato(s).`);
+    } catch {
+      setServingStatus("Nao foi possivel buscar substitutos.");
+    }
+  };
+
+  const applySubstitute = (index: number, substitute: SubstituteSuggestion) => {
+    setPlanForm((current) => ({
+      ...current,
+      assignments: current.assignments.map((assignment, itemIndex) =>
+        itemIndex === index
+          ? { ...assignment, personId: substitute.personId, status: "pending" }
+          : assignment
+      )
+    }));
+    const assignmentId = planForm.assignments[index]?.id;
+    if (assignmentId) {
+      setSubstitutesByAssignment((current) => {
+        const next = { ...current };
+        delete next[assignmentId];
+        return next;
+      });
+    }
+    setServingStatus(`Substituto aplicado: ${substitute.name}. Salve a escala para confirmar.`);
+  };
 
   const myLeadingGroupIds = useMemo(() => {
     if (!user.personId) return [] as string[];
@@ -271,47 +313,85 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             )}
 
             <div className="plan-positions">
-              {planForm.assignments.map((assignment, index) => (
-                canEditAssignments ? (
-                  <div className="plan-position" key={`${assignment.id}-${index}`}>
-                    <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
-                    <select className="pp-name" value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
-                      <option value="">Selecionar pessoa</option>
-                      {eligiblePeople.map((person) => (
-                        <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
-                      ))}
-                    </select>
-                    <input className="pp-role" placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
-                    <select className="pp-status" value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
-                      <option value="pending">Pendente</option>
-                      <option value="confirmed">Confirmado</option>
-                      <option value="declined">Recusado</option>
-                    </select>
-                    <input className="pp-notes" placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
-                    <button className="icon-button pp-remove" type="button" aria-label="Remover" onClick={() => removeAssignment(index)}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="plan-position" key={`${assignment.personId}-${index}`}>
-                    <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone="brand" /></span>
-                    <strong className="pp-name">{personName(assignment.personId) || "Sem pessoa"}</strong>
-                    <span className="pp-role">{assignment.role || "Sem funcao"}</span>
-                    <span className="pp-status"><StatusPill tone={statusToneFor(assignment.status)}>{assignmentStatusLabels[assignment.status]}</StatusPill></span>
-                    <span className="pp-notes muted">{assignment.notes}</span>
-                    {assignment.personId === user.personId && (
-                      <div className="response-actions pp-remove">
-                        <button className="secondary-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "confirmed")}>
-                          <Check size={14} /> Confirmar
+              {planForm.assignments.map((assignment, index) => {
+                const blocked = selectedPlan ? isBlockedOnDate(assignment.personId, selectedPlan.date) : false;
+                const suggestions = substitutesByAssignment[assignment.id];
+                return (
+                  <div key={`${assignment.id || "new"}-${index}`}>
+                    {canEditAssignments ? (
+                      <div className="plan-position">
+                        <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
+                        <select className="pp-name" value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
+                          <option value="">Selecionar pessoa</option>
+                          {eligiblePeople.map((person) => (
+                            <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
+                          ))}
+                        </select>
+                        <input className="pp-role" placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
+                        <select className="pp-status" value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
+                          <option value="pending">Pendente</option>
+                          <option value="confirmed">Confirmado</option>
+                          <option value="declined">Recusado</option>
+                        </select>
+                        <input className="pp-notes" placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
+                        <button className="icon-button pp-remove" type="button" aria-label="Remover" onClick={() => removeAssignment(index)}>
+                          <X size={14} />
                         </button>
-                        <button className="danger-outline-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "declined")}>
-                          <X size={14} /> Recusar
-                        </button>
+                      </div>
+                    ) : (
+                      <div className="plan-position">
+                        <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone="brand" /></span>
+                        <strong className="pp-name">{personName(assignment.personId) || "Sem pessoa"}</strong>
+                        <span className="pp-role">{assignment.role || "Sem funcao"}</span>
+                        <span className="pp-status"><StatusPill tone={statusToneFor(assignment.status)}>{assignmentStatusLabels[assignment.status]}</StatusPill></span>
+                        <span className="pp-notes muted">{assignment.notes}</span>
+                        {assignment.personId === user.personId && (
+                          <div className="response-actions pp-remove">
+                            <button className="secondary-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "confirmed")}>
+                              <Check size={14} /> Confirmar
+                            </button>
+                            <button className="danger-outline-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "declined")}>
+                              <X size={14} /> Recusar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {blocked && (
+                      <p className="plan-position-warning">
+                        <AlertTriangle size={14} /> Esta pessoa marcou indisponibilidade em {selectedPlan?.date}.
+                      </p>
+                    )}
+
+                    {canEditAssignments && assignment.status === "declined" && assignment.id && (
+                      <div className="substitute-panel">
+                        <div className="response-actions" style={{ justifyContent: "space-between" }}>
+                          <h4>Substitutos sugeridos</h4>
+                          <button className="secondary-button btn-sm" type="button" onClick={() => fetchSubstitutes(assignment.id)}>
+                            <UserPlus size={14} /> Buscar candidatos
+                          </button>
+                        </div>
+                        {suggestions && suggestions.length === 0 && <p className="muted">Sem candidatos disponiveis na equipe.</p>}
+                        {suggestions && suggestions.length > 0 && (
+                          <div className="substitute-list">
+                            {suggestions.map((suggestion) => (
+                              <div className="substitute-row" key={suggestion.personId}>
+                                <Avatar name={suggestion.name} size="sm" tone="muted" />
+                                <strong>{suggestion.name}</strong>
+                                <span>{suggestion.recentLoad} escala(s) recentes</span>
+                                <button className="secondary-button btn-sm" type="button" onClick={() => applySubstitute(index, suggestion)}>
+                                  Escalar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )
-              ))}
+                );
+              })}
             </div>
 
             {canEditAssignments && (

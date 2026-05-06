@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageInput, PersonBlockOutInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -15,6 +15,7 @@ import { checkInRepository } from "./data/checkInRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
+import { blockOutRepository, isPersonBlockedOnDate } from "./data/blockOutRepository.js";
 import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
@@ -799,6 +800,137 @@ const handleCreatePeopleMessage = async (req: IncomingMessage, res: ServerRespon
 
   await recordAudit(user, "create", "people_message", message.id, `Mensagem para ${message.recipientPersonIds.length} pessoa(s): ${message.subject}`);
   sendJson(res, 201, message);
+};
+
+const handleListBlockOuts = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const personId = (url.searchParams.get("personId") || "").trim();
+
+  if (personId) {
+    sendJson(res, 200, await blockOutRepository.listForPerson(personId));
+    return;
+  }
+
+  sendJson(res, 200, await blockOutRepository.list());
+};
+
+const handleCreateBlockOut = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const body = await readJson<PersonBlockOutInput>(req);
+  if (!body?.personId || !body?.startDate) {
+    sendError(res, 400, "invalid_json", "Informe pessoa e data inicial.");
+    return;
+  }
+
+  const isOwner = user.personId && body.personId === user.personId;
+  if (!isOwner && user.role !== "admin") {
+    sendError(res, 403, "forbidden", "Voce so pode criar bloqueio para si.");
+    return;
+  }
+
+  const created = await blockOutRepository.create(body, toPublicUser(user));
+  if (created === "invalid") {
+    sendError(res, 400, "invalid_json", "Datas invalidas; o fim deve ser igual ou posterior ao inicio.");
+    return;
+  }
+
+  await recordAudit(user, "create", "person_block_out", created.id, `Bloqueio de ${created.startDate} a ${created.endDate} para ${created.personId}`);
+  sendJson(res, 201, created);
+};
+
+const handleDeleteBlockOut = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const blockOut = await blockOutRepository.findById(id);
+  if (!blockOut) {
+    sendError(res, 404, "not_found", "Bloqueio nao encontrado.");
+    return;
+  }
+
+  const isOwner = user.personId && blockOut.personId === user.personId;
+  if (!isOwner && user.role !== "admin") {
+    sendError(res, 403, "forbidden", "Voce so pode remover seu proprio bloqueio.");
+    return;
+  }
+
+  await blockOutRepository.remove(id);
+  await recordAudit(user, "delete", "person_block_out", id, `Bloqueio removido de ${blockOut.personId}`);
+  sendJson(res, 200, { ok: true });
+};
+
+const handleSuggestSubstitutes = async (req: IncomingMessage, res: ServerResponse, planId: string, assignmentId: string) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const plans = await servingPlanRepository.list();
+  const plan = plans.find((item) => item.id === planId);
+  if (!plan) {
+    sendError(res, 404, "not_found", "Plano nao encontrado.");
+    return;
+  }
+
+  const assignment = plan.assignments.find((item) => item.id === assignmentId);
+  if (!assignment) {
+    sendError(res, 404, "not_found", "Atribuicao nao encontrada.");
+    return;
+  }
+
+  const groups = await groupRepository.list();
+  const group = groups.find((item) => item.id === plan.groupId);
+  const isLeader = Boolean(group && user.personId && group.leaderPersonId === user.personId);
+  if (user.role !== "admin" && !isLeader) {
+    sendError(res, 403, "forbidden", "Apenas admin ou lider da equipe pode pedir substituto.");
+    return;
+  }
+  if (!group) {
+    sendJson(res, 200, []);
+    return;
+  }
+
+  const blockOuts = await blockOutRepository.list();
+  const allPlans = await servingPlanRepository.list();
+  const people = await personRepository.list();
+
+  const cutoff = new Date(plan.date);
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffIso = cutoff.toISOString().slice(0, 10);
+
+  const recentLoadByPerson = new Map<string, number>();
+  for (const otherPlan of allPlans) {
+    if (otherPlan.date < cutoffIso) continue;
+    if (otherPlan.date > plan.date) continue;
+    for (const item of otherPlan.assignments) {
+      if (!item.personId) continue;
+      if (item.status === "declined") continue;
+      recentLoadByPerson.set(item.personId, (recentLoadByPerson.get(item.personId) || 0) + 1);
+    }
+  }
+
+  const alreadyAssigned = new Set(plan.assignments.map((item) => item.personId).filter(Boolean));
+
+  const candidates: SubstituteSuggestion[] = group.memberPersonIds
+    .filter((personId) => !alreadyAssigned.has(personId))
+    .map((personId) => {
+      const person = people.find((item) => item.id === personId);
+      const name = person ? `${person.firstName} ${person.lastName}`.trim() : "Pessoa";
+      return {
+        personId,
+        name,
+        recentLoad: recentLoadByPerson.get(personId) || 0,
+        hasBlockOut: isPersonBlockedOnDate(blockOuts, personId, plan.date)
+      };
+    })
+    .filter((candidate) => !candidate.hasBlockOut)
+    .sort((a, b) => a.recentLoad - b.recentLoad || a.name.localeCompare(b.name))
+    .slice(0, 5);
+
+  sendJson(res, 200, candidates);
 };
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1593,6 +1725,28 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/people-messages") {
     void handleCreatePeopleMessage(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/block-outs") {
+    void handleListBlockOuts(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/block-outs") {
+    void handleCreateBlockOut(req, res);
+    return;
+  }
+
+  const blockOutMatch = url.pathname.match(/^\/block-outs\/([^/]+)$/);
+  if (blockOutMatch && req.method === "DELETE") {
+    void handleDeleteBlockOut(req, res, blockOutMatch[1]);
+    return;
+  }
+
+  const substitutesMatch = url.pathname.match(/^\/serving-plans\/([^/]+)\/substitutes\/([^/]+)$/);
+  if (substitutesMatch && req.method === "GET") {
+    void handleSuggestSubstitutes(req, res, substitutesMatch[1], substitutesMatch[2]);
     return;
   }
 

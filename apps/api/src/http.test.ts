@@ -617,6 +617,58 @@ test("requested teams sync serving plans and leader can only schedule members of
   assert.equal(remainingPlans.body?.find((item) => item.eventId === eventId), undefined);
 });
 
+test("person can manage own block-outs and admin can manage anyone", async () => {
+  const memberPerson = memberSession.user.personId;
+  const adminPerson = adminSession.user.personId;
+
+  const cannotCreateForOther = await requestJson<{ error: string }>("/block-outs", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ personId: adminPerson, startDate: "2026-12-25", endDate: "2026-12-25", reason: "viagem" })
+  });
+  assert.equal(cannotCreateForOther.response.status, 403);
+
+  const ownBlock = await requestJson<{ id: string }>("/block-outs", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ personId: memberPerson, startDate: "2026-12-20", endDate: "2026-12-22", reason: "viagem" })
+  });
+  assert.equal(ownBlock.response.status, 201);
+
+  const adminBlock = await requestJson<{ id: string }>("/block-outs", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ personId: adminPerson, startDate: "2026-12-25", endDate: "2026-12-25", reason: "natal" })
+  });
+  assert.equal(adminBlock.response.status, 201);
+
+  const filtered = await requestJson<unknown[]>(`/block-outs?personId=${memberPerson}`, {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(filtered.response.status, 200);
+  assert.ok(Array.isArray(filtered.body));
+  assert.ok((filtered.body as Array<{ personId: string }>).every((item) => item.personId === memberPerson));
+
+  const cannotDeleteOther = await requestJson<{ error: string }>(`/block-outs/${adminBlock.body!.id}`, {
+    method: "DELETE",
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(cannotDeleteOther.response.status, 403);
+
+  const ownDelete = await requestJson<{ ok: boolean }>(`/block-outs/${ownBlock.body!.id}`, {
+    method: "DELETE",
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(ownDelete.response.status, 200);
+
+  const invalid = await requestJson<{ error: string }>("/block-outs", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ personId: adminPerson, startDate: "2026-12-25", endDate: "2026-12-20", reason: "fim antes" })
+  });
+  assert.equal(invalid.response.status, 400);
+});
+
 test("admin and leader can send people messages while member can only read", async () => {
   const memberPerson = memberSession.user.personId;
   const adminPerson = adminSession.user.personId;

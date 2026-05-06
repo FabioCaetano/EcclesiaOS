@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PeopleMessage, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -26,6 +26,7 @@ export interface DataFile {
   groups: GroupProfile[];
   labelTemplates: LabelTemplate[];
   peopleMessages: PeopleMessage[];
+  personBlockOuts: PersonBlockOut[];
   people: PersonProfile[];
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
@@ -48,6 +49,7 @@ const defaultData = (): DataFile => ({
   groups: defaultGroups,
   labelTemplates: defaultLabelTemplates,
   peopleMessages: [],
+  personBlockOuts: [],
   people: defaultPeople,
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
@@ -108,6 +110,11 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     recipientPersonIds: Array.isArray(message.recipientPersonIds) ? message.recipientPersonIds.map(String) : [],
     createdByUserId: message.createdByUserId || "",
     createdByName: message.createdByName || ""
+  })),
+  personBlockOuts: (data.personBlockOuts || []).map((blockOut) => ({
+    ...blockOut,
+    reason: blockOut.reason || "",
+    createdByUserId: blockOut.createdByUserId || ""
   })),
   servingPlans: (data.servingPlans || defaultServingPlans).map((plan) => ({
     ...plan,

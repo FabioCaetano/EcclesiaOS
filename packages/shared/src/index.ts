@@ -40,6 +40,25 @@ export interface PeopleMessage {
 
 export type PeopleMessageInput = Pick<PeopleMessage, "subject" | "body" | "channel" | "recipientPersonIds">;
 
+export interface PersonBlockOut {
+  id: string;
+  personId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  createdAt: string;
+  createdByUserId: string;
+}
+
+export type PersonBlockOutInput = Pick<PersonBlockOut, "personId" | "startDate" | "endDate" | "reason">;
+
+export interface SubstituteSuggestion {
+  personId: string;
+  name: string;
+  recentLoad: number;
+  hasBlockOut: boolean;
+}
+
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;

@@ -203,6 +203,19 @@ model LabelTemplateRecord {
   @@index([layout])
 }
 
+model PersonBlockOutRecord {
+  id              String   @id
+  personId        String
+  startDate       String
+  endDate         String
+  reason          String   @default("")
+  createdAt       DateTime
+  createdByUserId String   @default("")
+
+  @@index([personId])
+  @@index([startDate])
+}
+
 model PeopleMessageRecord {
   id                 String   @id
   subject            String
