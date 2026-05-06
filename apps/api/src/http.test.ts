@@ -685,7 +685,7 @@ test("admin and leader can send people messages while member can only read", asy
   });
   assert.equal(memberCannotSend.response.status, 403);
 
-  const leaderSend = await requestJson<{ id: string; recipientPersonIds: string[] }>("/people-messages", {
+  const leaderSend = await requestJson<{ message: { recipientPersonIds: string[] } }>("/people-messages", {
     method: "POST",
     headers: authHeaders(leaderSession),
     body: JSON.stringify({
@@ -696,9 +696,9 @@ test("admin and leader can send people messages while member can only read", asy
     })
   });
   assert.equal(leaderSend.response.status, 201);
-  assert.equal(leaderSend.body?.recipientPersonIds.length, 1);
+  assert.equal(leaderSend.body?.message.recipientPersonIds.length, 1);
 
-  const adminSend = await requestJson<{ id: string }>("/people-messages", {
+  const adminSend = await requestJson<{ message: { id: string }; delivery: { reason?: string } }>("/people-messages", {
     method: "POST",
     headers: authHeaders(adminSession),
     body: JSON.stringify({
@@ -709,6 +709,11 @@ test("admin and leader can send people messages while member can only read", asy
     })
   });
   assert.equal(adminSend.response.status, 201);
+  assert.equal(adminSend.body?.delivery.reason, "not_configured");
+
+  const emailStatus = await requestJson<{ configured: boolean }>("/system/email-status");
+  assert.equal(emailStatus.response.status, 200);
+  assert.equal(emailStatus.body?.configured, false);
 
   const memberCanRead = await requestJson<unknown[]>("/people-messages", {
     headers: authHeaders(memberSession)

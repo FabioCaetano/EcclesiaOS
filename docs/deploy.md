@@ -31,7 +31,20 @@ NODE_ENV=production
 ECCLESIAOS_DATA_PROVIDER=prisma
 DATABASE_URL=<connection string do Neon>
 AUTH_TOKEN_SECRET=<chave longa e secreta>
+RESEND_API_KEY=<opcional; chave da Resend>
+EMAIL_FROM=<opcional; ex.: "Sua Igreja <noreply@suaigreja.com>">
 ```
+
+`RESEND_API_KEY` e `EMAIL_FROM` sao opcionais. Quando ausentes:
+
+- Mensagens em lote continua funcionando, mas o envio de email cai para `mailto:` no dispositivo do operador.
+- `GET /system/email-status` responde `{ "configured": false }` e o frontend mostra um banner indicando o fallback.
+
+Quando configurados:
+
+- Resend envia os emails com o remetente definido em `EMAIL_FROM`.
+- Em producao, o dominio do `EMAIL_FROM` precisa estar verificado no painel da Resend (DNS).
+- Ate verificar, voce so consegue enviar para o email cadastrado na conta Resend (modo de teste).
 
 ## Migration Em Producao
 

@@ -40,6 +40,22 @@ export interface PeopleMessage {
 
 export type PeopleMessageInput = Pick<PeopleMessage, "subject" | "body" | "channel" | "recipientPersonIds">;
 
+export interface PeopleMessageDelivery {
+  sent: number;
+  skipped: number;
+  failed: number;
+  reason?: "not_configured" | "manual_channel" | "no_recipients_with_email";
+}
+
+export interface PeopleMessageResponse {
+  message: PeopleMessage;
+  delivery: PeopleMessageDelivery;
+}
+
+export interface EmailStatus {
+  configured: boolean;
+}
+
 export interface PersonBlockOut {
   id: string;
   personId: string;

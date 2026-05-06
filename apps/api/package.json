@@ -20,7 +20,8 @@
     "@ecclesiaos/shared": "file:../../packages/shared",
     "@prisma/client": "^6.19.3",
     "cron-parser": "^5.5.0",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "resend": "^6.12.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",

@@ -1898,6 +1898,27 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
   .messages-layout { grid-template-columns: 1fr; }
 }
 
+.email-status-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 14px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.email-status-banner.configured {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+.email-status-banner.fallback {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
 /* Block-out list */
 .block-out-list {
   display: grid;

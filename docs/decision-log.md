@@ -98,6 +98,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 85. Bloqueios de data + sugestao de substitutos: nova entidade `PersonBlockOut` (start, end, motivo); pessoa marca os proprios via "Minha conta", admin marca para qualquer um; ServingPage alerta visualmente quando pessoa selecionada esta bloqueada na data; `GET /serving-plans/:planId/substitutes/:assignmentId` retorna candidatos da equipe nao bloqueados ranqueados por carga recente; sem recorrencia de bloqueios, sem notificacao automatica.
 
+86. Provedor de email Resend integrado: nova dependencia `resend`, `apps/api/src/email.ts`, variaveis `RESEND_API_KEY` e `EMAIL_FROM`; `POST /people-messages` envia automaticamente quando canal e `email` e provedor configurado; `GET /system/email-status` expoe estado para o frontend mostrar banner; sem chave o sistema continua com fallback `mailto:` no frontend; reset por email, notificacoes de escala e templates ricos ficam para fases futuras.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

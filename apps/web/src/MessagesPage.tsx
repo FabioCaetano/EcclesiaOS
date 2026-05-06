@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Mail, MessageCircle, MessageSquare, Search, Send } from "lucide-react";
+import { CheckCircle2, Mail, MessageCircle, MessageSquare, Search, Send } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
 import type { CurrentUser, GroupProfile, MessageChannel, PeopleMessage, PersonProfile } from "@ecclesiaos/shared";
-import { loadGroups, loadPeople, loadPeopleMessages, sendPeopleMessage } from "./api";
+import { loadEmailStatus, loadGroups, loadPeople, loadPeopleMessages, sendPeopleMessage } from "./api";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
 interface Props {
@@ -63,6 +63,7 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
   const [status, setStatus] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [generatedLinks, setGeneratedLinks] = useState<Array<{ name: string; url: string | null }>>([]);
+  const [emailConfigured, setEmailConfigured] = useState(false);
 
   const canSend = canManageModule(user.role, "messages");
 
@@ -70,6 +71,7 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
     loadPeople(token).then(setPeople).catch(() => setStatus("Nao foi possivel carregar pessoas."));
     loadGroups(token).then(setGroups).catch(() => setStatus("Nao foi possivel carregar grupos."));
     loadPeopleMessages(token).then(setMessages).catch(() => setStatus("Nao foi possivel carregar mensagens."));
+    loadEmailStatus().then((info) => setEmailConfigured(info.configured)).catch(() => setEmailConfigured(false));
   }, [token]);
 
   const groupMemberSet = useMemo(() => {
@@ -118,20 +120,30 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
 
     setStatus("Registrando envio...");
     try {
-      const created = await sendPeopleMessage(token, { subject, body, channel, recipientPersonIds: selectedIds });
-      setMessages((current) => [created, ...current]);
-      setSelectedMessageId(created.id);
+      const result = await sendPeopleMessage(token, { subject, body, channel, recipientPersonIds: selectedIds });
+      setMessages((current) => [result.message, ...current]);
+      setSelectedMessageId(result.message.id);
 
-      const links = selectedPeople.map((person) => ({
-        name: `${person.firstName} ${person.lastName}`.trim(),
-        url: buildLink(channel, person, subject, body)
-      }));
-      setGeneratedLinks(links);
-      const firstLink = links.find((link) => link.url);
-      if (firstLink?.url) {
-        window.open(firstLink.url, "_blank");
+      const sentByProvider = channel === "email" && result.delivery.sent > 0;
+
+      if (sentByProvider) {
+        setGeneratedLinks([]);
+        setStatus(`Email enviado via Resend para ${result.delivery.sent} pessoa(s) (${result.delivery.skipped} sem email, ${result.delivery.failed} falha(s)).`);
+      } else {
+        const links = selectedPeople.map((person) => ({
+          name: `${person.firstName} ${person.lastName}`.trim(),
+          url: buildLink(channel, person, subject, body)
+        }));
+        setGeneratedLinks(links);
+        const firstLink = links.find((link) => link.url);
+        if (firstLink?.url && channel !== "manual") {
+          window.open(firstLink.url, "_blank");
+        }
+        const reasonLabel = result.delivery.reason === "not_configured"
+          ? " (provedor de email nao configurado)"
+          : "";
+        setStatus(`Mensagem registrada para ${selectedIds.length} pessoa(s)${reasonLabel}.`);
       }
-      setStatus(`Mensagem registrada para ${selectedIds.length} pessoa(s).`);
     } catch (error) {
       const message = error instanceof Error && error.message === "forbidden"
         ? "Apenas admin ou lider pode enviar mensagens."
@@ -151,6 +163,20 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
         title="Mensagens"
         description="Filtre pessoas, componha mensagens em lote e registre o envio. Sem provedor de email, usamos WhatsApp e mailto do dispositivo."
       />
+
+      <div className={`email-status-banner ${emailConfigured ? "configured" : "fallback"}`}>
+        {emailConfigured ? (
+          <>
+            <CheckCircle2 size={16} />
+            <span>Provedor de email configurado. Mensagens com canal "Email" sao enviadas via Resend.</span>
+          </>
+        ) : (
+          <>
+            <Mail size={16} />
+            <span>Sem provedor de email. Canal "Email" abre o cliente padrao do dispositivo via mailto.</span>
+          </>
+        )}
+      </div>
 
       {status && <p className="muted" style={{ marginBottom: "var(--space-4)" }}>{status}</p>}
 

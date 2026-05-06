@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageInput, PersonBlockOutInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -21,6 +21,7 @@ import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
 import { userRepository } from "./data/userRepository.js";
 import { fetchYouTubeFeed } from "./youtube.js";
+import { isEmailConfigured, sendEmail } from "./email.js";
 import { verifyPassword } from "./passwords.js";
 import { randomBytes } from "node:crypto";
 
@@ -799,7 +800,45 @@ const handleCreatePeopleMessage = async (req: IncomingMessage, res: ServerRespon
   }
 
   await recordAudit(user, "create", "people_message", message.id, `Mensagem para ${message.recipientPersonIds.length} pessoa(s): ${message.subject}`);
-  sendJson(res, 201, message);
+
+  const delivery: PeopleMessageDelivery = { sent: 0, skipped: 0, failed: 0 };
+
+  if (message.channel === "email") {
+    if (!isEmailConfigured()) {
+      delivery.reason = "not_configured";
+    } else {
+      const allPeople = await personRepository.list();
+      const recipients = message.recipientPersonIds
+        .map((id) => allPeople.find((person) => person.id === id))
+        .filter((person): person is NonNullable<typeof person> => Boolean(person));
+
+      if (recipients.length === 0) {
+        delivery.reason = "no_recipients_with_email";
+      } else {
+        for (const person of recipients) {
+          if (!person.email) {
+            delivery.skipped += 1;
+            continue;
+          }
+          const result = await sendEmail({
+            to: person.email,
+            subject: message.subject,
+            text: message.body
+          });
+          if (result.ok) {
+            delivery.sent += 1;
+          } else {
+            delivery.failed += 1;
+          }
+        }
+      }
+    }
+  } else {
+    delivery.reason = "manual_channel";
+  }
+
+  const response: PeopleMessageResponse = { message, delivery };
+  sendJson(res, 201, response);
 };
 
 const handleListBlockOuts = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1606,6 +1645,12 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/health") {
     handleHealth(res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/system/email-status") {
+    const response: EmailStatus = { configured: isEmailConfigured() };
+    sendJson(res, 200, response);
     return;
   }
 

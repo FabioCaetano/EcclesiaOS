@@ -854,6 +854,16 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 55: Provedor De Email Com Resend
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos integrar Resend para envio real de email a partir de Mensagens em lote?
+
+Decisao: provedor unico (Resend); fallback automatico para `mailto:` quando sem chave; reset por email fica para Fase 56.
+
 Antes de desenvolver, perguntar:
 
 > Vamos permitir que pessoas marquem indisponibilidade e o lider receba sugestao de substitutos?

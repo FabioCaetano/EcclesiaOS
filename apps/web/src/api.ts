@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -203,7 +203,7 @@ export const loadPeopleMessages = async (token: string): Promise<PeopleMessage[]
   return response.json() as Promise<PeopleMessage[]>;
 };
 
-export const sendPeopleMessage = async (token: string, input: PeopleMessageInput): Promise<PeopleMessage> => {
+export const sendPeopleMessage = async (token: string, input: PeopleMessageInput): Promise<PeopleMessageResponse> => {
   const response = await fetch(`${apiBaseUrl}/people-messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
@@ -212,7 +212,13 @@ export const sendPeopleMessage = async (token: string, input: PeopleMessageInput
 
   if (response.status === 403) throw new Error("forbidden");
   if (!response.ok) throw new Error("people-message-create-failed");
-  return response.json() as Promise<PeopleMessage>;
+  return response.json() as Promise<PeopleMessageResponse>;
+};
+
+export const loadEmailStatus = async (): Promise<EmailStatus> => {
+  const response = await fetch(`${apiBaseUrl}/system/email-status`);
+  if (!response.ok) return { configured: false };
+  return response.json() as Promise<EmailStatus>;
 };
 
 export const loadYouTubeVideos = async (token: string): Promise<YouTubeVideosResponse> => {
