@@ -14,6 +14,15 @@ import { defaultResources, defaultRoomReservations } from "./defaultResources.js
 import { defaultUsers, type UserRecord } from "./defaultUsers.js";
 import { hashPassword, isPasswordHash } from "../passwords.js";
 
+export interface PasswordResetTokenRecord {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: string;
+  usedAt: string | null;
+  createdAt: string;
+}
+
 export interface DataFile {
   attendance: AttendanceRecord[];
   auditLogs: AuditLogEntry[];
@@ -27,6 +36,7 @@ export interface DataFile {
   labelTemplates: LabelTemplate[];
   peopleMessages: PeopleMessage[];
   personBlockOuts: PersonBlockOut[];
+  passwordResetTokens: PasswordResetTokenRecord[];
   people: PersonProfile[];
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
@@ -50,6 +60,7 @@ const defaultData = (): DataFile => ({
   labelTemplates: defaultLabelTemplates,
   peopleMessages: [],
   personBlockOuts: [],
+  passwordResetTokens: [],
   people: defaultPeople,
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
@@ -115,6 +126,10 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     ...blockOut,
     reason: blockOut.reason || "",
     createdByUserId: blockOut.createdByUserId || ""
+  })),
+  passwordResetTokens: (data.passwordResetTokens || []).map((token) => ({
+    ...token,
+    usedAt: token.usedAt || null
   })),
   servingPlans: (data.servingPlans || defaultServingPlans).map((plan) => ({
     ...plan,

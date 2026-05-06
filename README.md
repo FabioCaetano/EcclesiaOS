@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 55 - Provedor De Email Com Resend.
+Fase atual concluida: Fase 56 - Reset De Senha Por Email.
 
 Estrutura:
 

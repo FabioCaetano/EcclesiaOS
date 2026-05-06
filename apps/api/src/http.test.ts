@@ -11,8 +11,11 @@ const testDir = await mkdtemp(join(tmpdir(), "ecclesiaos-http-"));
 process.env.ECCLESIAOS_DATA_FILE = join(testDir, "dev-db.json");
 process.env.ECCLESIAOS_DATA_PROVIDER = "json";
 process.env.AUTH_TOKEN_SECRET = "ecclesiaos-http-test-secret";
+process.env.RESEND_API_KEY = "";
+process.env.EMAIL_FROM = "";
 
 const { createEcclesiaServer } = await import("./server.js");
+const { passwordResetTokenRepository } = await import("./data/passwordResetTokenRepository.js");
 
 let server: Server;
 let baseUrl = "";
@@ -728,6 +731,60 @@ test("admin and leader can send people messages while member can only read", asy
     body: JSON.stringify({ subject: "Vazio", body: "", channel: "manual", recipientPersonIds: [] })
   });
   assert.equal(noRecipients.response.status, 400);
+});
+
+test("forgot password flow returns generic responses and resets via valid token", async () => {
+  const unknown = await requestJson<{ ok: boolean; message: string }>("/auth/request-password-reset", {
+    method: "POST",
+    body: JSON.stringify({ email: "ninguem@example.com" })
+  });
+  assert.equal(unknown.response.status, 200);
+  assert.equal(unknown.body?.ok, true);
+
+  const known = await requestJson<{ ok: boolean; message: string }>("/auth/request-password-reset", {
+    method: "POST",
+    body: JSON.stringify({ email: "membro@ecclesiaos.local" })
+  });
+  assert.equal(known.response.status, 200);
+  assert.equal(known.body?.message, unknown.body?.message);
+
+  const invalid = await requestJson<{ error: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: "nao-existe", newPassword: "nova-senha-1" })
+  });
+  assert.equal(invalid.response.status, 400);
+
+  const tooShort = await requestJson<{ error: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: "qualquer", newPassword: "abc" })
+  });
+  assert.equal(tooShort.response.status, 400);
+
+  const issued = await passwordResetTokenRepository.create(memberSession.user.id);
+
+  const reset = await requestJson<{ ok: boolean }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: issued.token, newPassword: "novaSenhaForte1" })
+  });
+  assert.equal(reset.response.status, 200);
+
+  const reloggedAfterReset = await login("membro@ecclesiaos.local", "novaSenhaForte1");
+  memberSession = reloggedAfterReset;
+
+  const reused = await requestJson<{ error: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: issued.token, newPassword: "tentaDeNovo1" })
+  });
+  assert.equal(reused.response.status, 400);
+
+  // Restaura a senha original para nao quebrar testes seguintes.
+  const restoreToken = await passwordResetTokenRepository.create(memberSession.user.id);
+  const restore = await requestJson<{ ok: boolean }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: restoreToken.token, newPassword: "membro123" })
+  });
+  assert.equal(restore.response.status, 200);
+  memberSession = await login("membro@ecclesiaos.local", "membro123");
 });
 
 test("members can change their own password and admin can reset others", async () => {

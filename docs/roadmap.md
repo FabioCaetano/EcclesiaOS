@@ -864,6 +864,16 @@ Antes de desenvolver, perguntar:
 
 Decisao: provedor unico (Resend); fallback automatico para `mailto:` quando sem chave; reset por email fica para Fase 56.
 
+## Fase 56: Reset De Senha Por Email
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos liberar o "esqueci minha senha" agora que temos provedor de email?
+
+Decisao: token sha256 com expiracao de 15 min e uso unico; resposta generica para nao vazar usuarios; sem 2FA, sem rate limit explicito.
+
 Antes de desenvolver, perguntar:
 
 > Vamos permitir que pessoas marquem indisponibilidade e o lider receba sugestao de substitutos?

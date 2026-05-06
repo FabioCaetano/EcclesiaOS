@@ -33,6 +33,7 @@ DATABASE_URL=<connection string do Neon>
 AUTH_TOKEN_SECRET=<chave longa e secreta>
 RESEND_API_KEY=<opcional; chave da Resend>
 EMAIL_FROM=<opcional; ex.: "Sua Igreja <noreply@suaigreja.com>">
+WEB_BASE_URL=<opcional; URL publica do frontend, padrao http://localhost:5173>
 ```
 
 `RESEND_API_KEY` e `EMAIL_FROM` sao opcionais. Quando ausentes:
@@ -45,6 +46,8 @@ Quando configurados:
 - Resend envia os emails com o remetente definido em `EMAIL_FROM`.
 - Em producao, o dominio do `EMAIL_FROM` precisa estar verificado no painel da Resend (DNS).
 - Ate verificar, voce so consegue enviar para o email cadastrado na conta Resend (modo de teste).
+
+`WEB_BASE_URL` define o link enviado nos emails de "esqueci minha senha". Em producao na Vercel, ajuste para `https://seu-frontend.vercel.app` (ou seu dominio proprio).
 
 ## Migration Em Producao
 

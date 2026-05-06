@@ -203,6 +203,18 @@ model LabelTemplateRecord {
   @@index([layout])
 }
 
+model PasswordResetTokenRecord {
+  id        String    @id
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
 model PersonBlockOutRecord {
   id              String   @id
   personId        String

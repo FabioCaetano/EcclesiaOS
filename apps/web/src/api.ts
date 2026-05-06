@@ -62,6 +62,38 @@ export const changeOwnPassword = async (token: string, payload: ChangePasswordRe
   return response.json() as Promise<{ ok: boolean }>;
 };
 
+export const requestPasswordReset = async (email: string): Promise<{ ok: boolean; message: string }> => {
+  const response = await fetch(`${apiBaseUrl}/auth/request-password-reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) throw new Error("request-reset-failed");
+  return response.json() as Promise<{ ok: boolean; message: string }>;
+};
+
+export const resetPasswordWithToken = async (token: string, newPassword: string): Promise<{ ok: boolean }> => {
+  const response = await fetch(`${apiBaseUrl}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = "invalid-token";
+    try {
+      const parsed = JSON.parse(text) as { message?: string };
+      if (parsed.message) message = parsed.message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+  return response.json() as Promise<{ ok: boolean }>;
+};
+
 export const adminResetUserPassword = async (token: string, userId: string): Promise<ResetPasswordResponse> => {
   const response = await fetch(`${apiBaseUrl}/users/${userId}/reset-password`, {
     method: "POST",

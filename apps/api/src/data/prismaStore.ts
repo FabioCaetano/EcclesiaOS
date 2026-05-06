@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
-import type { DataFile } from "./dataStore.js";
+import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
 const asUserRole = (role: string): UserRole => (
@@ -175,6 +175,22 @@ const toPeopleMessage = (message: {
   createdAt: message.createdAt.toISOString()
 });
 
+const toPasswordResetToken = (token: {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+  createdAt: Date;
+}): PasswordResetTokenRecord => ({
+  id: token.id,
+  userId: token.userId,
+  tokenHash: token.tokenHash,
+  expiresAt: token.expiresAt.toISOString(),
+  usedAt: token.usedAt ? token.usedAt.toISOString() : null,
+  createdAt: token.createdAt.toISOString()
+});
+
 const toPersonBlockOut = (blockOut: {
   id: string;
   personId: string;
@@ -207,7 +223,7 @@ const toLabelTemplate = (template: {
 });
 
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -224,7 +240,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.labelTemplateRecord.findMany(),
     prisma.peopleMessageRecord.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.personBlockOutRecord.findMany({ orderBy: { startDate: "desc" } })
+    prisma.personBlockOutRecord.findMany({ orderBy: { startDate: "desc" } }),
+    prisma.passwordResetTokenRecord.findMany({ orderBy: { createdAt: "desc" } })
   ]);
 
   if (!church) {
@@ -283,7 +300,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     })),
     labelTemplates: labelTemplates.map(toLabelTemplate),
     peopleMessages: peopleMessages.map(toPeopleMessage),
-    personBlockOuts: personBlockOuts.map(toPersonBlockOut)
+    personBlockOuts: personBlockOuts.map(toPersonBlockOut),
+    passwordResetTokens: passwordResetTokens.map(toPasswordResetToken)
   };
 };
 
@@ -293,6 +311,7 @@ export const writePrismaData = async (data: DataFile) => {
     await tx.auditLogRecord.deleteMany();
     await tx.peopleMessageRecord.deleteMany();
     await tx.personBlockOutRecord.deleteMany();
+    await tx.passwordResetTokenRecord.deleteMany();
     await tx.labelTemplateRecord.deleteMany();
     await tx.roomReservationRecord.deleteMany();
     await tx.churchResourceRecord.deleteMany();
@@ -459,6 +478,17 @@ export const writePrismaData = async (data: DataFile) => {
         data: {
           ...blockOut,
           createdAt: new Date(blockOut.createdAt)
+        }
+      });
+    }
+
+    for (const token of data.passwordResetTokens) {
+      await tx.passwordResetTokenRecord.create({
+        data: {
+          ...token,
+          expiresAt: new Date(token.expiresAt),
+          usedAt: token.usedAt ? new Date(token.usedAt) : null,
+          createdAt: new Date(token.createdAt)
         }
       });
     }

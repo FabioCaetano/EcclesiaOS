@@ -13,10 +13,12 @@ import { FinancePage } from "./FinancePage";
 import { EventsPage } from "./EventsPage";
 import { GroupsPage } from "./GroupsPage";
 import { HomePage } from "./HomePage";
+import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { MessagesPage } from "./MessagesPage";
 import { PeoplePage } from "./PeoplePage";
 import { PublicRegistrationPage } from "./PublicRegistrationPage";
+import { ResetPasswordPage } from "./ResetPasswordPage";
 import { ResourcesPage } from "./ResourcesPage";
 import { ServingPage } from "./ServingPage";
 import { UsersPage } from "./UsersPage";
@@ -26,6 +28,13 @@ import "./styles.css";
 const App = () => {
   const publicRegistrationMatch = window.location.pathname.match(/^\/register\/([^/]+)$/);
   if (publicRegistrationMatch) return <PublicRegistrationPage slug={publicRegistrationMatch[1]} />;
+
+  if (window.location.pathname === "/forgot-password") return <ForgotPasswordPage />;
+
+  if (window.location.pathname === "/reset-password") {
+    const params = new URLSearchParams(window.location.search);
+    return <ResetPasswordPage token={params.get("token") || ""} />;
+  }
 
   const [session, setSession] = useState<AuthSession | null>(() => loadStoredSession());
   const [currentView, setCurrentView] = useState<AppView>("home");

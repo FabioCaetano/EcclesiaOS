@@ -100,6 +100,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 86. Provedor de email Resend integrado: nova dependencia `resend`, `apps/api/src/email.ts`, variaveis `RESEND_API_KEY` e `EMAIL_FROM`; `POST /people-messages` envia automaticamente quando canal e `email` e provedor configurado; `GET /system/email-status` expoe estado para o frontend mostrar banner; sem chave o sistema continua com fallback `mailto:` no frontend; reset por email, notificacoes de escala e templates ricos ficam para fases futuras.
 
+87. Reset de senha por email com `POST /auth/request-password-reset` (publico, resposta generica para nao vazar usuarios) e `POST /auth/reset-password` (publico, valida token sha256 com expiracao de 15 min e uso unico); LoginPage ganha link "Esqueci minha senha"; novas paginas publicas `/forgot-password` e `/reset-password`; nova var `WEB_BASE_URL` no backend para gerar o link no email.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

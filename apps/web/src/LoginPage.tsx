@@ -96,6 +96,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
           {mode === "login" ? "Criar nova conta" : "Ja tenho conta"}
         </button>
 
+        {mode === "login" && (
+          <a className="text-button auth-toggle" href="/forgot-password">Esqueci minha senha</a>
+        )}
+
         {mode === "login" && <div className="demo-accounts">
           {demoAccounts.map((account) => (
             <button

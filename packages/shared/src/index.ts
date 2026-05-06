@@ -86,6 +86,20 @@ export interface ResetPasswordResponse {
   temporaryPassword: string;
 }
 
+export interface RequestPasswordResetInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
+export interface PasswordResetGenericResponse {
+  ok: true;
+  message: string;
+}
+
 export type PermissionAction = "view" | "manage";
 
 const adminOnlyModules: AppModuleKey[] = ["finance", "users", "audit"];

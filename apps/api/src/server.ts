@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -16,6 +16,7 @@ import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
 import { blockOutRepository, isPersonBlockedOnDate } from "./data/blockOutRepository.js";
+import { passwordResetTokenRepository } from "./data/passwordResetTokenRepository.js";
 import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
@@ -37,6 +38,9 @@ const generateTemporaryPassword = (): string => {
 
 const port = Number(process.env.PORT || 4000);
 const tokenSecret = process.env.AUTH_TOKEN_SECRET || "ecclesiaos-development-secret";
+const webBaseUrl = (process.env.WEB_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+const passwordResetGenericMessage = "Se o email estiver cadastrado, voce recebera um link para redefinir a senha.";
+const passwordResetGenericError = "Link invalido ou expirado. Solicite um novo email.";
 
 const sendJson = (res: ServerResponse, statusCode: number, body: unknown) => {
   const payload = JSON.stringify(body);
@@ -200,6 +204,82 @@ const handleAdminResetPassword = async (req: IncomingMessage, res: ServerRespons
     temporaryPassword
   };
   sendJson(res, 200, response);
+};
+
+const handleRequestPasswordReset = async (req: IncomingMessage, res: ServerResponse) => {
+  const body = await readJson<RequestPasswordResetInput>(req);
+  const email = String(body?.email || "").trim().toLowerCase();
+  const generic: PasswordResetGenericResponse = { ok: true, message: passwordResetGenericMessage };
+
+  if (!email) {
+    sendJson(res, 200, generic);
+    return;
+  }
+
+  const users = await userRepository.listUsers();
+  const user = users.find((item) => item.email.toLowerCase() === email);
+  if (!user) {
+    sendJson(res, 200, generic);
+    return;
+  }
+
+  const { token } = await passwordResetTokenRepository.create(user.id);
+
+  if (isEmailConfigured()) {
+    const link = `${webBaseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const subject = "Recuperar acesso ao EcclesiaOS";
+    const text = `Ola, ${user.name}.\n\nVoce solicitou redefinir sua senha no EcclesiaOS. Clique no link abaixo (valido por 15 minutos):\n\n${link}\n\nSe voce nao solicitou, pode ignorar este email.`;
+    const html = `<p>Ola, <strong>${user.name}</strong>.</p>
+<p>Voce solicitou redefinir sua senha no EcclesiaOS.</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Redefinir senha</a></p>
+<p style="color:#5c6b78;font-size:13px;">Link valido por 15 minutos. Se voce nao solicitou, ignore este email.</p>
+<p style="color:#8a96a3;font-size:12px;">Ou copie e cole no navegador: ${link}</p>`;
+
+    await sendEmail({ to: user.email, subject, text, html });
+  }
+
+  sendJson(res, 200, generic);
+};
+
+const handleResetPasswordWithToken = async (req: IncomingMessage, res: ServerResponse) => {
+  const body = await readJson<ResetPasswordInput>(req);
+  const token = String(body?.token || "").trim();
+  const newPassword = String(body?.newPassword || "").trim();
+
+  if (!token || !newPassword) {
+    sendError(res, 400, "invalid_json", passwordResetGenericError);
+    return;
+  }
+  if (newPassword.length < 6) {
+    sendError(res, 400, "invalid_json", "A nova senha precisa ter pelo menos 6 caracteres.");
+    return;
+  }
+
+  const record = await passwordResetTokenRepository.findActive(token);
+  if (!record) {
+    sendError(res, 400, "invalid_json", passwordResetGenericError);
+    return;
+  }
+
+  const updated = await userRepository.updatePassword(record.userId, newPassword);
+  if (!updated) {
+    sendError(res, 400, "invalid_json", passwordResetGenericError);
+    return;
+  }
+
+  const fullUser = await userRepository.findById(record.userId);
+  await passwordResetTokenRepository.markUsed(record.id);
+  if (fullUser) {
+    await auditRepository.create({
+      action: "update",
+      entityType: "user",
+      entityId: record.userId,
+      actor: fullUser,
+      summary: "Senha redefinida via link de email."
+    });
+  }
+
+  sendJson(res, 200, { ok: true } satisfies { ok: true });
 };
 
 const handleMe = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1671,6 +1751,16 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/auth/change-password") {
     void handleChangeOwnPassword(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/auth/request-password-reset") {
+    void handleRequestPasswordReset(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/auth/reset-password") {
+    void handleResetPasswordWithToken(req, res);
     return;
   }
 
