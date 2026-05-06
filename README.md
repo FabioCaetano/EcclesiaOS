@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes.
+Fase atual concluida: Fase 51 - Troca De Senha Pelo Usuario E Reset Administrativo.
 
 Estrutura:
 

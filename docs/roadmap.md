@@ -834,6 +834,26 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 50: Polimento Mobile E Acessibilidade
+
+Status atual: concluida.
+
+## Fase 51: Troca De Senha Pelo Usuario E Reset Administrativo
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos liberar o usuario para trocar a propria senha e dar ao admin um botao de reset com senha temporaria?
+
+Decisao: dois endpoints (self-service e admin reset), nova tela "Minha conta", botao na UsersPage; sem fluxo de email nesta fase.
+
+Antes de desenvolver, perguntar:
+
+> Vamos polir os atritos de iOS Safari, areas tocaveis e navegacao por teclado?
+
+Decisao: ajustes CSS-first + pequena mudanca no `AppLayout`; sem features novas.
+
 Antes de desenvolver, perguntar:
 
 > Vamos fechar a consistencia aplicando o novo design em Financeiro, Usuarios, Auditoria, Ambientes, Grupos e Presenca?

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import type { AuthSession } from "@ecclesiaos/shared";
+import { AccountPage } from "./AccountPage";
 import { AppLayout } from "./AppLayout";
 import { AttendancePage } from "./AttendancePage";
 import { AuditPage } from "./AuditPage";
@@ -83,6 +84,7 @@ const App = () => {
       {currentView === "finance" && <FinancePage token={session.token} user={session.user} />}
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}
       {currentView === "audit" && <AuditPage token={session.token} user={session.user} />}
+      {currentView === "account" && <AccountPage token={session.token} user={session.user} />}
     </AppLayout>
   );
 };

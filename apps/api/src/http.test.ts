@@ -617,6 +617,48 @@ test("requested teams sync serving plans and leader can only schedule members of
   assert.equal(remainingPlans.body?.find((item) => item.eventId === eventId), undefined);
 });
 
+test("members can change their own password and admin can reset others", async () => {
+  const wrongPassword = await requestJson<{ error: string }>("/auth/change-password", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ currentPassword: "wrong", newPassword: "novaSenha123" })
+  });
+  assert.equal(wrongPassword.response.status, 401);
+
+  const tooShort = await requestJson<{ error: string }>("/auth/change-password", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ currentPassword: "membro123", newPassword: "abc" })
+  });
+  assert.equal(tooShort.response.status, 400);
+
+  const ok = await requestJson<{ ok: boolean }>("/auth/change-password", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ currentPassword: "membro123", newPassword: "membroNova1" })
+  });
+  assert.equal(ok.response.status, 200);
+
+  const reloggedMember = await login("membro@ecclesiaos.local", "membroNova1");
+  memberSession = reloggedMember;
+
+  const memberCannotReset = await requestJson<{ error: string }>(`/users/${adminSession.user.id}/reset-password`, {
+    method: "POST",
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(memberCannotReset.response.status, 403);
+
+  const adminReset = await requestJson<{ temporaryPassword: string }>(`/users/${memberSession.user.id}/reset-password`, {
+    method: "POST",
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(adminReset.response.status, 200);
+  assert.ok(adminReset.body?.temporaryPassword && adminReset.body.temporaryPassword.length >= 8);
+
+  const reloginAfterReset = await login("membro@ecclesiaos.local", adminReset.body!.temporaryPassword);
+  memberSession = reloginAfterReset;
+});
+
 test("leaders and members can only respond to their own serving assignments", async () => {
   const memberForbidden = await requestJson<{ error: string }>("/serving-plans/srv_001/assignments/asg_002/status", {
     method: "PATCH",

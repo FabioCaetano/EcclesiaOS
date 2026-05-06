@@ -95,5 +95,18 @@ export const userRepository = {
     data.users = nextUsers;
     await writeData(data);
     return true;
+  },
+
+  async updatePassword(id: string, plainPassword: string) {
+    const data = await readData();
+    const index = data.users.findIndex((user) => user.id === id);
+    if (index === -1) return null;
+
+    data.users[index] = {
+      ...data.users[index],
+      password: hashPassword(plainPassword)
+    };
+    await writeData(data);
+    return toPublicUser(data.users[index]);
   }
 };

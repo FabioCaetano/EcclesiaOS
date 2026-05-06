@@ -4,7 +4,7 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes**.
+Fase atual concluida: **Fase 51 - Troca De Senha Pelo Usuario E Reset Administrativo**.
 
 Ultimo modulo entregue:
 
@@ -89,6 +89,8 @@ Ambiente atual:
 - [[phases/phase-47-design-system-and-layout|Fase 47 - Sistema De Design E Redesenho Do Layout]]
 - [[phases/phase-48-design-system-operational|Fase 48 - Aplicar Sistema De Design Aos Modulos Operacionais]]
 - [[phases/phase-49-design-system-remaining|Fase 49 - Aplicar Sistema De Design Aos Modulos Restantes]]
+- [[phases/phase-50-mobile-polish-and-accessibility|Fase 50 - Polimento Mobile E Acessibilidade]]
+- [[phases/phase-51-password-self-service|Fase 51 - Troca De Senha Pelo Usuario E Reset Administrativo]]
 
 ## Decisoes
 
@@ -142,6 +144,8 @@ Ambiente atual:
 - [[decisions/0048-design-system-and-layout-redesign|0048 - Sistema De Design E Redesenho Do Layout]]
 - [[decisions/0049-design-system-applied-to-operational-modules|0049 - Aplicar Sistema De Design Aos Modulos Operacionais]]
 - [[decisions/0050-design-system-applied-to-remaining-modules|0050 - Aplicar Sistema De Design Aos Modulos Restantes]]
+- [[decisions/0051-mobile-polish-and-accessibility|0051 - Polimento Mobile E Acessibilidade]]
+- [[decisions/0052-self-service-password-and-admin-reset|0052 - Troca De Senha Pelo Usuario E Reset Administrativo]]
 
 ## Proximos Caminhos
 

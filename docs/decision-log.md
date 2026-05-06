@@ -88,6 +88,10 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 80. Sistema de design aplicado aos modulos restantes (Financeiro, Usuarios, Auditoria, Ambientes, Grupos, Presenca); produto inteiro com mesmo padrao visual; sem alteracoes em logica, dados ou endpoints.
 
+81. Polimento mobile e acessibilidade: `100dvh` no shell, lock de scroll quando o drawer abre, areas tocaveis 44px, `font-size: 16px` em inputs no mobile (sem zoom no iOS), `:hover` apenas em `(hover: hover)`, skip link e `aria-current="page"` na sidebar.
+
+82. Troca de senha pelo proprio usuario via `POST /auth/change-password` (autenticado, exige senha atual, minimo 6 caracteres) e reset administrativo via `POST /users/:id/reset-password` (admin only) que retorna senha temporaria em texto puro uma unica vez; ambos auditados; reset por email fica para fase futura.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

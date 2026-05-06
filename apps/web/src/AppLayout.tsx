@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Heart,
   Home,
+  KeyRound,
   LogOut,
   Menu,
   ScrollText,
@@ -50,7 +51,8 @@ const navItems: NavItem[] = [
   { label: "Igreja", module: "church", view: "church", icon: Heart, group: "Cadastros" },
   { label: "Financeiro", module: "finance", view: "finance", icon: Wallet, group: "Sistema" },
   { label: "Usuarios", module: "users", view: "users", icon: UsersRound, group: "Sistema" },
-  { label: "Auditoria", module: "audit", view: "audit", icon: ScrollText, group: "Sistema" }
+  { label: "Auditoria", module: "audit", view: "audit", icon: ScrollText, group: "Sistema" },
+  { label: "Minha conta", module: "account", view: "account", icon: KeyRound, group: "Sistema" }
 ];
 
 const groupOrder: NavItem["group"][] = ["Operacao", "Cadastros", "Sistema"];
@@ -84,8 +86,18 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
     return () => window.removeEventListener("keydown", onEsc);
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("no-scroll");
+      return () => document.body.classList.remove("no-scroll");
+    }
+    document.body.classList.remove("no-scroll");
+    return undefined;
+  }, [sidebarOpen]);
+
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Pular para o conteudo</a>
       <div className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`} aria-label="Navegacao">
         <div className="sidebar-brand">
@@ -106,6 +118,7 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
                     key={item.view}
                     type="button"
                     className={`nav-item ${currentView === item.view ? "active" : ""}`}
+                    aria-current={currentView === item.view ? "page" : undefined}
                     onClick={() => {
                       onNavigate(item.view);
                       setSidebarOpen(false);
@@ -143,17 +156,22 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
           </div>
         </div>
         <div className="app-header-actions">
-          <div className="app-header-user">
+          <button
+            type="button"
+            className="app-header-user"
+            onClick={() => onNavigate("account")}
+            aria-label="Abrir minha conta"
+          >
             <div className="app-header-user-avatar">{initials(user.name)}</div>
             <div className="app-header-user-text">
               <strong>{user.name}</strong>
               <span>{roleLabels[user.role]}</span>
             </div>
-          </div>
+          </button>
         </div>
       </header>
 
-      <main className="workspace">{children}</main>
+      <main className="workspace" id="main-content">{children}</main>
     </div>
   );
 };

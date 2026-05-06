@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PersonInput, RegisterRequest, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PersonInput, RegisterRequest, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, UserInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -19,6 +19,18 @@ import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
 import { userRepository } from "./data/userRepository.js";
 import { fetchYouTubeFeed } from "./youtube.js";
+import { verifyPassword } from "./passwords.js";
+import { randomBytes } from "node:crypto";
+
+const generateTemporaryPassword = (): string => {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghjkmnpqrstuvwxyz";
+  const bytes = randomBytes(12);
+  let result = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    result += alphabet[bytes[i] % alphabet.length];
+  }
+  return result;
+};
 
 const port = Number(process.env.PORT || 4000);
 const tokenSecret = process.env.AUTH_TOKEN_SECRET || "ecclesiaos-development-secret";
@@ -122,6 +134,68 @@ const handleLogin = async (req: IncomingMessage, res: ServerResponse) => {
     user: publicUser
   };
 
+  sendJson(res, 200, response);
+};
+
+const handleChangeOwnPassword = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const body = await readJson<ChangePasswordRequest>(req);
+  const currentPassword = String(body?.currentPassword || "").trim();
+  const newPassword = String(body?.newPassword || "").trim();
+
+  if (!currentPassword || !newPassword) {
+    sendError(res, 400, "invalid_json", "Informe a senha atual e a nova senha.");
+    return;
+  }
+  if (newPassword.length < 6) {
+    sendError(res, 400, "invalid_json", "A nova senha precisa ter pelo menos 6 caracteres.");
+    return;
+  }
+  if (newPassword === currentPassword) {
+    sendError(res, 400, "invalid_json", "A nova senha precisa ser diferente da atual.");
+    return;
+  }
+
+  if (!verifyPassword(currentPassword, user.password)) {
+    sendError(res, 401, "invalid_credentials", "Senha atual incorreta.");
+    return;
+  }
+
+  const updated = await userRepository.updatePassword(user.id, newPassword);
+  if (!updated) {
+    sendError(res, 404, "not_found", "Usuario nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "update", "user", user.id, "Senha alterada pelo proprio usuario.");
+  sendJson(res, 200, { ok: true });
+};
+
+const handleAdminResetPassword = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const actor = await requireAdmin(req, res);
+  if (!actor) return;
+
+  const target = await userRepository.findById(id);
+  if (!target) {
+    sendError(res, 404, "not_found", "Usuario nao encontrado.");
+    return;
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const updated = await userRepository.updatePassword(id, temporaryPassword);
+  if (!updated) {
+    sendError(res, 404, "not_found", "Usuario nao encontrado.");
+    return;
+  }
+
+  await recordAudit(actor, "update", "user", id, `Senha redefinida pelo admin para ${target.email}.`);
+  const response: ResetPasswordResponse = {
+    userId: id,
+    email: target.email,
+    temporaryPassword
+  };
   sendJson(res, 200, response);
 };
 
@@ -1391,6 +1465,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/auth/change-password") {
+    void handleChangeOwnPassword(req, res);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/audit-logs") {
     void handleListAuditLogs(req, res);
     return;
@@ -1403,6 +1482,12 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/users") {
     void handleCreateUser(req, res);
+    return;
+  }
+
+  const userResetMatch = url.pathname.match(/^\/users\/([^/]+)\/reset-password$/);
+  if (userResetMatch && req.method === "POST") {
+    void handleAdminResetPassword(req, res, userResetMatch[1]);
     return;
   }
 

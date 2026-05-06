@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, UsersRound } from "lucide-react";
-import type { CurrentUser, PersonProfile, UserInput } from "@ecclesiaos/shared";
-import { deleteUser, loadPeople, loadUsers, saveUser } from "./api";
+import { KeyRound, Plus, UsersRound } from "lucide-react";
+import type { CurrentUser, PersonProfile, ResetPasswordResponse, UserInput } from "@ecclesiaos/shared";
+import { adminResetUserPassword, deleteUser, loadPeople, loadUsers, saveUser } from "./api";
 import { emptyUserInput, roleLabels } from "./constants";
 import { Card, EmptyState, PageHeader } from "./ui";
 
@@ -29,6 +29,7 @@ export const UsersPage: React.FC<Props> = ({ token, user }) => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userForm, setUserForm] = useState<UserInput>(emptyUserInput);
   const [status, setStatus] = useState("");
+  const [resetResult, setResetResult] = useState<ResetPasswordResponse | null>(null);
 
   const selectedUser = useMemo(() => users.find((item) => item.id === selectedUserId) || null, [selectedUserId, users]);
 
@@ -84,6 +85,21 @@ export const UsersPage: React.FC<Props> = ({ token, user }) => {
       setStatus("Usuario removido.");
     } catch {
       setStatus("Nao foi possivel remover o usuario.");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUserId) return;
+    if (!window.confirm("Gerar uma senha temporaria para este usuario? A senha aparecera apenas uma vez.")) return;
+
+    setStatus("Gerando senha temporaria...");
+    setResetResult(null);
+    try {
+      const response = await adminResetUserPassword(token, selectedUserId);
+      setResetResult(response);
+      setStatus("Senha temporaria gerada. Compartilhe com o usuario por canal seguro.");
+    } catch {
+      setStatus("Nao foi possivel gerar a senha.");
     }
   };
 
@@ -144,8 +160,21 @@ export const UsersPage: React.FC<Props> = ({ token, user }) => {
             <input type="password" value={userForm.password} onChange={(event) => updateField("password", event.target.value)} />
           </label>
 
+          {resetResult && resetResult.userId === selectedUserId && (
+            <div className="password-reset-banner wide-field">
+              <p>Senha temporaria de <em>{resetResult.email}</em>:</p>
+              <strong>{resetResult.temporaryPassword}</strong>
+              <p>Copie agora e oriente o usuario a trocar pela conta dele apos o login.</p>
+            </div>
+          )}
+
           <div className="form-footer">
             <button type="submit">{selectedUserId ? "Salvar usuario" : "Criar usuario"}</button>
+            {selectedUserId && (
+              <button className="secondary-button" type="button" onClick={handleResetPassword}>
+                <KeyRound size={14} /> Resetar senha
+              </button>
+            )}
             {selectedUserId && selectedUserId !== user.id && <button className="danger-button" type="button" onClick={handleDelete}>Remover</button>}
             <p>{status || "Financeiro e usuarios sao restritos a administradores."}</p>
           </div>

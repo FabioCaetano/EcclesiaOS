@@ -23,7 +23,18 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit" | "account";
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  userId: string;
+  email: string;
+  temporaryPassword: string;
+}
 
 export type PermissionAction = "view" | "manage";
 

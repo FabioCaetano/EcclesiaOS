@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PersonInput, PersonProfile, RegisterRequest, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -47,6 +47,29 @@ export const register = async (request: RegisterRequest): Promise<AuthSession> =
 
   if (!response.ok) throw new Error(response.status === 409 ? "duplicate-register" : "invalid-register");
   return response.json() as Promise<AuthSession>;
+};
+
+export const changeOwnPassword = async (token: string, payload: ChangePasswordRequest): Promise<{ ok: boolean }> => {
+  const response = await fetch(`${apiBaseUrl}/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload)
+  });
+
+  if (response.status === 401) throw new Error("invalid-current-password");
+  if (response.status === 400) throw new Error("invalid-new-password");
+  if (!response.ok) throw new Error("change-password-failed");
+  return response.json() as Promise<{ ok: boolean }>;
+};
+
+export const adminResetUserPassword = async (token: string, userId: string): Promise<ResetPasswordResponse> => {
+  const response = await fetch(`${apiBaseUrl}/users/${userId}/reset-password`, {
+    method: "POST",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("reset-password-failed");
+  return response.json() as Promise<ResetPasswordResponse>;
 };
 
 export const loadCurrentUser = async (token: string): Promise<CurrentUser> => {
