@@ -92,6 +92,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 82. Troca de senha pelo proprio usuario via `POST /auth/change-password` (autenticado, exige senha atual, minimo 6 caracteres) e reset administrativo via `POST /users/:id/reset-password` (admin only) que retorna senha temporaria em texto puro uma unica vez; ambos auditados; reset por email fica para fase futura.
 
+83. Check-in e Escalas redesenhados em estilo Planning Center: novos primitivos `Avatar` e `StatusPill`, busca proeminente nas abas de Check-in, cards com avatar + horario relativo, sidebar "No momento" na administracao kids, plan view de Escalas com cards de posicao + status pills coloridos; sem drag-drop, fotos reais, email/SMS, real-time ou multi-week view nesta fase.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

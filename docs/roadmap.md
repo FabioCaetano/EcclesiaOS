@@ -842,6 +842,16 @@ Status atual: concluida.
 
 Status atual: concluida.
 
+## Fase 52: Check-in E Escalas Estilo Planning Center
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos aproximar Check-in e Escalas visualmente do Planning Center?
+
+Decisao: avatares + status pills + busca + cards; sem drag-drop, fotos ou real-time.
+
 Antes de desenvolver, perguntar:
 
 > Vamos liberar o usuario para trocar a propria senha e dar ao admin um botao de reset com senha temporaria?

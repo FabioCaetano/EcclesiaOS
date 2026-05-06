@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Camera, ClipboardCheck, MessageCircle, Printer, ScanLine } from "lucide-react";
+import { Camera, ClipboardCheck, MessageCircle, Printer, ScanLine, Search, Tag, X } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
 import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
 import { checkOutChild, deleteEventCheckIn, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn } from "./api";
 import { useQrScanner } from "./useQrScanner";
-import { Card, EmptyState, PageHeader } from "./ui";
+import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
 interface Props {
   token: string;
@@ -62,6 +62,24 @@ const labelPresetClass = (template: LabelTemplate): string => (
   template.isContinuous ? "brother-62-continuous" : "brother-62x100"
 );
 
+const relativeTime = (iso: string): string => {
+  if (!iso) return "";
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return "";
+  const diff = Date.now() - ts;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "agora mesmo";
+  if (minutes < 60) return `ha ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `ha ${hours} h`;
+  return new Date(iso).toLocaleDateString("pt-BR");
+};
+
+const matchesQuery = (haystack: string, query: string): boolean => {
+  if (!query) return true;
+  return haystack.toLowerCase().includes(query.trim().toLowerCase());
+};
+
 const labelPageStyle = (template: LabelTemplate): string => {
   const width = Math.max(10, Number(template.widthMm) || 62);
   if (template.isContinuous) {
@@ -114,6 +132,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [activeView, setActiveView] = useState<CheckInView>("events");
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
 
   const canManage = canManageModule(user.role, "checkin");
@@ -384,12 +403,32 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </form>
         <div>
           <h3>Pessoas no evento</h3>
-          {eventCheckIns.length === 0 ? <p className="muted">Sem check-ins de pessoas.</p> : eventCheckIns.map((item) => (
-            <p className="report-row" key={item.id}>
-              <span>{personName(item.personId)} - {eventName(item.eventId)}</span>
-              {canManage ? <button className="icon-button" type="button" onClick={() => removeEventCheckIn(item.id)}>Remover</button> : <strong>OK</strong>}
-            </p>
-          ))}
+          <div className="checkin-search">
+            <Search size={16} className="checkin-search-icon" />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar por nome..." />
+          </div>
+          {eventCheckIns.length === 0 ? (
+            <EmptyState icon={ClipboardCheck} title="Sem check-ins" description="Nenhuma pessoa registrada neste evento ainda." />
+          ) : (
+            <div className="checkin-grid">
+              {eventCheckIns
+                .filter((item) => matchesQuery(personName(item.personId), searchQuery))
+                .map((item) => (
+                  <article className="checkin-card" key={item.id}>
+                    <Avatar name={personName(item.personId)} size="md" tone="success" />
+                    <div className="checkin-card-text">
+                      <strong>{personName(item.personId)}</strong>
+                      <span>{eventName(item.eventId)} - {relativeTime(item.checkedInAt)}</span>
+                    </div>
+                    {canManage && (
+                      <button className="icon-button" type="button" aria-label="Remover check-in" onClick={() => removeEventCheckIn(item.id)}>
+                        <X size={14} />
+                      </button>
+                    )}
+                  </article>
+                ))}
+            </div>
+          )}
         </div>
       </div>}
 
@@ -433,12 +472,24 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </form>
         <div>
           <h3>Criancas ativas</h3>
-          {openChildren.length === 0 ? <p className="muted">Nenhuma crianca aguardando retirada.</p> : openChildren.map((item) => (
-            <p className="report-row" key={item.id}>
-              <span>{item.childName} - {eventName(item.eventId)}</span>
-              <button className="secondary-button" type="button" onClick={() => setSelectedLabelId(item.id)}>Etiqueta</button>
-            </p>
-          ))}
+          {openChildren.length === 0 ? (
+            <EmptyState icon={ClipboardCheck} title="Sem criancas ativas" description="Nenhuma crianca aguardando retirada agora." />
+          ) : (
+            <div className="checkin-grid">
+              {openChildren.map((item) => (
+                <article className="checkin-card" key={item.id}>
+                  <Avatar name={item.childName} size="md" tone="info" />
+                  <div className="checkin-card-text">
+                    <strong>{item.childName}</strong>
+                    <span>{eventName(item.eventId)} - codigo {item.securityCode}</span>
+                  </div>
+                  <button className="secondary-button btn-sm" type="button" onClick={() => setSelectedLabelId(item.id)}>
+                    <Tag size={14} /> Etiqueta
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>}
 
@@ -454,34 +505,99 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </div>
       </div>}
 
-      {activeView === "admin" && <div className="report-columns">
-        <div>
-          <h3>Administracao infantil</h3>
-          {canManage && (
-            <div className="batch-toolbar">
-              <button className="secondary-button" type="button" onClick={selectOpenBatchLabels}>Selecionar ativos</button>
-              <button className="secondary-button" type="button" onClick={() => setSelectedBatchIds([])}>Limpar</button>
-              <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={selectedBatchLabels.length === 0}>
-                <Printer size={14} /> Imprimir lote
-              </button>
-              <span>{selectedBatchLabels.length} selecionada(s)</span>
+      {activeView === "admin" && (
+        <div className="checkin-layout">
+          <div>
+            <h3>Administracao infantil</h3>
+            <div className="checkin-search">
+              <Search size={16} className="checkin-search-icon" />
+              <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar crianca ou responsavel..." />
             </div>
-          )}
-          {childCheckIns.length === 0 ? <p className="muted">Sem check-ins infantis.</p> : childCheckIns.map((item) => (
-            <p className="report-row" key={item.id}>
-              <span>
-                {canManage && <input className="batch-checkbox" type="checkbox" checked={selectedBatchIds.includes(item.id)} onChange={() => toggleBatchLabel(item.id)} />}
-                {item.childName} - {eventName(item.eventId)} - codigo {item.securityCode}
-              </span>
-              <span className="response-actions">
-                <button className="secondary-button" type="button" onClick={() => setSelectedLabelId(item.id)}>Etiqueta</button>
-                {!item.checkedOutAt && <a className="secondary-link" href={guardianMessageLink(item)} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Mensagem</a>}
-                {item.checkedOutAt ? <strong>Saiu</strong> : canManage ? <button className="secondary-button" type="button" onClick={() => handleChildCheckout(item.id)}>Saida</button> : isGuardianAllowed(item) ? <button className="secondary-button" type="button" onClick={() => handleGuardianChildCheckout(item)}>Retirar</button> : <strong>Ativo</strong>}
-              </span>
-            </p>
-          ))}
+            {canManage && (
+              <div className="batch-toolbar">
+                <button className="secondary-button" type="button" onClick={selectOpenBatchLabels}>Selecionar ativos</button>
+                <button className="secondary-button" type="button" onClick={() => setSelectedBatchIds([])}>Limpar</button>
+                <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={selectedBatchLabels.length === 0}>
+                  <Printer size={14} /> Imprimir lote
+                </button>
+                <span>{selectedBatchLabels.length} selecionada(s)</span>
+              </div>
+            )}
+            {childCheckIns.length === 0 ? (
+              <EmptyState icon={ClipboardCheck} title="Sem check-ins infantis" description="Registre criancas na aba Kids para que elas apareçam aqui." />
+            ) : (
+              <div className="checkin-grid">
+                {childCheckIns
+                  .filter((item) => matchesQuery(`${item.childName} ${item.guardianName}`, searchQuery))
+                  .map((item) => (
+                    <article className="checkin-card" key={item.id}>
+                      <Avatar name={item.childName} size="md" tone={item.checkedOutAt ? "muted" : "info"} />
+                      <div className="checkin-card-text">
+                        <strong>
+                          {canManage && (
+                            <input
+                              className="batch-checkbox"
+                              type="checkbox"
+                              checked={selectedBatchIds.includes(item.id)}
+                              onChange={() => toggleBatchLabel(item.id)}
+                              aria-label={`Selecionar ${item.childName}`}
+                            />
+                          )}
+                          {item.childName}
+                        </strong>
+                        <span>
+                          {eventName(item.eventId)} - codigo {item.securityCode}
+                          {item.checkedInAt && ` - ${relativeTime(item.checkedInAt)}`}
+                        </span>
+                      </div>
+                      <div className="response-actions">
+                        {item.checkedOutAt ? (
+                          <StatusPill tone="muted">Saiu</StatusPill>
+                        ) : (
+                          <StatusPill tone="success">Ativo</StatusPill>
+                        )}
+                        <button className="secondary-button btn-sm" type="button" onClick={() => setSelectedLabelId(item.id)}>
+                          <Tag size={14} /> Etiqueta
+                        </button>
+                        {!item.checkedOutAt && (
+                          <a className="secondary-link" href={guardianMessageLink(item)} target="_blank" rel="noreferrer">
+                            <MessageCircle size={14} /> Mensagem
+                          </a>
+                        )}
+                        {!item.checkedOutAt && canManage && (
+                          <button className="secondary-button btn-sm" type="button" onClick={() => handleChildCheckout(item.id)}>Saida</button>
+                        )}
+                        {!item.checkedOutAt && !canManage && isGuardianAllowed(item) && (
+                          <button className="secondary-button btn-sm" type="button" onClick={() => handleGuardianChildCheckout(item)}>Retirar</button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          <aside className="checkin-side" aria-label="No momento">
+            <h3>No momento</h3>
+            {openChildren.length === 0 ? (
+              <p className="muted">Nenhuma crianca presente.</p>
+            ) : (
+              <div className="checkin-side-list">
+                {openChildren.slice(0, 12).map((item) => (
+                  <div className="checkin-side-item" key={item.id}>
+                    <Avatar name={item.childName} size="sm" tone="info" />
+                    <div>
+                      <strong>{item.childName}</strong>
+                      <span>{relativeTime(item.checkedInAt)}</span>
+                    </div>
+                    <StatusPill tone="success">Aqui</StatusPill>
+                  </div>
+                ))}
+              </div>
+            )}
+          </aside>
         </div>
-      </div>}
+      )}
 
       {selectedLabel && selectedTemplate && (
         <div className="child-label-preview">

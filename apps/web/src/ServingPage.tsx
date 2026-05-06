@@ -1,10 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Plus } from "lucide-react";
+import { Check, ClipboardList, Plus, X } from "lucide-react";
 import type { CurrentUser, GroupProfile, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput } from "@ecclesiaos/shared";
 import { deleteServingPlan, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
 import { toServingPlanInput } from "./mappers";
-import { Card, EmptyState, PageHeader } from "./ui";
+import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
+import type { StatusTone } from "./ui";
+
+const statusToneFor = (status: ServingAssignment["status"]): StatusTone => {
+  if (status === "confirmed") return "success";
+  if (status === "declined") return "danger";
+  return "muted";
+};
 
 interface Props {
   token: string;
@@ -252,42 +259,66 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           </label>
           <label className="wide-field">Observacoes<textarea disabled={!canEditAssignments} value={planForm.notes} onChange={(event) => updatePlanField("notes", event.target.value)} /></label>
 
-          <fieldset className="member-picker">
+          <fieldset className="member-picker plan-detail wide-field">
             <legend>Escalados</legend>
-            {planForm.assignments.map((assignment, index) => (
-              <div className="assignment-row" key={`${assignment.id}-${index}`}>
-                <select disabled={!canEditAssignments} value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
-                  <option value="">Pessoa</option>
-                  {eligiblePeople.map((person) => (
-                    <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
-                  ))}
-                </select>
-                <input disabled={!canEditAssignments} placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
-                <select disabled={!canEditAssignments} value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
-                  <option value="pending">Pendente</option>
-                  <option value="confirmed">Confirmado</option>
-                  <option value="declined">Recusado</option>
-                </select>
-                <input disabled={!canEditAssignments} placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
-                {canEditAssignments && <button className="icon-button" type="button" onClick={() => removeAssignment(index)}>Remover</button>}
-              </div>
-            ))}
-            {canEditAssignments && <button className="secondary-button" type="button" onClick={addAssignment}>Adicionar pessoa</button>}
-            {!canEditAssignments && planForm.assignments.length === 0 && <p className="muted">Nenhuma pessoa escalada.</p>}
-            {!canEditAssignments && planForm.assignments.map((assignment, index) => (
-              <div className="response-row" key={`${assignment.personId}-${index}`}>
-                <p className="report-row">
-                  <span>{personName(assignment.personId)} - {assignment.role}</span>
-                  <strong>{assignmentStatusLabels[assignment.status]}</strong>
-                </p>
-                {assignment.personId === user.personId && (
-                  <div className="response-actions">
-                    <button className="secondary-button" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "confirmed")}>Confirmar</button>
-                    <button className="danger-outline-button" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "declined")}>Recusar</button>
+            <div className="plan-detail-header">
+              <h2>{selectedPlan?.title || "Nova escala"}</h2>
+              <span>{selectedPlan ? `${selectedPlan.date} - ${groupName(selectedPlan.groupId)}` : "Defina os campos acima e adicione pessoas"}</span>
+            </div>
+
+            {planForm.assignments.length === 0 && (
+              <div className="plan-position-empty">Nenhuma pessoa escalada ainda.</div>
+            )}
+
+            <div className="plan-positions">
+              {planForm.assignments.map((assignment, index) => (
+                canEditAssignments ? (
+                  <div className="plan-position" key={`${assignment.id}-${index}`}>
+                    <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
+                    <select className="pp-name" value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
+                      <option value="">Selecionar pessoa</option>
+                      {eligiblePeople.map((person) => (
+                        <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
+                      ))}
+                    </select>
+                    <input className="pp-role" placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
+                    <select className="pp-status" value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
+                      <option value="pending">Pendente</option>
+                      <option value="confirmed">Confirmado</option>
+                      <option value="declined">Recusado</option>
+                    </select>
+                    <input className="pp-notes" placeholder="Notas" value={assignment.notes} onChange={(event) => updateAssignment(index, "notes", event.target.value)} />
+                    <button className="icon-button pp-remove" type="button" aria-label="Remover" onClick={() => removeAssignment(index)}>
+                      <X size={14} />
+                    </button>
                   </div>
-                )}
-              </div>
-            ))}
+                ) : (
+                  <div className="plan-position" key={`${assignment.personId}-${index}`}>
+                    <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone="brand" /></span>
+                    <strong className="pp-name">{personName(assignment.personId) || "Sem pessoa"}</strong>
+                    <span className="pp-role">{assignment.role || "Sem funcao"}</span>
+                    <span className="pp-status"><StatusPill tone={statusToneFor(assignment.status)}>{assignmentStatusLabels[assignment.status]}</StatusPill></span>
+                    <span className="pp-notes muted">{assignment.notes}</span>
+                    {assignment.personId === user.personId && (
+                      <div className="response-actions pp-remove">
+                        <button className="secondary-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "confirmed")}>
+                          <Check size={14} /> Confirmar
+                        </button>
+                        <button className="danger-outline-button btn-sm" type="button" onClick={() => respondToAssignment(selectedPlanId || "", assignment.id, "declined")}>
+                          <X size={14} /> Recusar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              ))}
+            </div>
+
+            {canEditAssignments && (
+              <button className="plan-position-add" type="button" onClick={addAssignment}>
+                <Plus size={16} /> Adicionar pessoa
+              </button>
+            )}
           </fieldset>
 
           <div className="form-footer">
