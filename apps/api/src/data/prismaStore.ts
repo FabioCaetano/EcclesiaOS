@@ -546,3 +546,36 @@ export const writePrismaData = async (data: DataFile) => {
     timeout: 60000
   });
 };
+
+export const appendPrismaEventsAndServingPlans = async (events: ChurchEvent[], servingPlans: ServingPlan[]) => {
+  if (events.length === 0 && servingPlans.length === 0) return;
+
+  await prisma.$transaction(async (tx) => {
+    if (events.length > 0) {
+      await tx.eventRecord.createMany({
+        data: events.map((event) => ({
+          ...event,
+          requestedTeamIds: event.requestedTeamIds as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(event.createdAt),
+          updatedAt: new Date(event.updatedAt)
+        })),
+        skipDuplicates: true
+      });
+    }
+
+    if (servingPlans.length > 0) {
+      await tx.servingPlanRecord.createMany({
+        data: servingPlans.map((plan) => ({
+          ...plan,
+          assignments: plan.assignments as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(plan.createdAt),
+          updatedAt: new Date(plan.updatedAt)
+        })),
+        skipDuplicates: true
+      });
+    }
+  }, {
+    maxWait: 10000,
+    timeout: 30000
+  });
+};

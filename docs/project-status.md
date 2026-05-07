@@ -20,7 +20,7 @@ Feedback consolidado em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]
 Prioridades abertas:
 
 - Agenda ja foi estabilizada na Fase 66 com erros especificos, Ambiente em vez de Local e recorrencias materializadas.
-- Hotfix aplicado: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API.
+- Estabilizacao aplicada: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API, e novas ocorrencias usam escrita incremental no Prisma.
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
 - Check-in ganhou aba Etiquetas na Fase 67, mas ainda pode evoluir para dashboard operacional mais completo de Kids/Eventos.
 - Escalas precisa restringir criacao/edicao a admin/lider, simplificar a tela e trazer indisponibilidade para o modulo.
@@ -311,7 +311,7 @@ Fluxos validados:
 - Leitura de QR Code por camera funciona em qualquer navegador moderno: usa `BarcodeDetector` quando disponivel e cai para `jsqr` quando nao; ainda depende de HTTPS/localhost e permissao de camera.
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
 - Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
-- A materializacao sob demanda ainda usa escrita agregada pelo `writePrismaData`; em producao isso recebeu hotfix, mas deve virar escrita incremental no Prisma.
+- A materializacao sob demanda passou a usar escrita incremental no Prisma para novos eventos filhos e planos de escala; validacao/publicacao ainda pendente nesta sessao.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.

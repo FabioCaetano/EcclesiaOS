@@ -49,7 +49,7 @@ Para ambiente publicado:
 ## Bloqueadores Imediatos
 
 1. Validar build/testes da Fase 67 quando o ambiente local permitir executar comandos novamente.
-2. Transformar materializacao de ocorrencias em escrita incremental no Prisma, removendo dependencia do `writePrismaData` completo em producao.
+2. Publicar o hotfix/estabilizacao no GitHub e redeployar Render/Vercel.
 3. Escalas ainda precisa amadurecer permissoes, visualizacao e indisponibilidade.
 4. Posicoes de ministerios ainda precisam entrar para escalas por funcao real.
 5. Igreja ainda precisa upload de logo e refinamento de identidade visual.

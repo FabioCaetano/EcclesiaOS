@@ -1,6 +1,6 @@
 # Fase 67 - UX De Ambientes E Check-in
 
-Status: implementada, com hotfix de producao aplicado; validacao automatica pendente por bloqueio do sandbox.
+Status: implementada, com estabilizacao de producao aplicada; validacao automatica pendente por bloqueio do sandbox.
 
 ## Objetivo
 
@@ -11,6 +11,8 @@ Reduzir a confusao operacional apontada no feedback de produto, principalmente e
 - Hotfix de API aplicado durante a fase: `GET /events` nao derruba mais a API se a materializacao automatica de recorrencias falhar no Prisma/Neon.
 - Transacao Prisma de escrita recebeu `maxWait` e `timeout` maiores para reduzir erro `P2028` em producao.
 - Geracao manual de ocorrencias agora retorna erro amigavel se a transacao falhar, sem encerrar o processo Node.
+- Materializacao de recorrencias passou a usar escrita incremental no Prisma, inserindo apenas novos eventos filhos e planos de escala relacionados.
+- `writePrismaData` deixa de ser usado no fluxo critico de `GET /events` para criar ocorrencias.
 - Ambientes agora separa melhor o fluxo de cadastro de ambiente e o fluxo de reserva.
 - Mensagens de erro de ambiente e reserva foram separadas, evitando erro de cadastro aparecer no formulario de reserva.
 - Criacao de ambiente valida nome antes de chamar a API.
@@ -42,7 +44,9 @@ Resultado: os comandos nao puderam ser executados nesta sessao porque o ambiente
 
 ## Observacao De Producao
 
-Durante a conclusao da fase, o Render registrou erro Prisma `P2028` em `handleListEvents`, causado pela materializacao automatica de recorrencias dentro de `GET /events`. O hotfix aplicado evita queda da API e aumenta o tempo permitido da transacao. A arquitetura futura ideal e substituir o `writePrismaData` completo por operacoes incrementais no Prisma para eventos/ocorrencias.
+Durante a conclusao da fase, o Render registrou erro Prisma `P2028` em `handleListEvents`, causado pela materializacao automatica de recorrencias dentro de `GET /events`. Foi aplicado primeiro um hotfix para evitar queda da API e, em seguida, a materializacao de ocorrencias foi alterada para escrita incremental no Prisma.
+
+Pendencia: validar em build/testes e publicar.
 
 ## Proxima Fase Recomendada
 

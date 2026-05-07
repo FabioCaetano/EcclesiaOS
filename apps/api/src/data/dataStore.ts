@@ -192,4 +192,21 @@ export const writeData = async (data: DataFile) => {
   await rename(tempFilePath, dataFilePath);
 };
 
+export const appendEventsAndServingPlans = async (events: ChurchEvent[], servingPlans: ServingPlan[]) => {
+  if (events.length === 0 && servingPlans.length === 0) return;
+
+  if (dataProvider === "prisma") {
+    const { appendPrismaEventsAndServingPlans } = await import("./prismaStore.js");
+    await appendPrismaEventsAndServingPlans(events, servingPlans);
+    return;
+  }
+
+  const data = await readData();
+  await writeData({
+    ...data,
+    events: [...data.events, ...events],
+    servingPlans: [...data.servingPlans, ...servingPlans]
+  });
+};
+
 export const getDefaultData = (): DataFile => defaultData();

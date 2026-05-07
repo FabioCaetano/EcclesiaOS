@@ -1,5 +1,5 @@
 import type { ChurchEvent, ChurchEventInput, CronGenerationResult, EventRecurrence, EventType } from "@ecclesiaos/shared";
-import { readData, writeData } from "./dataStore.js";
+import { appendEventsAndServingPlans, readData, writeData } from "./dataStore.js";
 import { computeTechnicalCap, planCronOccurrences } from "../cron.js";
 import { removePlansForEvent, synchronizePlansForEvent } from "./servingPlanRepository.js";
 import type { DataFile } from "./dataStore.js";
@@ -171,6 +171,11 @@ const syncPlansForEvents = (data: DataFile, events: ChurchEvent[]): DataFile["se
   return plans;
 };
 
+const newPlansOnly = (existingPlans: DataFile["servingPlans"], nextPlans: DataFile["servingPlans"]): DataFile["servingPlans"] => {
+  const existingIds = new Set(existingPlans.map((plan) => plan.id));
+  return nextPlans.filter((plan) => !existingIds.has(plan.id));
+};
+
 export const eventRepository = {
   async list(): Promise<ChurchEvent[]> {
     const data = await readData();
@@ -268,7 +273,7 @@ export const eventRepository = {
 
     if (totalGenerated > 0) {
       const nextPlans = syncPlansForEvents(data, allNewChildren);
-      await writeData({ ...data, events: allEvents, servingPlans: nextPlans });
+      await appendEventsAndServingPlans(allNewChildren, newPlansOnly(data.servingPlans, nextPlans));
     }
 
     return { generated: totalGenerated, skipped: totalSkipped, total: totalPlanned };
@@ -285,7 +290,7 @@ export const eventRepository = {
     const result = expandSingleMaster(master, data.events, now);
     if (result.newChildren.length > 0) {
       const nextPlans = syncPlansForEvents(data, result.newChildren);
-      await writeData({ ...data, events: [...data.events, ...result.newChildren], servingPlans: nextPlans });
+      await appendEventsAndServingPlans(result.newChildren, newPlansOnly(data.servingPlans, nextPlans));
     }
     return { generated: result.generated, skipped: result.skipped, total: result.total };
   }

@@ -179,6 +179,7 @@
   },
   "active": "88b545964bc09b8a",
   "lastOpenFiles": [
+    "docs/decisions/0069-incremental-prisma-event-occurrences.md",
     "docs/decisions/0068-resources-checkin-ux.md",
     "docs/phases/phase-67-resources-checkin-ux.md",
     "docs/feedback-2026-05-07.md",
@@ -215,7 +216,6 @@
     "docs/decisions/0043-ux-home-agenda-checkin.md",
     "docs/phases/phase-42-ux-home-agenda-checkin.md",
     "docs/decisions/0042-checkin-to-attendance.md",
-    "docs/phases/phase-41-checkin-to-attendance.md",
     "node_modules/pngjs/coverage/lcov-report/sort-arrow-sprite.png",
     "node_modules/pngjs/coverage/lcov-report/favicon.png",
     "node_modules/playwright-core/lib/vite/traceViewer/playwright-logo.svg",
