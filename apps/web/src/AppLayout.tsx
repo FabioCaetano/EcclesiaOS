@@ -6,6 +6,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   ClipboardList,
+  BarChart3,
   Heart,
   Home,
   KeyRound,
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
   { label: "Ambientes", module: "resources", view: "resources", icon: Sparkles, group: "Cadastros" },
   { label: "Igreja", module: "church", view: "church", icon: Heart, group: "Cadastros" },
   { label: "Financeiro", module: "finance", view: "finance", icon: Wallet, group: "Sistema" },
+  { label: "Relatorios", module: "reports", view: "reports", icon: BarChart3, group: "Sistema" },
   { label: "Usuarios", module: "users", view: "users", icon: UsersRound, group: "Sistema" },
   { label: "Auditoria", module: "audit", view: "audit", icon: ScrollText, group: "Sistema" },
   { label: "Minha conta", module: "account", view: "account", icon: KeyRound, group: "Sistema" }

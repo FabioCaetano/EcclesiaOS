@@ -1,1 +1,1 @@
-export type AppView = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit" | "account" | "messages";
+export type AppView = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "reports" | "users" | "audit" | "account" | "messages";

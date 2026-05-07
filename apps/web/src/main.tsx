@@ -23,6 +23,7 @@ import { PublicRegistrationPage } from "./PublicRegistrationPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { VisitorRegistrationPage } from "./VisitorRegistrationPage";
 import { ResourcesPage } from "./ResourcesPage";
+import { ReportsPage } from "./ReportsPage";
 import { ServingPage } from "./ServingPage";
 import { UsersPage } from "./UsersPage";
 import type { AppView } from "./types";
@@ -106,6 +107,7 @@ const App = () => {
       {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} />}
       {currentView === "serving" && <ServingPage token={session.token} user={session.user} />}
       {currentView === "finance" && <FinancePage token={session.token} user={session.user} />}
+      {currentView === "reports" && <ReportsPage token={session.token} user={session.user} />}
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}
       {currentView === "audit" && <AuditPage token={session.token} user={session.user} />}
       {currentView === "account" && <AccountPage token={session.token} user={session.user} />}

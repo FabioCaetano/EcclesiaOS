@@ -23,7 +23,7 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "users" | "audit" | "account" | "messages";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
 
 export type MessageChannel = "email" | "whatsapp" | "manual";
 
@@ -548,6 +548,7 @@ export const plannedModules: AppModuleSummary[] = [
   { key: "calendar", name: "Calendario da igreja", phase: "Fase 30", status: "active" },
   { key: "serving", name: "Escalas e cultos", phase: "Fase 7", status: "planned" },
   { key: "finance", name: "Financeiro", phase: "Fase 8", status: "planned" },
+  { key: "reports", name: "Relatorios", phase: "Fase 75", status: "active" },
   { key: "users", name: "Usuarios e permissoes", phase: "Fase 22", status: "active" },
   { key: "audit", name: "Auditoria", phase: "Fase 40", status: "active" }
 ];
