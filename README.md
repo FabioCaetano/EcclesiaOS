@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 56 - Reset De Senha Por Email.
+Fase atual concluida: Fase 57 - Notificacoes De Escala Por Email.
 
 Estrutura:
 

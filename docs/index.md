@@ -4,7 +4,7 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 56 - Reset De Senha Por Email**.
+Fase atual concluida: **Fase 57 - Notificacoes De Escala Por Email**.
 
 Ultimo modulo entregue:
 
@@ -96,6 +96,7 @@ Ambiente atual:
 - [[phases/phase-54-block-out-dates-and-substitutes|Fase 54 - Bloqueios De Data E Sugestao De Substitutos]]
 - [[phases/phase-55-email-provider|Fase 55 - Provedor De Email Com Resend]]
 - [[phases/phase-56-forgot-password|Fase 56 - Reset De Senha Por Email]]
+- [[phases/phase-57-serving-notifications|Fase 57 - Notificacoes De Escala Por Email]]
 
 ## Decisoes
 
@@ -156,6 +157,7 @@ Ambiente atual:
 - [[decisions/0055-block-out-dates-and-substitute-suggestions|0055 - Bloqueios De Data E Sugestao De Substitutos]]
 - [[decisions/0056-email-provider-resend|0056 - Provedor De Email Com Resend]]
 - [[decisions/0057-forgot-password-by-email|0057 - Reset De Senha Por Email]]
+- [[decisions/0058-serving-notifications-email|0058 - Notificacoes De Escala Por Email]]
 
 ## Proximos Caminhos
 

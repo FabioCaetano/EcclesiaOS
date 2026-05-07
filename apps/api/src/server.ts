@@ -1585,10 +1585,20 @@ const handleUpdateServingPlan = async (req: IncomingMessage, res: ServerResponse
     }
   }
 
+  const previousPersonIds = new Set(
+    existingPlan.assignments.map((assignment) => assignment.personId).filter(Boolean)
+  );
+
   const plan = await servingPlanRepository.update(id, sanitizeServingPlanInput(body));
   if (!plan) {
     sendError(res, 404, "not_found", "Plano nao encontrado.");
     return;
+  }
+
+  for (const assignment of plan.assignments) {
+    if (assignment.personId && !previousPersonIds.has(assignment.personId)) {
+      await notifyNewAssignment(assignment.personId, { title: plan.title, date: plan.date }, assignment.role);
+    }
   }
 
   sendJson(res, 200, plan);
@@ -1611,6 +1621,61 @@ const sanitizeServingAssignmentStatusUpdate = (body: ServingAssignmentStatusUpda
   status: body.status === "confirmed" || body.status === "declined" ? body.status : "pending",
   notes: String(body.notes || "").trim()
 });
+
+const notifyNewAssignment = async (personId: string, plan: { title: string; date: string }, role: string) => {
+  if (!isEmailConfigured()) return;
+  try {
+    const person = (await personRepository.list()).find((item) => item.id === personId);
+    if (!person?.email) return;
+
+    const safeRole = role || "Funcao a definir";
+    const link = `${webBaseUrl}/`;
+    const subject = `Voce foi escalado em ${plan.title}`;
+    const text = `Ola ${person.firstName},\n\nVoce foi escalado para servir em "${plan.title}" no dia ${plan.date}.\nFuncao: ${safeRole}.\n\nAcesse ${link} para confirmar ou recusar.\n\nObrigado.`;
+    const html = `<p>Ola, <strong>${person.firstName}</strong>.</p>
+<p>Voce foi escalado para servir em <strong>${plan.title}</strong> no dia ${plan.date}.</p>
+<p>Funcao: ${safeRole}</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>
+<p style="color:#5c6b78;font-size:13px;">Acesse o sistema para confirmar ou recusar.</p>`;
+
+    await sendEmail({ to: person.email, subject, text, html });
+  } catch {
+    // best effort
+  }
+};
+
+const notifyAssignmentResponse = async (
+  plan: { title: string; date: string; groupId: string },
+  assignment: { personId: string; role: string },
+  status: "confirmed" | "declined" | "pending"
+) => {
+  if (!isEmailConfigured()) return;
+  if (status === "pending") return;
+  if (!plan.groupId) return;
+  try {
+    const group = (await groupRepository.list()).find((item) => item.id === plan.groupId);
+    if (!group?.leaderPersonId) return;
+    const people = await personRepository.list();
+    const leader = people.find((item) => item.id === group.leaderPersonId);
+    if (!leader?.email) return;
+
+    const respondent = people.find((item) => item.id === assignment.personId);
+    const respondentName = respondent ? `${respondent.firstName} ${respondent.lastName}`.trim() : "Pessoa";
+    const verb = status === "confirmed" ? "confirmou" : "recusou";
+    const role = assignment.role || "funcao a definir";
+    const link = `${webBaseUrl}/`;
+    const subject = `${respondentName} ${verb} a escala de ${plan.title}`;
+    const text = `Ola ${leader.firstName},\n\n${respondentName} ${verb} a escala em "${plan.title}" no dia ${plan.date}.\nFuncao: ${role}\n\nAcesse ${link} para acompanhar.`;
+    const html = `<p>Ola, <strong>${leader.firstName}</strong>.</p>
+<p><strong>${respondentName}</strong> ${verb} a escala em <strong>${plan.title}</strong> no dia ${plan.date}.</p>
+<p>Funcao: ${role}</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>`;
+
+    await sendEmail({ to: leader.email, subject, text, html });
+  } catch {
+    // best effort
+  }
+};
 
 const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: ServerResponse, planId: string, assignmentId: string) => {
   const user = await requireUser(req, res);
@@ -1637,6 +1702,16 @@ const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: Se
 
   const update = sanitizeServingAssignmentStatusUpdate(body);
   const plan = await servingPlanRepository.updateAssignmentStatus(planId, assignmentId, update.status, update.notes);
+  if (plan) {
+    const updatedAssignment = plan.assignments.find((item) => item.id === assignmentId);
+    if (updatedAssignment) {
+      await notifyAssignmentResponse(
+        { title: plan.title, date: plan.date, groupId: plan.groupId },
+        { personId: updatedAssignment.personId, role: updatedAssignment.role },
+        update.status
+      );
+    }
+  }
   sendJson(res, 200, plan);
 };
 

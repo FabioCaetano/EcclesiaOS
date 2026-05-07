@@ -102,6 +102,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 87. Reset de senha por email com `POST /auth/request-password-reset` (publico, resposta generica para nao vazar usuarios) e `POST /auth/reset-password` (publico, valida token sha256 com expiracao de 15 min e uso unico); LoginPage ganha link "Esqueci minha senha"; novas paginas publicas `/forgot-password` e `/reset-password`; nova var `WEB_BASE_URL` no backend para gerar o link no email.
 
+88. Notificacoes de escala por email: `PUT /serving-plans/:id` envia email para cada `personId` recem-atribuido; `PATCH /serving-plans/:planId/assignments/:assignmentId/status` envia email ao lider do grupo quando alguem confirma ou recusa; envios silenciosos quando provedor nao configurado, best-effort com try/catch para nao quebrar o salvamento; sem tokens de confirmacao via link, sem lembretes proximos da data, sem email quando admin remove pessoa.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

@@ -868,6 +868,16 @@ Decisao: provedor unico (Resend); fallback automatico para `mailto:` quando sem 
 
 Status atual: concluida.
 
+## Fase 57: Notificacoes De Escala Por Email
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos avisar pessoa por email quando for escalada e o lider quando alguem responder?
+
+Decisao: emails best-effort no PUT do plano (novas atribuicoes) e no PATCH de status (resposta); silencioso quando provedor ausente; sem tokens de confirmacao via link.
+
 Antes de desenvolver, perguntar:
 
 > Vamos liberar o "esqueci minha senha" agora que temos provedor de email?
