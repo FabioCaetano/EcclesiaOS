@@ -2,9 +2,11 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 73 - Check-in UX 2**.
+O EcclesiaOS concluiu ate a **Fase 74 - Pessoas 2 - Campos Ampliados**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
+
+Tambem em 2026-05-07 foi registrado o bloco [[feedback-2026-05-07-new-modules|Feedback De Produto - Novos Modulos - 2026-05-07]], com pedidos de musicas/playlists, liturgia/checklist, formularios, campos ampliados de pessoas e relatorios.
 
 A base atual ja cobre:
 
@@ -12,7 +14,7 @@ A base atual ja cobre:
 - PostgreSQL/Prisma como banco real local e JSON como fallback/teste;
 - igreja unica com canal do YouTube, QR de visitante e templates de etiqueta;
 - Inicio operacional com videos reais do canal via feed publico;
-- pessoas, grupos, ministerios com posicoes de servico, visitantes e mensagens em lote;
+- pessoas com campos ampliados, grupos, ministerios com posicoes de servico, visitantes e mensagens em lote;
 - templates de mensagem com variaveis por destinatario;
 - provedor de email via Resend com fallback seguro quando nao configurado;
 - presenca historica consolidada a partir de check-ins;
@@ -48,39 +50,63 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar a Fase 73 no GitHub e redeployar Render/Vercel.
-2. Aplicar migrations Prisma `20260507130000_group_service_positions` e `20260507140000_group_member_service_positions` no ambiente publicado.
-3. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
-4. Financeiro ainda pode evoluir em relatorios/exportacao.
-5. Igreja ainda precisa upload de logo e refinamento de identidade visual, mas essa fase foi pulada por enquanto.
+1. Publicar a Fase 74 no GitHub e redeployar Render/Vercel.
+2. Aplicar migrations Prisma pendentes, incluindo `20260507150000_people_extended_fields`.
+3. Seguir para Relatorios 1 - Pessoas.
+4. Musicas/Liturgia e Formularios seguem planejados.
+5. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
 
 ## Proximas Fases Recomendadas
 
-### Check-in Salas Infantis
+### Relatorios 1 - Pessoas
 
 Escopo provavel:
 
-- salas infantis por idade;
-- dashboard por sala;
-- fila de criancas aguardando retirada por sala;
-- acoes rapidas de mensagem ao responsavel;
-- refinamento da area de etiquetas e impressao.
+- aniversariantes da semana;
+- total de membros;
+- membros por mulheres/homens;
+- adolescentes/kids por idade;
+- filtros por status, idade e ministerio;
+- exportacao CSV.
 
-Valor: aproxima Check-in de um fluxo real de domingo.
+Valor: transforma o cadastro ampliado em informacao de gestao.
 
-### Financeiro 2
+### Musicas E Liturgia
 
 Escopo provavel:
 
-- relatorios por periodo;
-- exportacao CSV;
-- visao por fundo/categoria;
-- melhorias de recibo.
+- cadastro de musicas e tons;
+- playlists/setlists por culto;
+- checklist/liturgia por culto.
 
-Valor: torna o financeiro mais util para operacao mensal.
+Valor: conecta Agenda, Louvor e operacao do culto.
+
+### Musicas E Liturgia
+
+Escopo provavel:
+
+- cadastro de musicas e tons;
+- playlists/setlists por culto;
+- vinculo com evento/culto da Agenda;
+- checklist/liturgia por culto;
+- responsaveis e status por item.
+
+Valor: conecta Agenda, Louvor e operacao do culto.
+
+### Formularios
+
+Escopo provavel:
+
+- criador de formularios por admin;
+- campos configuraveis;
+- responsaveis por formulario;
+- notificacoes/email de novas respostas;
+- relatorios/exportacao por formulario.
+
+Valor: cria captação estruturada de informacoes sem depender de ferramentas externas.
 
 ## Recomendacao Atual
 
-Primeiro publicar a Fase 73. Depois seguir para **Check-in Salas Infantis** ou **Financeiro 2**.
+Primeiro publicar a Fase 74. Depois seguir para **Relatorios 1 - Pessoas**.
 
-Motivo: pulamos Marca e Auditoria por enquanto; Check-in agora tem contexto operacional, e pode ganhar profundidade real com salas ou podemos voltar ao Financeiro.
+Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em Pessoas.

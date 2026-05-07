@@ -38,6 +38,10 @@ model PersonRecord {
   email     String
   phone     String
   birthDate String
+  membershipDate String @default("")
+  address   String @default("")
+  baptized  Boolean @default(false)
+  gender    String @default("unspecified")
   status    String
   guardianPersonIds Json @default("[]")
   notes     String

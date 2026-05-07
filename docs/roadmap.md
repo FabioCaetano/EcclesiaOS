@@ -1222,3 +1222,92 @@ Entregue:
 - contadores e listas filtrados pelo contexto;
 - botao para aplicar evento selecionado aos formularios;
 - administracao kids e etiquetas seguindo o mesmo contexto.
+
+## Fase 74: Pessoas 2 - Campos Ampliados
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos ampliar o cadastro de pessoas antes de criar relatorios?
+
+Possivel escopo:
+
+- data de nascimento;
+- data de membresia;
+- endereco;
+- batismo;
+- ministerios que serve;
+- notas;
+- preparar categorias para relatorios.
+
+Entregue:
+
+- `membershipDate`, `address`, `baptized` e `gender` em Pessoas;
+- ministerios que serve derivados de Grupos/Ministerios;
+- UI de Pessoas ampliada;
+- migration Prisma para persistir os novos campos.
+
+## Fase 75: Relatorios 1 - Pessoas
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos criar a primeira aba de Relatorios focada em Pessoas?
+
+Possivel escopo:
+
+- aniversariantes da semana;
+- total de membros;
+- membros por faixa/categoria;
+- filtros por status, idade e ministerio;
+- exportacao CSV.
+
+## Fase 76: Musicas E Playlists Por Culto
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos criar repertorio musical e playlists vinculadas aos cultos?
+
+Possivel escopo:
+
+- cadastro de musicas;
+- tons por musica;
+- tags/observacoes/link de cifra;
+- playlist por culto/evento;
+- visualizacao das musicas relacionadas ao culto.
+
+## Fase 77: Checklist E Liturgia Do Culto
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos adicionar checklist/liturgia dentro de cada culto?
+
+Possivel escopo:
+
+- itens ordenados da liturgia;
+- responsavel por item;
+- horario/duracao estimada;
+- status pendente/concluido;
+- observacoes internas.
+
+## Fase 78: Formularios
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos criar uma area de formularios administraveis?
+
+Possivel escopo:
+
+- criacao de formularios por admin;
+- campos configuraveis;
+- responsaveis por formulario;
+- notificacoes/email para responsaveis;
+- respostas e relatorios/exportacao.

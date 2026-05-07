@@ -46,6 +46,10 @@ test("personRepository creates, updates and removes normalized people", async ()
     email: " ana@example.com ",
     phone: " 9999 ",
     birthDate: "",
+    membershipDate: "",
+    address: "",
+    baptized: false,
+    gender: "unspecified",
     status: "visitor",
     guardianPersonIds: [],
     notes: "  primeira visita "
@@ -62,6 +66,10 @@ test("personRepository creates, updates and removes normalized people", async ()
     email: "",
     phone: "",
     birthDate: "",
+    membershipDate: "2026-05-01",
+    address: "Rua Teste",
+    baptized: true,
+    gender: "female",
     status: "member",
     guardianPersonIds: [],
     notes: ""
@@ -80,6 +88,10 @@ test("personRepository persists guardian links", async () => {
     email: "",
     phone: "",
     birthDate: "",
+    membershipDate: "",
+    address: "",
+    baptized: false,
+    gender: "unspecified",
     status: "visitor",
     guardianPersonIds: ["per_001"],
     notes: ""

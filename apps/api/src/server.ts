@@ -386,6 +386,10 @@ const createPersonForUser = async (input: UserInput | RegisterRequest) => {
     email: input.email,
     phone: "phone" in input ? registerLike.phone : "",
     birthDate: "",
+    membershipDate: "",
+    address: "",
+    baptized: false,
+    gender: "unspecified",
     status: "status" in input ? registerLike.status : "member",
     guardianPersonIds: [],
     notes: "Pessoa criada automaticamente para vinculo de usuario."
@@ -501,6 +505,10 @@ const handleCreateVisitor = async (req: IncomingMessage, res: ServerResponse) =>
     email: input.email,
     phone: input.phone,
     birthDate: "",
+    membershipDate: "",
+    address: "",
+    baptized: false,
+    gender: "unspecified",
     status: "visitor",
     guardianPersonIds: [],
     notes: input.notes ? `Visitante via QR. ${input.notes}` : "Visitante via QR."
@@ -635,6 +643,10 @@ const sanitizePersonInput = (body: PersonInput): PersonInput => ({
   email: String(body.email || "").trim(),
   phone: String(body.phone || "").trim(),
   birthDate: String(body.birthDate || "").trim(),
+  membershipDate: String(body.membershipDate || "").trim(),
+  address: String(body.address || "").trim(),
+  baptized: Boolean(body.baptized),
+  gender: body.gender === "female" || body.gender === "male" ? body.gender : "unspecified",
   status: body.status === "visitor" ? "visitor" : "member",
   guardianPersonIds: Array.isArray(body.guardianPersonIds) ? body.guardianPersonIds.map(String).filter(Boolean) : [],
   notes: String(body.notes || "").trim()

@@ -38,7 +38,7 @@ Prioridades abertas:
 | Registro Publico | Concluido | Cadastro cria pessoa e usuario `member` vinculado. |
 | Persistencia inicial | Concluido | Dados em JSON local. |
 | Igreja | Concluido | Igreja unica simples, sem campus, com canal do YouTube configuravel. |
-| Pessoas | Concluido | CRUD minimo por admin, leitura por autenticados e responsaveis vinculados. |
+| Pessoas | Concluido | CRUD por admin, leitura por autenticados, responsaveis vinculados, membresia, endereco, batismo, genero e ministerios derivados dos grupos. |
 | Grupos e Ministerios | Concluido | CRUD minimo por admin, leitura por autenticados, posicoes de servico e posicoes por pessoa em ministerios/equipes. |
 | Layout e Navegacao | Concluido | Inicio, Igreja, Pessoas e Grupos em secoes navegaveis. |
 | Presenca | Oculto no menu | Codigo e endpoints mantidos; fluxo operacional migrou para Agenda/Check-in. |
@@ -318,6 +318,7 @@ Fluxos validados:
 - A Fase 72 adicionou `memberServicePositions` em ministerios/equipes e requer migration Prisma `20260507140000_group_member_service_positions`.
 - A Fase 72 passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - A Fase 73 adicionou contexto operacional por evento/culto no Check-in e passou em `build:web`, `build:api` e 37 testes da API em 2026-05-07.
+- A Fase 74 adicionou campos ampliados em Pessoas e passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -330,4 +331,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: publicar a Fase 73 e depois seguir para **Check-in Salas Infantis** ou **Financeiro 2**.
+Proxima recomendacao: publicar a Fase 74 e depois seguir para **Relatorios 1 - Pessoas**.

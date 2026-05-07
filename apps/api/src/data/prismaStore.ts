@@ -299,6 +299,10 @@ export const readPrismaData = async (): Promise<DataFile> => {
     people: people.map((person) => ({
       ...person,
       status: person.status === "visitor" ? "visitor" : "member",
+      gender: person.gender === "female" || person.gender === "male" ? person.gender : "unspecified",
+      membershipDate: person.membershipDate || "",
+      address: person.address || "",
+      baptized: Boolean(person.baptized),
       guardianPersonIds: asStringArray(person.guardianPersonIds),
       createdAt: person.createdAt.toISOString(),
       updatedAt: person.updatedAt.toISOString()

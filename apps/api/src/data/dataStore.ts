@@ -121,7 +121,14 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     heightMm: Number(template.heightMm) || 0,
     printerModel: template.printerModel || ""
   })),
-  people: (data.people || defaultPeople).map((person) => ({ ...person, guardianPersonIds: person.guardianPersonIds || [] })),
+  people: (data.people || defaultPeople).map((person) => ({
+    ...person,
+    membershipDate: person.membershipDate || "",
+    address: person.address || "",
+    baptized: Boolean(person.baptized),
+    gender: person.gender === "female" || person.gender === "male" ? person.gender : "unspecified",
+    guardianPersonIds: person.guardianPersonIds || []
+  })),
   resources: data.resources || defaultResources,
   roomReservations: (data.roomReservations || defaultRoomReservations).map((reservation) => ({ ...reservation, status: reservation.status === "cancelled" ? "cancelled" : "confirmed" })),
   peopleMessages: (data.peopleMessages || []).map((message) => ({

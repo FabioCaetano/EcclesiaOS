@@ -34,6 +34,10 @@ export const emptyPersonInput: PersonInput = {
   email: "",
   phone: "",
   birthDate: "",
+  membershipDate: "",
+  address: "",
+  baptized: false,
+  gender: "unspecified",
   status: "member",
   guardianPersonIds: [],
   notes: ""

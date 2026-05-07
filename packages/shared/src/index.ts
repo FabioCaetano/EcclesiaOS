@@ -221,6 +221,7 @@ export interface ChurchProfile {
 export type ChurchProfileUpdate = Omit<ChurchProfile, "id">;
 
 export type PersonStatus = "member" | "visitor";
+export type PersonGender = "female" | "male" | "unspecified";
 
 export interface PersonProfile {
   id: string;
@@ -229,6 +230,10 @@ export interface PersonProfile {
   email: string;
   phone: string;
   birthDate: string;
+  membershipDate: string;
+  address: string;
+  baptized: boolean;
+  gender: PersonGender;
   status: PersonStatus;
   guardianPersonIds: string[];
   notes: string;

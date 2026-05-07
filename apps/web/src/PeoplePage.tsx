@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Printer, Users } from "lucide-react";
-import type { CurrentUser, LabelTemplate, PersonInput, PersonProfile } from "@ecclesiaos/shared";
-import { deletePerson, loadLabelTemplates, loadPeople, savePerson } from "./api";
+import type { CurrentUser, GroupProfile, LabelTemplate, PersonInput, PersonProfile } from "@ecclesiaos/shared";
+import { deletePerson, loadGroups, loadLabelTemplates, loadPeople, savePerson } from "./api";
 import { emptyPersonInput } from "./constants";
 import { toPersonInput } from "./mappers";
 import { Card, EmptyState, PageHeader } from "./ui";
@@ -22,6 +22,7 @@ const labelPageStyle = (template: LabelTemplate): string => {
 
 export const PeoplePage: React.FC<Props> = ({ token, user }) => {
   const [people, setPeople] = useState<PersonProfile[]>([]);
+  const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [personForm, setPersonForm] = useState<PersonInput>(emptyPersonInput);
   const [peopleStatus, setPeopleStatus] = useState("");
@@ -32,6 +33,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
 
   useEffect(() => {
     refreshPeople().catch(() => setPeopleStatus("Nao foi possivel carregar pessoas."));
+    loadGroups(token).then(setGroups).catch(() => setGroups([]));
   }, [token]);
 
   useEffect(() => {
@@ -68,6 +70,17 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
 
   const updatePersonField = (field: keyof PersonInput, value: string) => {
     setPersonForm((current) => ({ ...current, [field]: field === "status" && value === "visitor" ? "visitor" : value }));
+  };
+
+  const ministrySummary = (personId: string) => {
+    const servingGroups = groups.filter((group) =>
+      (group.type === "ministry" || group.type === "team") && group.memberPersonIds.includes(personId)
+    );
+    if (servingGroups.length === 0) return "Nenhum ministerio vinculado";
+    return servingGroups.map((group) => {
+      const positions = group.memberServicePositions?.[personId] || [];
+      return positions.length > 0 ? `${group.name} (${positions.join(", ")})` : group.name;
+    }).join("; ");
   };
 
   const toggleGuardian = (personId: string) => {
@@ -139,6 +152,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
             <button className={person.id === selectedPersonId ? "person-row selected" : "person-row"} key={person.id} type="button" onClick={() => selectPerson(person)}>
               <strong>{person.firstName} {person.lastName}</strong>
               <span>{person.status === "member" ? "Membro" : "Visitante"} - {person.email || "sem email"}</span>
+              <span>{person.status === "member" ? ministrySummary(person.id) : "Visitante"}</span>
             </button>
           ))}
         </div>
@@ -148,7 +162,16 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
           <label>Sobrenome<input disabled={user.role !== "admin"} value={personForm.lastName} onChange={(event) => updatePersonField("lastName", event.target.value)} /></label>
           <label>Email<input disabled={user.role !== "admin"} value={personForm.email} onChange={(event) => updatePersonField("email", event.target.value)} /></label>
           <label>Telefone<input disabled={user.role !== "admin"} value={personForm.phone} onChange={(event) => updatePersonField("phone", event.target.value)} /></label>
-          <label>Nascimento<input disabled={user.role !== "admin"} type="date" value={personForm.birthDate} onChange={(event) => updatePersonField("birthDate", event.target.value)} /></label>
+          <label>Data de nasc.<input disabled={user.role !== "admin"} type="date" value={personForm.birthDate} onChange={(event) => updatePersonField("birthDate", event.target.value)} /></label>
+          <label>Data que se membrou<input disabled={user.role !== "admin"} type="date" value={personForm.membershipDate} onChange={(event) => updatePersonField("membershipDate", event.target.value)} /></label>
+          <label>
+            Genero
+            <select disabled={user.role !== "admin"} value={personForm.gender} onChange={(event) => updatePersonField("gender", event.target.value)}>
+              <option value="unspecified">Nao informado</option>
+              <option value="female">Mulher</option>
+              <option value="male">Homem</option>
+            </select>
+          </label>
           <label>
             Status
             <select disabled={user.role !== "admin"} value={personForm.status} onChange={(event) => updatePersonField("status", event.target.value)}>
@@ -156,7 +179,18 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
               <option value="visitor">Visitante</option>
             </select>
           </label>
-          <label className="wide-field">Observacoes internas<textarea disabled={user.role !== "admin"} value={personForm.notes} onChange={(event) => updatePersonField("notes", event.target.value)} /></label>
+          <label className="wide-field">Endereco<input disabled={user.role !== "admin"} value={personForm.address} onChange={(event) => updatePersonField("address", event.target.value)} /></label>
+          <label className="checkbox-inline wide-field">
+            <input
+              checked={personForm.baptized}
+              disabled={user.role !== "admin"}
+              type="checkbox"
+              onChange={(event) => setPersonForm((current) => ({ ...current, baptized: event.target.checked }))}
+            />
+            Batismo registrado
+          </label>
+          <label className="wide-field">Ministerios que serve<input disabled value={selectedPersonId ? ministrySummary(selectedPersonId) : "Selecione uma pessoa para ver ministerios vinculados"} /></label>
+          <label className="wide-field">Notas<textarea disabled={user.role !== "admin"} value={personForm.notes} onChange={(event) => updatePersonField("notes", event.target.value)} /></label>
           <fieldset className="member-picker">
             <legend>Responsaveis vinculados</legend>
             {people.filter((person) => person.id !== selectedPersonId).map((person) => (

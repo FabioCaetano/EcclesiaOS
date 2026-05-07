@@ -9,6 +9,10 @@ const normalizeInput = (input: PersonInput): PersonInput => ({
   email: String(input.email || "").trim(),
   phone: String(input.phone || "").trim(),
   birthDate: String(input.birthDate || "").trim(),
+  membershipDate: String(input.membershipDate || "").trim(),
+  address: String(input.address || "").trim(),
+  baptized: Boolean(input.baptized),
+  gender: input.gender === "female" || input.gender === "male" ? input.gender : "unspecified",
   status: input.status === "visitor" ? "visitor" : "member",
   guardianPersonIds: Array.isArray(input.guardianPersonIds) ? input.guardianPersonIds.map(String).filter(Boolean) : [],
   notes: String(input.notes || "").trim()

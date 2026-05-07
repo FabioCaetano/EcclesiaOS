@@ -20,6 +20,10 @@ export const toPersonInput = (person: PersonProfile): PersonInput => ({
   email: person.email,
   phone: person.phone,
   birthDate: person.birthDate,
+  membershipDate: person.membershipDate || "",
+  address: person.address || "",
+  baptized: Boolean(person.baptized),
+  gender: person.gender || "unspecified",
   status: person.status,
   guardianPersonIds: person.guardianPersonIds || [],
   notes: person.notes

@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 73 - Check-in UX 2**.
+Fase atual concluida: **Fase 74 - Pessoas 2 - Campos Ampliados**.
 
 Ultimo modulo entregue:
 
-- Check-in ganhou painel operacional por evento/culto selecionado;
-- contadores refletem o evento selecionado;
-- Evento, Kids, Administracao kids e Etiquetas usam o mesmo contexto;
-- listas de criancas e pessoas ficam filtradas pelo contexto;
-- fluxo ficou mais claro sem criar novo menu lateral.
+- Pessoas ganhou campos de membresia, endereco, batismo e genero;
+- Ministerio que serve aparece derivado dos grupos/ministerios;
+- cadastro esta pronto para relatorios iniciais;
+- Prisma ganhou migration para os novos campos de Pessoas;
+- builds e testes passaram apos a mudanca.
 
 Ambiente atual:
 
@@ -29,12 +29,13 @@ Ambiente atual:
 3. [[project-status|Status Do Projeto]]
 4. [[roadmap|Roadmap Faseado]]
 5. [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]
-6. [[decision-log|Registro De Decisoes]]
-7. [[development|Desenvolvimento Local]]
-8. [[deploy|Publicacao Gratuita]]
-9. [[project-structure|Estrutura Do Projeto]]
-10. [[next-steps|Proximos Passos]]
-11. [[questions|Backlog De Perguntas]]
+6. [[feedback-2026-05-07-new-modules|Feedback De Produto - Novos Modulos - 2026-05-07]]
+7. [[decision-log|Registro De Decisoes]]
+8. [[development|Desenvolvimento Local]]
+9. [[deploy|Publicacao Gratuita]]
+10. [[project-structure|Estrutura Do Projeto]]
+11. [[next-steps|Proximos Passos]]
+12. [[questions|Backlog De Perguntas]]
 
 ## Fases
 
@@ -110,6 +111,7 @@ Ambiente atual:
 - [[phases/phase-69-ministry-service-positions|Fase 69 - Posicoes Em Ministerios]]
 - [[phases/phase-72-member-service-positions-substitutes|Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos]]
 - [[phases/phase-73-checkin-ux-2|Fase 73 - Check-in UX 2]]
+- [[phases/phase-74-people-extended-fields|Fase 74 - Pessoas 2 - Campos Ampliados]]
 
 ## Decisoes
 
@@ -186,14 +188,16 @@ Ambiente atual:
 - [[decisions/0071-ministry-service-positions|0071 - Posicoes Configuraveis Em Ministerios]]
 - [[decisions/0072-member-service-positions-substitutes|0072 - Posicoes Por Pessoa E Substitutos Por Posicao]]
 - [[decisions/0073-checkin-operational-context|0073 - Contexto Operacional No Check-in]]
+- [[decisions/0074-people-extended-fields|0074 - Campos Ampliados Em Pessoas]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 73**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma pendentes.
-2. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
-3. **Financeiro 2**: relatorios, exportacoes e visao por periodo/fundo/categoria.
-4. **Fase 70 - Marca Da Igreja E Refinos De Conta**: mantida pulada por decisao temporaria.
+1. **Publicar Fase 74**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma pendentes.
+2. **Relatorios 1 - Pessoas**: aniversariantes, total de membros e segmentacoes.
+3. **Musicas E Liturgia**: repertorio, playlists por culto e checklist/liturgia.
+4. **Formularios**: criacao de formularios, responsaveis, notificacoes e relatorios.
+5. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
 
-Recomendacao atual: publicar a Fase 73 e seguir para **Check-in Salas Infantis** ou **Financeiro 2**.
+Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.

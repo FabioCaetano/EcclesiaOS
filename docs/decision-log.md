@@ -128,6 +128,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 100. Contexto operacional no Check-in: a aba Check-in passa a ter um evento/culto selecionado no topo; contadores e listas de Eventos, Kids, Administracao kids e Etiquetas usam esse contexto para reduzir confusao operacional sem criar novo menu lateral.
 
+101. Campos ampliados em Pessoas: `PersonProfile` passa a ter `membershipDate`, `address`, `baptized` e `gender`; ministerios que serve continuam derivados de Grupos/Ministerios para evitar duplicacao de dados; genero e nascimento servem como base para relatorios de membros por mulheres/homens, adolescentes e kids.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.
