@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Heart, Plus, Printer, Tag } from "lucide-react";
+import { Download, Heart, Plus, Printer, QrCode, Tag } from "lucide-react";
+import QRCode from "qrcode";
 import type { ChurchProfile, ChurchProfileUpdate, CurrentUser, LabelLayout, LabelTemplate, LabelTemplateInput } from "@ecclesiaos/shared";
 import { deleteLabelTemplate, loadChurchProfile, loadLabelTemplates, saveLabelTemplate, updateChurchProfile } from "./api";
 import { toChurchUpdate } from "./mappers";
@@ -43,8 +44,10 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [templateStatus, setTemplateStatus] = useState("");
   const [printingTemplate, setPrintingTemplate] = useState<LabelTemplate | null>(null);
+  const [visitorQrSrc, setVisitorQrSrc] = useState("");
 
   const isAdmin = user.role === "admin";
+  const visitorUrl = `${window.location.origin}/visitor`;
 
   useEffect(() => {
     loadChurchProfile(token)
@@ -67,6 +70,24 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
   useEffect(() => {
     void refreshTemplates();
   }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    QRCode.toDataURL(visitorUrl, { errorCorrectionLevel: "M", margin: 1, width: 320 })
+      .then((src) => { if (active) setVisitorQrSrc(src); })
+      .catch(() => { if (active) setVisitorQrSrc(""); });
+    return () => { active = false; };
+  }, [visitorUrl]);
+
+  const downloadVisitorQr = () => {
+    if (!visitorQrSrc) return;
+    const link = document.createElement("a");
+    link.href = visitorQrSrc;
+    link.download = "ecclesiaos-qr-visitante.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     if (!printingTemplate) return;
@@ -187,6 +208,34 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
       ) : (
         <p className="muted">{churchStatus || "Carregando cadastro..."}</p>
       )}
+      </Card>
+
+      <Card className="church-panel">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow"><QrCode size={12} />Pre-cadastro</p>
+          <h2>QR de visitantes</h2>
+        </div>
+      </div>
+      <div className="visitor-qr-block">
+        {visitorQrSrc ? (
+          <img className="visitor-qr-image" src={visitorQrSrc} alt="QR Code de pre-cadastro de visitantes" />
+        ) : (
+          <div className="visitor-qr-image placeholder" />
+        )}
+        <div className="visitor-qr-info">
+          <p className="muted">Imprima e deixe na entrada. O visitante escaneia, preenche um formulario rapido e cai em Pessoas com status visitante.</p>
+          <p className="muted"><strong>URL:</strong> {visitorUrl}</p>
+          <div className="response-actions">
+            <button className="secondary-button" type="button" onClick={downloadVisitorQr} disabled={!visitorQrSrc}>
+              <Download size={14} /> Baixar PNG
+            </button>
+            <a className="secondary-button" href={visitorUrl} target="_blank" rel="noopener noreferrer">
+              Abrir formulario
+            </a>
+          </div>
+        </div>
+      </div>
       </Card>
 
       <Card className="church-panel">

@@ -37,6 +37,7 @@ const normalizeInput = (input: ChurchEventInput): ChurchEventInput => ({
   registrationPrice: Math.max(0, Number(input.registrationPrice) || 0),
   registrationCurrency: String(input.registrationCurrency || "BRL").trim().toUpperCase() || "BRL",
   registrationSlug: String(input.registrationSlug || "").trim(),
+  registrationRequiresEmailConfirmation: Boolean(input.registrationRequiresEmailConfirmation),
   description: String(input.description || "").trim()
 });
 
@@ -66,6 +67,7 @@ const buildChildFromMaster = (master: ChurchEvent, occurrence: { date: string; s
   registrationPrice: 0,
   registrationCurrency: master.registrationCurrency,
   registrationSlug: `${master.registrationSlug || master.id}-${occurrence.date}-${occurrence.startTime.replace(":", "")}`,
+  registrationRequiresEmailConfirmation: false,
   description: master.description,
   createdAt: nowIso,
   updatedAt: nowIso

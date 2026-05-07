@@ -234,7 +234,14 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
       await refreshPlans();
       await refreshNotifications();
       if (selectedPlanId === updated.id) selectPlan(updated);
-      setServingStatus(status === "confirmed" ? "Escala confirmada." : "Escala recusada.");
+      if (updated.substituteSuggestions.length > 0) {
+        setSubstitutesByAssignment((current) => ({ ...current, [assignmentId]: updated.substituteSuggestions }));
+      }
+      setServingStatus(status === "confirmed"
+        ? "Escala confirmada."
+        : updated.substituteSuggestions.length > 0
+          ? `Escala recusada. ${updated.substituteSuggestions.length} substituto(s) sugerido(s) automaticamente.`
+          : "Escala recusada. Nenhum substituto disponivel automaticamente.");
     } catch {
       setServingStatus("Nao foi possivel responder a escala.");
     }

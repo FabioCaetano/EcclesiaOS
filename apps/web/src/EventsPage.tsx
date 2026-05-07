@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { CalendarDays, Plus } from "lucide-react";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile } from "@ecclesiaos/shared";
-import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEventRegistrations, loadEvents, loadGroups, loadResources, saveEvent, updateEventRegistrationStatus } from "./api";
+import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
 import { useQrScanner } from "./useQrScanner";
@@ -16,10 +16,17 @@ interface Props {
 const registrationStatusLabels: Record<EventRegistrationStatus, string> = {
   confirmed: "Confirmada",
   pending_payment: "Pagamento pendente",
+  pending_email_confirmation: "Aguardando email",
   cancelled: "Cancelada"
 };
 
 const ticketPayload = (registration: EventRegistration) => `ecclesiaos-event-ticket:${registration.id}:${registration.ticketCode || registration.id}`;
+
+const isEmailConfirmationExpired = (registration: EventRegistration) => (
+  registration.status === "pending_email_confirmation"
+  && Boolean(registration.emailConfirmationExpiresAt)
+  && registration.emailConfirmationExpiresAt < new Date().toISOString()
+);
 
 const parseTicketPayload = (value: string) => {
   const parts = value.trim().split(":");
@@ -60,6 +67,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const [eventForm, setEventForm] = useState<ChurchEventInput>(emptyEventInput);
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
   const [status, setStatus] = useState("");
+  const [emailConfigured, setEmailConfigured] = useState(false);
 
   const upcomingEvents = useMemo(() => events.filter((event) => event.date >= new Date().toISOString().slice(0, 10)), [events]);
   const filteredEvents = useMemo(() => events.filter((event) => !monthFilter || event.date.startsWith(monthFilter)), [events, monthFilter]);
@@ -84,6 +92,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   useEffect(() => {
     loadGroups(token).then(setGroups).catch(() => setStatus("Nao foi possivel carregar grupos."));
     loadResources(token).then(setResources).catch(() => setStatus("Nao foi possivel carregar ambientes."));
+    loadEmailStatus().then((info) => setEmailConfigured(info.configured)).catch(() => setEmailConfigured(false));
     refreshEvents().catch(() => setStatus("Nao foi possivel carregar eventos."));
   }, [token]);
 
@@ -117,7 +126,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
         ? "other"
         : field === "recurrence" && !Object.keys(recurrenceLabels).includes(value)
           ? "none"
-          : field === "registrationEnabled"
+          : field === "registrationEnabled" || field === "registrationRequiresEmailConfirmation"
             ? Boolean(value)
             : field === "registrationCapacity" || field === "registrationPrice"
               ? Number(value) || 0
@@ -187,11 +196,12 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const registrationCount = (eventId: string) => registrations.filter((registration) => registration.eventId === eventId && registration.status !== "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
   const selectedPublicLink = selectedEvent?.registrationSlug ? `${window.location.origin}/register/${selectedEvent.registrationSlug}` : "";
+  const selectedCheckInLink = selectedEvent?.registrationSlug ? `${window.location.origin}/event-checkin/${selectedEvent.registrationSlug}` : "";
   const selectedEventRegistrations = registrations.filter((registration) => registration.eventId === selectedEventId);
   const filteredRegistrations = selectedEventRegistrations.filter((registration) => registrationStatusFilter === "all" || registration.status === registrationStatusFilter);
   const selectedRegistration = registrations.find((registration) => registration.id === selectedRegistrationId) || null;
   const confirmedQuantity = selectedEventRegistrations.filter((registration) => registration.status === "confirmed").reduce((sum, registration) => sum + registration.quantity, 0);
-  const pendingQuantity = selectedEventRegistrations.filter((registration) => registration.status === "pending_payment").reduce((sum, registration) => sum + registration.quantity, 0);
+  const pendingQuantity = selectedEventRegistrations.filter((registration) => registration.status === "pending_payment" || registration.status === "pending_email_confirmation").reduce((sum, registration) => sum + registration.quantity, 0);
   const cancelledQuantity = selectedEventRegistrations.filter((registration) => registration.status === "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
   const amountConfirmed = selectedEventRegistrations.filter((registration) => registration.status === "confirmed").reduce((sum, registration) => sum + registration.amountDue, 0);
 
@@ -205,6 +215,19 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
       setStatus("Inscricao atualizada.");
     } catch {
       setStatus("Nao foi possivel atualizar a inscricao.");
+    }
+  };
+
+  const resendConfirmation = async (registration: EventRegistration) => {
+    if (user.role !== "admin") return;
+    setStatus("Reenviando confirmacao...");
+    try {
+      const result = await resendEventRegistrationConfirmation(token, registration.id);
+      await refreshEvents();
+      setSelectedRegistrationId(registration.id);
+      setStatus(result.emailSent ? "Email de confirmacao reenviado." : "Token renovado, mas o provedor de email nao esta configurado.");
+    } catch {
+      setStatus("Nao foi possivel reenviar a confirmacao.");
     }
   };
 
@@ -357,12 +380,25 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
           </fieldset>
           <label className="wide-field">Descricao<textarea disabled={user.role !== "admin"} value={eventForm.description} onChange={(event) => updateField("description", event.target.value)} /></label>
           <label className="wide-field">Slug publico<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} value={eventForm.registrationSlug} onChange={(event) => updateField("registrationSlug", event.target.value)} /></label>
+          <label className="checkbox-inline wide-field">
+            <input
+              type="checkbox"
+              disabled={user.role !== "admin" || !eventForm.registrationEnabled || !emailConfigured}
+              checked={eventForm.registrationRequiresEmailConfirmation}
+              onChange={(event) => updateField("registrationRequiresEmailConfirmation", event.target.checked ? "true" : "")}
+            />
+            Exigir confirmacao de email do inscrito
+            {!emailConfigured && eventForm.registrationEnabled && (
+              <span className="muted" style={{ marginLeft: "var(--space-2)" }}>(precisa configurar provedor de email)</span>
+            )}
+          </label>
 
           {selectedPublicLink && (
             <div className="receipt-preview wide-field">
               <h3>Link de inscricao</h3>
               <p><span>Pagina</span><strong>{selectedPublicLink}</strong></p>
               <p><span>API</span><strong>{apiBaseUrl}/public/events/{selectedEvent?.registrationSlug}</strong></p>
+              <p><span>Check-in</span><strong>{selectedCheckInLink}</strong></p>
             </div>
           )}
 
@@ -401,6 +437,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
                 <option value="all">Todos</option>
                 <option value="confirmed">Confirmadas</option>
                 <option value="pending_payment">Pagamento pendente</option>
+                <option value="pending_email_confirmation">Aguardando email</option>
                 <option value="cancelled">Canceladas</option>
               </select>
             </label>
@@ -426,11 +463,17 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
               <article className={registration.id === selectedRegistrationId ? "registration-row selected" : "registration-row"} key={registration.id}>
                 <button type="button" onClick={() => setSelectedRegistrationId(registration.id)}>
                   <strong>{registration.name}</strong>
-                  <span>{registrationStatusLabels[registration.status]} - {registration.quantity} vaga(s) - {selectedEvent.registrationCurrency} {registration.amountDue.toFixed(2)}</span>
+                  <span>{registrationStatusLabels[registration.status]}{isEmailConfirmationExpired(registration) ? " expirada" : ""} - {registration.quantity} vaga(s) - {selectedEvent.registrationCurrency} {registration.amountDue.toFixed(2)}</span>
                   <small>{registration.email} {registration.phone ? `- ${registration.phone}` : ""}</small>
+                  {registration.status === "pending_email_confirmation" && registration.emailConfirmationExpiresAt && (
+                    <small>Link valido ate {new Date(registration.emailConfirmationExpiresAt).toLocaleString()}</small>
+                  )}
                 </button>
                 <div className="response-actions">
                   <button className="secondary-button" type="button" onClick={() => checkInRegistration(registration)}>{registration.checkedInAt ? "Entrada OK" : "Check-in"}</button>
+                  {registration.status === "pending_email_confirmation" && (
+                    <button className="secondary-button" type="button" onClick={() => resendConfirmation(registration)}>{isEmailConfirmationExpired(registration) ? "Renovar email" : "Reenviar email"}</button>
+                  )}
                   <button className="secondary-button" type="button" onClick={() => updateRegistration(registration, "confirmed")}>Confirmar</button>
                   <button className="secondary-button" type="button" onClick={() => updateRegistration(registration, "pending_payment")}>Pendente</button>
                   <button className="danger-button" type="button" onClick={() => updateRegistration(registration, "cancelled")}>Cancelar</button>

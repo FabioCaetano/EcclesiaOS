@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 59 - Lembretes Automaticos De Escala Por Email.
+Fase atual concluida: Fase 62 - Confirmacao De Email No Registro Publico De Eventos.
 
 Estrutura:
 

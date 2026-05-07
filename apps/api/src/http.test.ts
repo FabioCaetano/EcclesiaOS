@@ -16,6 +16,7 @@ process.env.EMAIL_FROM = "";
 
 const { createEcclesiaServer } = await import("./server.js");
 const { passwordResetTokenRepository } = await import("./data/passwordResetTokenRepository.js");
+const { eventRegistrationRepository } = await import("./data/eventRegistrationRepository.js");
 
 let server: Server;
 let baseUrl = "";
@@ -119,6 +120,38 @@ test("public registration creates member user linked to a person", async () => {
     })
   });
   assert.equal(duplicate.response.status, 409);
+});
+
+test("public visitor registration creates a visitor person without user", async () => {
+  const created = await requestJson<{ ok: true; message: string }>("/public/visitors", {
+    method: "POST",
+    body: JSON.stringify({
+      firstName: "Joao",
+      lastName: "Visitante",
+      email: "joao.visitante@example.com",
+      phone: "555-9999",
+      notes: "Veio com a familia"
+    })
+  });
+
+  assert.equal(created.response.status, 200);
+  assert.equal(created.body?.ok, true);
+  assert.equal(typeof created.body?.message, "string");
+
+  const people = await requestJson<Array<{ firstName: string; lastName: string; status: string; email: string; notes: string }>>("/people", {
+    headers: authHeaders(adminSession)
+  });
+  const person = people.body?.find((item) => item.email === "joao.visitante@example.com");
+  assert.ok(person, "visitor person should be persisted");
+  assert.equal(person?.status, "visitor");
+  assert.equal(person?.firstName, "Joao");
+  assert.ok(person?.notes.startsWith("Visitante via QR"));
+
+  const missing = await requestJson<{ error: string }>("/public/visitors", {
+    method: "POST",
+    body: JSON.stringify({ firstName: "", lastName: "", email: "", phone: "", notes: "" })
+  });
+  assert.equal(missing.response.status, 400);
 });
 
 test("authenticated list endpoints reject missing token and accept member token", async () => {
@@ -233,6 +266,131 @@ test("public event registration respects capacity and payment status", async () 
   });
   assert.equal(full.response.status, 409);
   assert.equal(full.body?.error, "conflict");
+});
+
+test("admin can renew pending event registration email confirmation", async () => {
+  const event = await requestJson<ChurchEvent>("/events", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      title: "Workshop Confirmacao",
+      type: "class",
+      date: "2026-06-18",
+      startTime: "19:00",
+      endTime: "21:00",
+      location: "Sala 2",
+      groupId: "",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      registrationEnabled: true,
+      registrationCapacity: 10,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "workshop-confirmacao",
+      registrationRequiresEmailConfirmation: true,
+      description: "Evento com confirmacao manual"
+    })
+  });
+  assert.equal(event.response.status, 201);
+  assert.ok(event.body);
+
+  const created = await eventRegistrationRepository.create(event.body, {
+    name: "Pessoa Pendente",
+    email: "pendente@example.com",
+    phone: "",
+    quantity: 1,
+    notes: ""
+  }, { emailConfirmationRequired: true });
+  assert.notEqual(created, "full");
+  if (created === "full") return;
+
+  const firstExpiresAt = created.registration.emailConfirmationExpiresAt;
+  const renewed = await requestJson<{ ok: boolean; emailSent: boolean; expiresAt: string; status: string }>(`/event-registrations/${created.registration.id}/resend-confirmation`, {
+    method: "POST",
+    headers: authHeaders(adminSession)
+  });
+
+  assert.equal(renewed.response.status, 200);
+  assert.equal(renewed.body?.ok, true);
+  assert.equal(renewed.body?.status, "pending_email_confirmation");
+  assert.equal(renewed.body?.emailSent, false);
+  assert.notEqual(renewed.body?.expiresAt, firstExpiresAt);
+});
+
+test("public self-service event check-in validates ticket payload and event slug", async () => {
+  const event = await requestJson<ChurchEvent>("/events", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      title: "Encontro Self Service",
+      type: "other",
+      date: "2026-06-22",
+      startTime: "10:00",
+      endTime: "12:00",
+      location: "Auditorio",
+      groupId: "",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      registrationEnabled: true,
+      registrationCapacity: 20,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "encontro-self-service",
+      registrationRequiresEmailConfirmation: false,
+      description: "Evento com check-in publico"
+    })
+  });
+  assert.equal(event.response.status, 201);
+
+  const registration = await requestJson<{ id: string; status: string; ticketCode: string; checkedInByUserId: string }>("/public/events/encontro-self-service/registrations", {
+    method: "POST",
+    body: JSON.stringify({ name: "Participante Self", email: "self@example.com", phone: "", quantity: 1, notes: "" })
+  });
+  assert.equal(registration.response.status, 201);
+  assert.equal(registration.body?.status, "confirmed");
+
+  const payload = `ecclesiaos-event-ticket:${registration.body?.id}:${registration.body?.ticketCode}`;
+  const checkedIn = await requestJson<{ checkedInAt: string; checkedInByUserId: string }>("/public/event-registrations/checkin", {
+    method: "POST",
+    body: JSON.stringify({ ticketPayload: payload, eventSlug: "encontro-self-service" })
+  });
+
+  assert.equal(checkedIn.response.status, 200);
+  assert.ok(checkedIn.body?.checkedInAt);
+  assert.equal(checkedIn.body?.checkedInByUserId, "self_service");
+
+  const wrongEvent = await requestJson<{ error: string }>("/events", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      title: "Outro Self Service",
+      type: "other",
+      date: "2026-06-23",
+      startTime: "10:00",
+      endTime: "12:00",
+      location: "Auditorio",
+      groupId: "",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      registrationEnabled: true,
+      registrationCapacity: 20,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "outro-self-service",
+      registrationRequiresEmailConfirmation: false,
+      description: ""
+    })
+  });
+  assert.equal(wrongEvent.response.status, 201);
+
+  const rejected = await requestJson<{ error: string }>("/public/event-registrations/checkin", {
+    method: "POST",
+    body: JSON.stringify({ ticketPayload: payload, eventSlug: "outro-self-service" })
+  });
+  assert.equal(rejected.response.status, 403);
 });
 
 test("leaders can register event and children check-ins", async () => {
@@ -672,6 +830,98 @@ test("person can manage own block-outs and admin can manage anyone", async () =>
   assert.equal(invalid.response.status, 400);
 });
 
+test("declined serving assignment returns automatic substitute suggestions", async () => {
+  const availablePerson = await requestJson<{ id: string }>("/people", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      firstName: "Substituto",
+      lastName: "Disponivel",
+      email: "substituto.disponivel@example.com",
+      phone: "",
+      birthDate: "",
+      status: "member",
+      guardianPersonIds: [],
+      notes: ""
+    })
+  });
+  assert.equal(availablePerson.response.status, 201);
+
+  const blockedPerson = await requestJson<{ id: string }>("/people", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      firstName: "Substituto",
+      lastName: "Bloqueado",
+      email: "substituto.bloqueado@example.com",
+      phone: "",
+      birthDate: "",
+      status: "member",
+      guardianPersonIds: [],
+      notes: ""
+    })
+  });
+  assert.equal(blockedPerson.response.status, 201);
+
+  const team = await requestJson<GroupProfile>("/groups", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      name: "Equipe Substituicao Automatica",
+      type: "team",
+      description: "",
+      leaderPersonId: leaderSession.user.personId,
+      memberPersonIds: [
+        memberSession.user.personId,
+        availablePerson.body!.id,
+        blockedPerson.body!.id
+      ]
+    })
+  });
+  assert.equal(team.response.status, 201);
+
+  const block = await requestJson<{ id: string }>("/block-outs", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      personId: blockedPerson.body!.id,
+      startDate: "2027-02-01",
+      endDate: "2027-02-01",
+      reason: "Indisponivel"
+    })
+  });
+  assert.equal(block.response.status, 201);
+
+  const plan = await requestJson<ServingPlan>("/serving-plans", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      date: "2027-02-01",
+      title: "Culto com substituto automatico",
+      groupId: team.body!.id,
+      eventId: "",
+      notes: "",
+      assignments: [
+        { id: "", personId: memberSession.user.personId, role: "Recepcao", status: "pending", notes: "", reminderSentAt: "" }
+      ]
+    })
+  });
+  assert.equal(plan.response.status, 201);
+  const assignmentId = plan.body!.assignments[0].id;
+
+  const declined = await requestJson<ServingPlan & { substituteSuggestions: Array<{ personId: string; name: string }>; substituteEmailSent: boolean }>(`/serving-plans/${plan.body!.id}/assignments/${assignmentId}/status`, {
+    method: "PATCH",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ status: "declined", notes: "Nao consigo servir" })
+  });
+
+  assert.equal(declined.response.status, 200);
+  assert.equal(declined.body?.assignments.find((assignment) => assignment.id === assignmentId)?.status, "declined");
+  assert.equal(declined.body?.substituteEmailSent, false);
+  assert.equal(declined.body?.substituteSuggestions.some((item) => item.personId === availablePerson.body!.id), true);
+  assert.equal(declined.body?.substituteSuggestions.some((item) => item.personId === blockedPerson.body!.id), false);
+});
+
 test("admin and leader can send people messages while member can only read", async () => {
   const memberPerson = memberSession.user.personId;
   const adminPerson = adminSession.user.personId;
@@ -731,6 +981,71 @@ test("admin and leader can send people messages while member can only read", asy
     body: JSON.stringify({ subject: "Vazio", body: "", channel: "manual", recipientPersonIds: [] })
   });
   assert.equal(noRecipients.response.status, 400);
+});
+
+test("public event registration confirmation rejects invalid tokens", async () => {
+  const invalid = await requestJson<{ error: string }>("/public/event-registrations/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token: "" })
+  });
+  assert.equal(invalid.response.status, 400);
+
+  const garbage = await requestJson<{ error: string }>("/public/event-registrations/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token: "naoexiste" })
+  });
+  assert.equal(garbage.response.status, 400);
+});
+
+test("admin and leader manage message templates while member only reads", async () => {
+  const memberCannotCreate = await requestJson<{ error: string }>("/message-templates", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ name: "Boas-vindas", channel: "email", subject: "Ola {{firstName}}", body: "Bem-vindo a {{churchName}}!" })
+  });
+  assert.equal(memberCannotCreate.response.status, 403);
+
+  const created = await requestJson<{ id: string; name: string; channel: string }>("/message-templates", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ name: "Boas-vindas", channel: "email", subject: "Ola {{firstName}}", body: "Bem-vindo a {{churchName}}!" })
+  });
+  assert.equal(created.response.status, 201);
+  assert.equal(created.body?.name, "Boas-vindas");
+  assert.equal(created.body?.channel, "email");
+
+  const leaderUpdate = await requestJson<{ id: string; name: string }>(`/message-templates/${created.body?.id}`, {
+    method: "PUT",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({ name: "Boas-vindas v2", channel: "whatsapp", subject: "Oi {{firstName}}", body: "{{churchName}} convida {{fullName}}." })
+  });
+  assert.equal(leaderUpdate.response.status, 200);
+  assert.equal(leaderUpdate.body?.name, "Boas-vindas v2");
+
+  const list = await requestJson<Array<{ id: string; name: string }>>("/message-templates", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(list.response.status, 200);
+  assert.ok((list.body || []).some((template) => template.id === created.body?.id));
+
+  const memberCannotDelete = await requestJson<{ error: string }>(`/message-templates/${created.body?.id}`, {
+    method: "DELETE",
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(memberCannotDelete.response.status, 403);
+
+  const removed = await requestJson<{ ok: boolean }>(`/message-templates/${created.body?.id}`, {
+    method: "DELETE",
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(removed.response.status, 200);
+
+  const missing = await requestJson<{ error: string }>(`/message-templates/${created.body?.id}`, {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ name: "X", channel: "manual", subject: "", body: "" })
+  });
+  assert.equal(missing.response.status, 404);
 });
 
 test("forgot password flow returns generic responses and resets via valid token", async () => {

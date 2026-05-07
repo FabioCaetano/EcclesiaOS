@@ -898,6 +898,36 @@ Antes de desenvolver, perguntar:
 
 Decisao: lazy no GET `/serving-notifications`; campo `reminderSentAt` na atribuicao garante uma vez so; janela em `REMINDER_DAYS_BEFORE` (default 2); sem cron job dedicado.
 
+## Fase 60: Pre-Cadastro De Visitantes Via QR Code
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos liberar QR Code na entrada para visitantes deixarem nome e contato sem criar conta?
+
+Decisao: novo `POST /public/visitors`, sem usuario nem senha; nova rota publica `/visitor`; ChurchPage gera QR; email de boas-vindas via Resend quando configurado.
+
+## Fase 61: Templates De Mensagem Com Variaveis
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos guardar modelos de mensagem com variaveis para reuso?
+
+Decisao: nova entidade `MessageTemplate`; variaveis Mustache simples (`{{firstName}}`, `{{lastName}}`, `{{fullName}}`, `{{email}}`, `{{phone}}`, `{{churchName}}`); substituicao por destinatario no backend (Resend) e no frontend (mailto/WhatsApp); CRUD restrito a admin/lider; leitura para todos autenticados; sem versionamento, sem condicionais, sem editor rico.
+
+## Fase 62: Confirmacao De Email No Registro Publico De Eventos
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos exigir confirmacao por email em inscricoes publicas para reduzir spam?
+
+Decisao: flag opcional por evento (`registrationRequiresEmailConfirmation`); novo status `pending_email_confirmation`; token hash sha256 + expiracao 24h gravados no proprio `EventRegistration`; endpoint publico `POST /public/event-registrations/confirm`; capacidade ignora registros pendentes ja expirados; flag desabilitada quando Resend nao esta configurado.
+
 Antes de desenvolver, perguntar:
 
 > Vamos liberar o "esqueci minha senha" agora que temos provedor de email?

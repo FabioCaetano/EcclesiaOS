@@ -108,6 +108,18 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 90. Lembretes automaticos de escala por email em modo lazy: `GET /serving-notifications` varre planos dentro de `REMINDER_DAYS_BEFORE` (default 2 dias) e envia email para atribuicoes sem `reminderSentAt`, com email cadastrado e status diferente de `declined`; sem cron job dedicado; campo `reminderSentAt` adicionado ao tipo `ServingAssignment`; envios best-effort silenciosos quando provedor ausente; sem multiplos lembretes por atribuicao, sem SMS, sem cron externo.
 
+91. Pre-cadastro de visitantes via QR Code: endpoint publico `POST /public/visitors` cria `PersonProfile` com status `visitor` sem criar usuario nem senha; resposta sempre 200 com mensagem generica; email de boas-vindas via Resend quando provedor configurado e visitante deu email; audit log usa o primeiro admin como ator com summary "Visitante via QR"; nova rota publica `/visitor` no frontend reaproveita `auth-shell`; ChurchPage exibe QR Code apontando para `${origin}/visitor` com botao Baixar PNG.
+
+92. Templates de mensagem com variaveis: nova entidade `MessageTemplate { id, name, channel, subject, body }` com CRUD em `/message-templates` (leitura por qualquer autenticado, escrita por admin/lider); util compartilhado `substituteMessageVariables` aplica `{{firstName}}`, `{{lastName}}`, `{{fullName}}`, `{{email}}`, `{{phone}}`, `{{churchName}}` por destinatario; substituicao acontece no backend antes do envio Resend e no frontend antes do `mailto:`/`wa.me`; variaveis desconhecidas permanecem no texto; migration Prisma `MessageTemplateRecord`; sem condicionais, sem loops, sem editor rico, sem versionamento.
+
+93. Confirmacao de email no registro publico de eventos: novo flag opcional por evento `registrationRequiresEmailConfirmation` (default falso); novo status de inscricao `pending_email_confirmation`; token `randomBytes(32)` base64url + hash sha256 + expiracao 24h gravados no proprio `EventRegistration` (sem nova tabela); endpoint publico `POST /public/event-registrations/confirm` valida e promove para `confirmed`/`pending_payment`; capacidade ignora registros expirados de `pending_email_confirmation`; flag desabilita no frontend quando Resend nao esta configurado; quando provedor ausente, backend ignora a flag (fallback para fluxo atual); audit log usa primeiro admin como ator com summary "Email confirmado".
+
+94. Reenvio de confirmacao de inscricao em evento: administradores podem chamar `POST /event-registrations/:id/resend-confirmation` para inscricoes `pending_email_confirmation`; o backend sempre gera novo token sha256 com expiracao de 24h, tenta envio via Resend em modo best-effort e registra auditoria; o frontend mostra link expirado, filtro por aguardando email e botao para reenviar/renovar.
+
+95. Check-in self-service de eventos: pagina publica `/event-checkin/<slug>` e endpoint `POST /public/event-registrations/checkin` validam o payload completo do ingresso contra o slug do evento; apenas inscricoes `confirmed` fazem check-in; `checkedInByUserId` recebe `self_service`; Agenda passa a exibir o link para uso em tablet/celular.
+
+96. Substituto automatico para recusas em escala: quando uma atribuicao recebe status `declined`, o backend calcula substitutos da mesma equipe, exclui pessoas ja escaladas ou bloqueadas na data, ranqueia por menor carga recente e retorna `substituteSuggestions` na resposta; o email ao lider inclui a lista quando Resend esta configurado; a aplicacao do substituto continua manual por lider/admin.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

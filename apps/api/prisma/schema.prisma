@@ -87,6 +87,7 @@ model EventRecord {
   registrationPrice Float @default(0)
   registrationCurrency String @default("BRL")
   registrationSlug String @unique @default("")
+  registrationRequiresEmailConfirmation Boolean @default(false)
   description String
   createdAt   DateTime
   updatedAt   DateTime
@@ -107,6 +108,8 @@ model EventRegistrationRecord {
   checkedInAt String @default("")
   checkedInByUserId String @default("")
   notes     String
+  emailConfirmationTokenHash String @default("")
+  emailConfirmationExpiresAt String @default("")
   createdAt DateTime
 }
 
@@ -239,6 +242,18 @@ model PeopleMessageRecord {
   createdByName      String   @default("")
 
   @@index([createdAt])
+}
+
+model MessageTemplateRecord {
+  id        String   @id
+  name      String
+  channel   String   @default("manual")
+  subject   String   @default("")
+  body      String   @default("")
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([name])
 }
 
 model AuditLogRecord {

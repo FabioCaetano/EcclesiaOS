@@ -3,17 +3,18 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { canAccessModule, canManageModule } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusUpdate, ServingPlanInput, SubstituteSuggestion, UserInput } from "@ecclesiaos/shared";
+import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
 import { financialTransactionRepository } from "./data/financialTransactionRepository.js";
 import { eventRepository } from "./data/eventRepository.js";
-import { eventRegistrationRepository } from "./data/eventRegistrationRepository.js";
+import { eventRegistrationRepository, reservedQuantityFor } from "./data/eventRegistrationRepository.js";
 import { checkInRepository } from "./data/checkInRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
+import { messageTemplateRepository } from "./data/messageTemplateRepository.js";
 import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
 import { blockOutRepository, isPersonBlockedOnDate } from "./data/blockOutRepository.js";
 import { passwordResetTokenRepository } from "./data/passwordResetTokenRepository.js";
@@ -460,6 +461,68 @@ const handleRegister = async (req: IncomingMessage, res: ServerResponse) => {
   sendJson(res, 201, { token: createToken(created), user: created } satisfies AuthSession);
 };
 
+const visitorRegistrationGenericMessage = "Recebemos seu cadastro. A equipe da igreja vai entrar em contato em breve.";
+
+const sanitizeVisitorRegistrationInput = (body: VisitorRegistrationInput): VisitorRegistrationInput => ({
+  firstName: String(body.firstName || "").trim(),
+  lastName: String(body.lastName || "").trim(),
+  email: String(body.email || "").trim(),
+  phone: String(body.phone || "").trim(),
+  notes: String(body.notes || "").trim()
+});
+
+const handleCreateVisitor = async (req: IncomingMessage, res: ServerResponse) => {
+  const body = await readJson<VisitorRegistrationInput>(req);
+  const generic: VisitorRegistrationResponse = { ok: true, message: visitorRegistrationGenericMessage };
+
+  const input = sanitizeVisitorRegistrationInput(body || ({} as VisitorRegistrationInput));
+  if (!input.firstName) {
+    sendError(res, 400, "invalid_json", "Informe ao menos o primeiro nome.");
+    return;
+  }
+
+  const person = await personRepository.create({
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    phone: input.phone,
+    birthDate: "",
+    status: "visitor",
+    guardianPersonIds: [],
+    notes: input.notes ? `Visitante via QR. ${input.notes}` : "Visitante via QR."
+  });
+
+  const users = await userRepository.listUsers();
+  const adminActor = users.find((user) => user.role === "admin");
+  if (adminActor) {
+    await auditRepository.create({
+      action: "create",
+      entityType: "person",
+      entityId: person.id,
+      actor: adminActor,
+      summary: `Visitante via QR: ${person.firstName} ${person.lastName}`.trim()
+    });
+  }
+
+  if (isEmailConfigured() && input.email) {
+    try {
+      const profile = await churchRepository.getProfile();
+      const churchName = profile.name || "nossa igreja";
+      const homeLink = webBaseUrl;
+      const subject = `Bem-vindo a ${churchName}`;
+      const text = `Ola, ${person.firstName}.\n\nObrigado por deixar seu contato em ${churchName}. Em breve nossa equipe entrara em contato.\n\nAcesse: ${homeLink}`;
+      const html = `<p>Ola, <strong>${person.firstName}</strong>.</p>
+<p>Obrigado por deixar seu contato em <strong>${churchName}</strong>. Em breve nossa equipe vai entrar em contato.</p>
+<p><a href="${homeLink}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Conhecer a igreja</a></p>`;
+      await sendEmail({ to: input.email, subject, text, html });
+    } catch {
+      // best-effort
+    }
+  }
+
+  sendJson(res, 200, generic);
+};
+
 const handleUpdateUser = async (req: IncomingMessage, res: ServerResponse, id: string) => {
   const user = await requireModuleAccess(req, res, "users");
   if (!user) return;
@@ -707,6 +770,7 @@ const sanitizeEventInput = (body: ChurchEventInput): ChurchEventInput => ({
   registrationPrice: Math.max(0, Number(body.registrationPrice) || 0),
   registrationCurrency: String(body.registrationCurrency || "BRL").trim().toUpperCase() || "BRL",
   registrationSlug: String(body.registrationSlug || "").trim(),
+  registrationRequiresEmailConfirmation: Boolean(body.registrationRequiresEmailConfirmation),
   description: String(body.description || "").trim()
 });
 
@@ -719,12 +783,44 @@ const sanitizeEventRegistrationInput = (body: EventRegistrationInput): EventRegi
 });
 
 const sanitizeEventRegistrationStatusUpdate = (body: EventRegistrationStatusUpdate): EventRegistrationStatusUpdate => ({
-  status: body.status === "cancelled" || body.status === "pending_payment" ? body.status : "confirmed"
+  status: (
+    body.status === "cancelled"
+    || body.status === "pending_payment"
+    || body.status === "pending_email_confirmation"
+      ? body.status
+      : "confirmed"
+  )
 });
 
 const sanitizeEventRegistrationCheckInRequest = (body: EventRegistrationCheckInRequest): EventRegistrationCheckInRequest => ({
   ticketCode: String(body.ticketCode || "").trim()
 });
+
+const sanitizeEventRegistrationSelfCheckInRequest = (body: Partial<EventRegistrationSelfCheckInRequest> | null): EventRegistrationSelfCheckInRequest => ({
+  ticketPayload: String(body?.ticketPayload || "").trim(),
+  eventSlug: String(body?.eventSlug || "").trim()
+});
+
+const parseTicketPayload = (value: string): { id: string; ticketCode: string } | null => {
+  const parts = value.trim().split(":");
+  if (parts.length !== 3 || parts[0] !== "ecclesiaos-event-ticket") return null;
+  return { id: parts[1], ticketCode: parts[2] };
+};
+
+const normalizePublicSlug = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+const sendEventRegistrationConfirmationEmail = async (event: ChurchEvent, registration: EventRegistration, confirmationToken: string) => {
+  const link = `${webBaseUrl}/register/${encodeURIComponent(event.registrationSlug || event.id)}/confirm?token=${encodeURIComponent(confirmationToken)}`;
+  const subject = `Confirme sua inscricao em ${event.title}`;
+  const text = `Ola, ${registration.name}.\n\nPara confirmar sua inscricao em "${event.title}" (${event.date}), clique no link abaixo (valido por 24 horas):\n\n${link}\n\nSe voce nao se inscreveu, ignore este email.`;
+  const html = `<p>Ola, <strong>${registration.name}</strong>.</p>
+<p>Para confirmar sua inscricao em <strong>${event.title}</strong> (${event.date}), clique no botao abaixo:</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Confirmar inscricao</a></p>
+<p style="color:#5c6b78;font-size:13px;">Link valido por 24 horas. Se nao foi voce, ignore.</p>
+<p style="color:#8a96a3;font-size:12px;">Ou copie e cole no navegador: ${link}</p>`;
+
+  return sendEmail({ to: registration.email, subject, text, html });
+};
 
 const sanitizeResourceInput = (body: ChurchResourceInput): ChurchResourceInput => ({
   name: String(body.name || "").trim(),
@@ -896,15 +992,24 @@ const handleCreatePeopleMessage = async (req: IncomingMessage, res: ServerRespon
       if (recipients.length === 0) {
         delivery.reason = "no_recipients_with_email";
       } else {
+        const churchProfile = await churchRepository.getProfile();
+        const churchName = churchProfile.name || "";
         for (const person of recipients) {
           if (!person.email) {
             delivery.skipped += 1;
             continue;
           }
+          const context = {
+            firstName: person.firstName,
+            lastName: person.lastName,
+            email: person.email,
+            phone: person.phone,
+            churchName
+          };
           const result = await sendEmail({
             to: person.email,
-            subject: message.subject,
-            text: message.body
+            subject: substituteMessageVariables(message.subject, context),
+            text: substituteMessageVariables(message.body, context)
           });
           if (result.ok) {
             delivery.sent += 1;
@@ -920,6 +1025,68 @@ const handleCreatePeopleMessage = async (req: IncomingMessage, res: ServerRespon
 
   const response: PeopleMessageResponse = { message, delivery };
   sendJson(res, 201, response);
+};
+
+const sanitizeMessageTemplateInput = (body: MessageTemplateInput): MessageTemplateInput => ({
+  name: String(body.name || "").trim(),
+  channel: body.channel === "email" || body.channel === "whatsapp" ? body.channel : "manual",
+  subject: String(body.subject || "").trim(),
+  body: String(body.body || "")
+});
+
+const handleListMessageTemplates = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  sendJson(res, 200, await messageTemplateRepository.list());
+};
+
+const handleCreateMessageTemplate = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireModuleManage(req, res, "messages");
+  if (!user) return;
+
+  const body = await readJson<MessageTemplateInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome do template.");
+    return;
+  }
+
+  const template = await messageTemplateRepository.create(sanitizeMessageTemplateInput(body));
+  await recordAudit(user, "create", "message_template", template.id, `Template criado: ${template.name}`);
+  sendJson(res, 201, template);
+};
+
+const handleUpdateMessageTemplate = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireModuleManage(req, res, "messages");
+  if (!user) return;
+
+  const body = await readJson<MessageTemplateInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome do template.");
+    return;
+  }
+
+  const updated = await messageTemplateRepository.update(id, sanitizeMessageTemplateInput(body));
+  if (!updated) {
+    sendError(res, 404, "not_found", "Template nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "update", "message_template", updated.id, `Template atualizado: ${updated.name}`);
+  sendJson(res, 200, updated);
+};
+
+const handleDeleteMessageTemplate = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireModuleManage(req, res, "messages");
+  if (!user) return;
+
+  const removed = await messageTemplateRepository.remove(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Template nao encontrado.");
+    return;
+  }
+
+  await recordAudit(user, "delete", "message_template", id, `Template removido: ${id}`);
+  sendJson(res, 200, { ok: true });
 };
 
 const handleListBlockOuts = async (req: IncomingMessage, res: ServerResponse) => {
@@ -984,6 +1151,48 @@ const handleDeleteBlockOut = async (req: IncomingMessage, res: ServerResponse, i
   sendJson(res, 200, { ok: true });
 };
 
+const buildSubstituteSuggestions = async (plan: ServingPlan, group: GroupProfile | undefined): Promise<SubstituteSuggestion[]> => {
+  if (!group) return [];
+
+  const [blockOuts, allPlans, people] = await Promise.all([
+    blockOutRepository.list(),
+    servingPlanRepository.list(),
+    personRepository.list()
+  ]);
+
+  const cutoff = new Date(plan.date);
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffIso = cutoff.toISOString().slice(0, 10);
+
+  const recentLoadByPerson = new Map<string, number>();
+  for (const otherPlan of allPlans) {
+    if (otherPlan.date < cutoffIso) continue;
+    if (otherPlan.date > plan.date) continue;
+    for (const item of otherPlan.assignments) {
+      if (!item.personId) continue;
+      if (item.status === "declined") continue;
+      recentLoadByPerson.set(item.personId, (recentLoadByPerson.get(item.personId) || 0) + 1);
+    }
+  }
+
+  const alreadyAssigned = new Set(plan.assignments.map((item) => item.personId).filter(Boolean));
+  return group.memberPersonIds
+    .filter((personId) => !alreadyAssigned.has(personId))
+    .map((personId) => {
+      const person = people.find((item) => item.id === personId);
+      const name = person ? `${person.firstName} ${person.lastName}`.trim() : "Pessoa";
+      return {
+        personId,
+        name,
+        recentLoad: recentLoadByPerson.get(personId) || 0,
+        hasBlockOut: isPersonBlockedOnDate(blockOuts, personId, plan.date)
+      };
+    })
+    .filter((candidate) => !candidate.hasBlockOut)
+    .sort((a, b) => a.recentLoad - b.recentLoad || a.name.localeCompare(b.name))
+    .slice(0, 5);
+};
+
 const handleSuggestSubstitutes = async (req: IncomingMessage, res: ServerResponse, planId: string, assignmentId: string) => {
   const user = await requireUser(req, res);
   if (!user) return;
@@ -1013,44 +1222,7 @@ const handleSuggestSubstitutes = async (req: IncomingMessage, res: ServerRespons
     return;
   }
 
-  const blockOuts = await blockOutRepository.list();
-  const allPlans = await servingPlanRepository.list();
-  const people = await personRepository.list();
-
-  const cutoff = new Date(plan.date);
-  cutoff.setDate(cutoff.getDate() - 30);
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
-
-  const recentLoadByPerson = new Map<string, number>();
-  for (const otherPlan of allPlans) {
-    if (otherPlan.date < cutoffIso) continue;
-    if (otherPlan.date > plan.date) continue;
-    for (const item of otherPlan.assignments) {
-      if (!item.personId) continue;
-      if (item.status === "declined") continue;
-      recentLoadByPerson.set(item.personId, (recentLoadByPerson.get(item.personId) || 0) + 1);
-    }
-  }
-
-  const alreadyAssigned = new Set(plan.assignments.map((item) => item.personId).filter(Boolean));
-
-  const candidates: SubstituteSuggestion[] = group.memberPersonIds
-    .filter((personId) => !alreadyAssigned.has(personId))
-    .map((personId) => {
-      const person = people.find((item) => item.id === personId);
-      const name = person ? `${person.firstName} ${person.lastName}`.trim() : "Pessoa";
-      return {
-        personId,
-        name,
-        recentLoad: recentLoadByPerson.get(personId) || 0,
-        hasBlockOut: isPersonBlockedOnDate(blockOuts, personId, plan.date)
-      };
-    })
-    .filter((candidate) => !candidate.hasBlockOut)
-    .sort((a, b) => a.recentLoad - b.recentLoad || a.name.localeCompare(b.name))
-    .slice(0, 5);
-
-  sendJson(res, 200, candidates);
+  sendJson(res, 200, await buildSubstituteSuggestions(plan, group));
 };
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1136,9 +1308,7 @@ const handleGetPublicEvent = async (res: ServerResponse, slug: string) => {
   }
 
   const registrations = await eventRegistrationRepository.list();
-  const reservedQuantity = registrations
-    .filter((registration) => registration.eventId === event.id && registration.status !== "cancelled")
-    .reduce((sum, registration) => sum + registration.quantity, 0);
+  const reservedQuantity = reservedQuantityFor(event, registrations);
 
   sendJson(res, 200, {
     event,
@@ -1160,13 +1330,114 @@ const handleCreatePublicRegistration = async (req: IncomingMessage, res: ServerR
     return;
   }
 
-  const registration = await eventRegistrationRepository.create(event, sanitizeEventRegistrationInput(body));
-  if (registration === "full") {
+  const requireConfirmation = Boolean(event.registrationRequiresEmailConfirmation) && isEmailConfigured();
+  const result = await eventRegistrationRepository.create(
+    event,
+    sanitizeEventRegistrationInput(body),
+    { emailConfirmationRequired: requireConfirmation }
+  );
+  if (result === "full") {
     sendError(res, 409, "conflict", "Limite de vagas atingido.");
     return;
   }
 
-  sendJson(res, 201, registration);
+  if (requireConfirmation && result.confirmationToken && result.registration.email) {
+    try {
+      await sendEventRegistrationConfirmationEmail(event, result.registration, result.confirmationToken);
+    } catch {
+      // best-effort
+    }
+  }
+
+  sendJson(res, 201, result.registration);
+};
+
+const handleConfirmEventRegistration = async (req: IncomingMessage, res: ServerResponse) => {
+  const body = await readJson<EventRegistrationConfirmInput>(req);
+  const token = String(body?.token || "").trim();
+  if (!token) {
+    sendError(res, 400, "invalid_json", "Token invalido ou expirado.");
+    return;
+  }
+
+  const result = await eventRegistrationRepository.confirmEmail(token);
+  if (result === "invalid") {
+    sendError(res, 400, "invalid_json", "Link invalido ou ja utilizado.");
+    return;
+  }
+  if (result === "expired") {
+    sendError(res, 400, "invalid_json", "Link expirado. Inscreva-se novamente.");
+    return;
+  }
+
+  const users = await userRepository.listUsers();
+  const adminActor = users.find((user) => user.role === "admin");
+  if (adminActor) {
+    await auditRepository.create({
+      action: "update",
+      entityType: "event_registration",
+      entityId: result.id,
+      actor: adminActor,
+      summary: `Email confirmado: ${result.name}`
+    });
+  }
+
+  const response: EventRegistrationConfirmResponse = { ok: true, status: result.status };
+  sendJson(res, 200, response);
+};
+
+const handlePublicEventRegistrationCheckIn = async (req: IncomingMessage, res: ServerResponse) => {
+  const body = sanitizeEventRegistrationSelfCheckInRequest(await readJson<EventRegistrationSelfCheckInRequest>(req));
+  const parsed = parseTicketPayload(body.ticketPayload);
+  if (!parsed || !body.eventSlug) {
+    sendError(res, 400, "invalid_json", "Informe um QR Code de ingresso valido.");
+    return;
+  }
+
+  const event = (await eventRepository.list()).find((entry) => normalizePublicSlug(entry.registrationSlug) === normalizePublicSlug(body.eventSlug));
+  if (!event) {
+    sendError(res, 404, "not_found", "Evento nao encontrado ou check-in indisponivel.");
+    return;
+  }
+
+  const registrations = await eventRegistrationRepository.list();
+  const registration = registrations.find((entry) => entry.id === parsed.id);
+  if (!registration) {
+    sendError(res, 404, "not_found", "Inscricao nao encontrada.");
+    return;
+  }
+  if (registration.eventId !== event.id) {
+    sendError(res, 403, "forbidden", "Este ingresso nao pertence a este evento.");
+    return;
+  }
+
+  const result = await eventRegistrationRepository.checkIn(parsed.id, parsed.ticketCode, "self_service");
+  if (!result) {
+    sendError(res, 404, "not_found", "Inscricao nao encontrada.");
+    return;
+  }
+  if (result === "invalid") {
+    sendError(res, 403, "forbidden", "Codigo do ingresso invalido.");
+    return;
+  }
+  if (result === "not_confirmed") {
+    sendError(res, 403, "forbidden", "Inscricao ainda nao esta confirmada.");
+    return;
+  }
+
+  const users = await userRepository.listUsers();
+  const adminActor = users.find((user) => user.role === "admin");
+  if (adminActor) {
+    await auditRepository.create({
+      action: "update",
+      entityType: "event_registration",
+      entityId: result.id,
+      actor: adminActor,
+      summary: `Self check-in de inscricao: ${result.name}`
+    });
+  }
+
+  sendJson(res, 200, result);
 };
 
 const handleListEventRegistrations = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1174,6 +1445,42 @@ const handleListEventRegistrations = async (req: IncomingMessage, res: ServerRes
   if (!user) return;
 
   sendJson(res, 200, await eventRegistrationRepository.list());
+};
+
+const handleResendEventRegistrationConfirmation = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireModuleManage(req, res, "events");
+  if (!user) return;
+
+  const result = await eventRegistrationRepository.resendEmailConfirmation(id);
+  if (result === "not_found") {
+    sendError(res, 404, "not_found", "Inscricao nao encontrada.");
+    return;
+  }
+  if (result === "not_pending") {
+    sendError(res, 400, "invalid_json", "A inscricao nao esta aguardando confirmacao de email.");
+    return;
+  }
+  if (result === "missing_email") {
+    sendError(res, 400, "invalid_json", "A inscricao nao possui email para confirmacao.");
+    return;
+  }
+
+  const event = (await eventRepository.list()).find((entry) => entry.id === result.registration.eventId);
+  if (!event) {
+    sendError(res, 404, "not_found", "Evento da inscricao nao encontrado.");
+    return;
+  }
+
+  const emailResult = await sendEventRegistrationConfirmationEmail(event, result.registration, result.confirmationToken);
+  await recordAudit(user, "update", "event_registration", result.registration.id, `Confirmacao reenviada: ${result.registration.email}`);
+
+  const response: EventRegistrationResendConfirmationResponse = {
+    ok: true,
+    status: result.registration.status,
+    emailSent: emailResult.ok,
+    expiresAt: result.registration.emailConfirmationExpiresAt
+  };
+  sendJson(res, 200, response);
 };
 
 const handleUpdateEventRegistrationStatus = async (req: IncomingMessage, res: ServerResponse, id: string) => {
@@ -1706,17 +2013,18 @@ const processUpcomingReminders = async () => {
 const notifyAssignmentResponse = async (
   plan: { title: string; date: string; groupId: string },
   assignment: { personId: string; role: string },
-  status: "confirmed" | "declined" | "pending"
-) => {
-  if (!isEmailConfigured()) return;
-  if (status === "pending") return;
-  if (!plan.groupId) return;
+  status: "confirmed" | "declined" | "pending",
+  substitutes: SubstituteSuggestion[] = []
+): Promise<boolean> => {
+  if (!isEmailConfigured()) return false;
+  if (status === "pending") return false;
+  if (!plan.groupId) return false;
   try {
     const group = (await groupRepository.list()).find((item) => item.id === plan.groupId);
-    if (!group?.leaderPersonId) return;
+    if (!group?.leaderPersonId) return false;
     const people = await personRepository.list();
     const leader = people.find((item) => item.id === group.leaderPersonId);
-    if (!leader?.email) return;
+    if (!leader?.email) return false;
 
     const respondent = people.find((item) => item.id === assignment.personId);
     const respondentName = respondent ? `${respondent.firstName} ${respondent.lastName}`.trim() : "Pessoa";
@@ -1724,15 +2032,24 @@ const notifyAssignmentResponse = async (
     const role = assignment.role || "funcao a definir";
     const link = `${webBaseUrl}/`;
     const subject = `${respondentName} ${verb} a escala de ${plan.title}`;
-    const text = `Ola ${leader.firstName},\n\n${respondentName} ${verb} a escala em "${plan.title}" no dia ${plan.date}.\nFuncao: ${role}\n\nAcesse ${link} para acompanhar.`;
+    const substituteText = status === "declined" && substitutes.length > 0
+      ? `\n\nSubstitutos sugeridos automaticamente:\n${substitutes.map((item, index) => `${index + 1}. ${item.name} (${item.recentLoad} escala(s) recentes)`).join("\n")}`
+      : "";
+    const substituteHtml = status === "declined" && substitutes.length > 0
+      ? `<p>Substitutos sugeridos automaticamente:</p><ul>${substitutes.map((item) => `<li>${item.name} (${item.recentLoad} escala(s) recentes)</li>`).join("")}</ul>`
+      : "";
+    const text = `Ola ${leader.firstName},\n\n${respondentName} ${verb} a escala em "${plan.title}" no dia ${plan.date}.\nFuncao: ${role}${substituteText}\n\nAcesse ${link} para acompanhar.`;
     const html = `<p>Ola, <strong>${leader.firstName}</strong>.</p>
 <p><strong>${respondentName}</strong> ${verb} a escala em <strong>${plan.title}</strong> no dia ${plan.date}.</p>
 <p>Funcao: ${role}</p>
+${substituteHtml}
 <p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>`;
 
-    await sendEmail({ to: leader.email, subject, text, html });
+    const result = await sendEmail({ to: leader.email, subject, text, html });
+    return result.ok;
   } catch {
     // best effort
+    return false;
   }
 };
 
@@ -1761,17 +2078,36 @@ const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: Se
 
   const update = sanitizeServingAssignmentStatusUpdate(body);
   const plan = await servingPlanRepository.updateAssignmentStatus(planId, assignmentId, update.status, update.notes);
+  let substituteSuggestions: SubstituteSuggestion[] = [];
+  let substituteEmailSent = false;
   if (plan) {
     const updatedAssignment = plan.assignments.find((item) => item.id === assignmentId);
     if (updatedAssignment) {
-      await notifyAssignmentResponse(
+      if (update.status === "declined") {
+        const group = (await groupRepository.list()).find((item) => item.id === plan.groupId);
+        substituteSuggestions = await buildSubstituteSuggestions(plan, group);
+      }
+      substituteEmailSent = await notifyAssignmentResponse(
         { title: plan.title, date: plan.date, groupId: plan.groupId },
         { personId: updatedAssignment.personId, role: updatedAssignment.role },
-        update.status
+        update.status,
+        substituteSuggestions
       );
+      if (update.status === "declined" && substituteSuggestions.length > 0) {
+        await recordAudit(user, "update", "serving_plan", plan.id, `Substitutos sugeridos para recusa: ${substituteSuggestions.map((item) => item.name).join(", ")}`);
+      }
     }
   }
-  sendJson(res, 200, plan);
+  if (!plan) {
+    sendError(res, 404, "not_found", "Escala ou pessoa escalada nao encontrada.");
+    return;
+  }
+  const response: ServingAssignmentStatusResponse = {
+    ...plan,
+    substituteSuggestions,
+    substituteEmailSent
+  };
+  sendJson(res, 200, response);
 };
 
 const handleListServingNotifications = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1877,6 +2213,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/auth/register") {
     void handleRegister(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/public/visitors") {
+    void handleCreateVisitor(req, res);
     return;
   }
 
@@ -1999,6 +2340,26 @@ export const createEcclesiaServer = () => createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/message-templates") {
+    void handleListMessageTemplates(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/message-templates") {
+    void handleCreateMessageTemplate(req, res);
+    return;
+  }
+
+  const messageTemplateMatch = url.pathname.match(/^\/message-templates\/([^/]+)$/);
+  if (messageTemplateMatch && req.method === "PUT") {
+    void handleUpdateMessageTemplate(req, res, messageTemplateMatch[1]);
+    return;
+  }
+  if (messageTemplateMatch && req.method === "DELETE") {
+    void handleDeleteMessageTemplate(req, res, messageTemplateMatch[1]);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/block-outs") {
     void handleListBlockOuts(req, res);
     return;
@@ -2080,8 +2441,24 @@ export const createEcclesiaServer = () => createServer((req, res) => {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/public/event-registrations/confirm") {
+    void handleConfirmEventRegistration(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/public/event-registrations/checkin") {
+    void handlePublicEventRegistrationCheckIn(req, res);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/event-registrations") {
     void handleListEventRegistrations(req, res);
+    return;
+  }
+
+  const eventRegistrationResendMatch = url.pathname.match(/^\/event-registrations\/([^/]+)\/resend-confirmation$/);
+  if (eventRegistrationResendMatch && req.method === "POST") {
+    void handleResendEventRegistrationConfirmation(req, res, eventRegistrationResendMatch[1]);
     return;
   }
 

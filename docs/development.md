@@ -54,6 +54,73 @@ Resposta esperada:
 }
 ```
 
+## Fluxo Atual De Inscricoes Com Email
+
+Eventos podem exigir confirmacao de email quando `RESEND_API_KEY` esta configurado. O registro publico cria a inscricao como `pending_email_confirmation` e envia um link valido por 24 horas.
+
+Administradores podem reenviar/renovar a confirmacao na tela Agenda ou via API:
+
+```text
+POST /event-registrations/:id/resend-confirmation
+```
+
+Sem provedor de email, o endpoint renova o token e retorna `emailSent: false`; isso mantem o fluxo testavel sem bloquear o desenvolvimento local.
+
+## Check-in Self-Service De Eventos
+
+Para eventos com inscricao publica, a Agenda mostra um link no formato:
+
+```text
+http://localhost:5173/event-checkin/<slug-do-evento>
+```
+
+Essa pagina pode ser aberta em tablet/celular na entrada do evento. Ela le o QR Code do ingresso ou aceita o payload manual.
+
+Endpoint usado:
+
+```text
+POST /public/event-registrations/checkin
+```
+
+Payload:
+
+```json
+{
+  "ticketPayload": "ecclesiaos-event-ticket:<id>:<ticketCode>",
+  "eventSlug": "<slug-do-evento>"
+}
+```
+
+Somente inscricoes `confirmed` sao aceitas. Ingressos de outro evento sao rejeitados.
+
+## Substitutos Automaticos Em Escalas
+
+Quando uma pessoa recusa uma escala:
+
+```text
+PATCH /serving-plans/:planId/assignments/:assignmentId/status
+```
+
+com payload:
+
+```json
+{
+  "status": "declined",
+  "notes": "Nao consigo servir"
+}
+```
+
+a resposta continua trazendo a escala atualizada e tambem:
+
+```json
+{
+  "substituteSuggestions": [],
+  "substituteEmailSent": false
+}
+```
+
+`substituteSuggestions` lista pessoas da mesma equipe, nao escaladas no plano, sem bloqueio na data, ordenadas por menor carga recente. A tela Escalas mostra essas sugestoes automaticamente e o lider/admin decide quem aplicar.
+
 ## Usuarios De Desenvolvimento
 
 No modo JSON, a API possui usuarios semente em arquivo local:

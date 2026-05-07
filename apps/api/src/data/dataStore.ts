@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -34,6 +34,7 @@ export interface DataFile {
   financialTransactions: FinancialTransaction[];
   groups: GroupProfile[];
   labelTemplates: LabelTemplate[];
+  messageTemplates: MessageTemplate[];
   peopleMessages: PeopleMessage[];
   personBlockOuts: PersonBlockOut[];
   passwordResetTokens: PasswordResetTokenRecord[];
@@ -58,6 +59,7 @@ const defaultData = (): DataFile => ({
   financialTransactions: defaultFinancialTransactions,
   groups: defaultGroups,
   labelTemplates: defaultLabelTemplates,
+  messageTemplates: [],
   peopleMessages: [],
   personBlockOuts: [],
   passwordResetTokens: [],
@@ -86,7 +88,9 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     ...registration,
     ticketCode: registration.ticketCode || registration.id,
     checkedInAt: registration.checkedInAt || "",
-    checkedInByUserId: registration.checkedInByUserId || ""
+    checkedInByUserId: registration.checkedInByUserId || "",
+    emailConfirmationTokenHash: registration.emailConfirmationTokenHash || "",
+    emailConfirmationExpiresAt: registration.emailConfirmationExpiresAt || ""
   })),
   events: (data.events || defaultEvents).map((event) => ({
     ...event,
@@ -99,7 +103,8 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     registrationCapacity: event.registrationCapacity || 0,
     registrationPrice: event.registrationPrice || 0,
     registrationCurrency: event.registrationCurrency || "BRL",
-    registrationSlug: event.registrationSlug || event.id
+    registrationSlug: event.registrationSlug || event.id,
+    registrationRequiresEmailConfirmation: Boolean(event.registrationRequiresEmailConfirmation)
   })),
   financialTransactions: data.financialTransactions || defaultFinancialTransactions,
   groups: data.groups || defaultGroups,
@@ -121,6 +126,13 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     recipientPersonIds: Array.isArray(message.recipientPersonIds) ? message.recipientPersonIds.map(String) : [],
     createdByUserId: message.createdByUserId || "",
     createdByName: message.createdByName || ""
+  })),
+  messageTemplates: (data.messageTemplates || []).map((template) => ({
+    ...template,
+    channel: template.channel === "email" || template.channel === "whatsapp" ? template.channel : "manual",
+    name: template.name || "",
+    subject: template.subject || "",
+    body: template.body || ""
   })),
   personBlockOuts: (data.personBlockOuts || []).map((blockOut) => ({
     ...blockOut,

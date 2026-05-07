@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Mail, MessageCircle, MessageSquare, Search, Send } from "lucide-react";
-import { canManageModule } from "@ecclesiaos/shared";
-import type { CurrentUser, GroupProfile, MessageChannel, PeopleMessage, PersonProfile } from "@ecclesiaos/shared";
-import { loadEmailStatus, loadGroups, loadPeople, loadPeopleMessages, sendPeopleMessage } from "./api";
+import { CheckCircle2, FileText, Mail, MessageCircle, MessageSquare, Plus, Save, Search, Send, Trash2 } from "lucide-react";
+import { canManageModule, messageVariableKeys, substituteMessageVariables } from "@ecclesiaos/shared";
+import type { CurrentUser, GroupProfile, MessageChannel, MessageTemplate, MessageVariableContext, PeopleMessage, PersonProfile } from "@ecclesiaos/shared";
+import { createMessageTemplate, deleteMessageTemplate, loadChurchProfile, loadEmailStatus, loadGroups, loadMessageTemplates, loadPeople, loadPeopleMessages, sendPeopleMessage, updateMessageTemplate } from "./api";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
 interface Props {
@@ -36,19 +36,39 @@ const channelLabels: Record<MessageChannel, string> = {
 
 const sanitizePhone = (raw: string) => raw.replace(/\D/g, "");
 
-const buildLink = (channel: MessageChannel, person: PersonProfile, subject: string, body: string): string | null => {
+const personContext = (person: PersonProfile, churchName: string): MessageVariableContext => ({
+  firstName: person.firstName,
+  lastName: person.lastName,
+  email: person.email || "",
+  phone: person.phone || "",
+  churchName
+});
+
+const buildLink = (channel: MessageChannel, person: PersonProfile, subject: string, body: string, churchName: string): string | null => {
+  const context = personContext(person, churchName);
+  const renderedSubject = substituteMessageVariables(subject, context);
+  const renderedBody = substituteMessageVariables(body, context);
   if (channel === "email") {
     if (!person.email) return null;
-    const params = new URLSearchParams({ subject, body });
+    const params = new URLSearchParams({ subject: renderedSubject, body: renderedBody });
     return `mailto:${person.email}?${params.toString()}`;
   }
   if (channel === "whatsapp") {
     const phone = sanitizePhone(person.phone || "");
     if (!phone) return null;
-    const text = encodeURIComponent(`${subject ? `*${subject}*\n\n` : ""}${body}`);
+    const text = encodeURIComponent(`${renderedSubject ? `*${renderedSubject}*\n\n` : ""}${renderedBody}`);
     return `https://wa.me/${phone}?text=${text}`;
   }
   return null;
+};
+
+const variableLabels: Record<typeof messageVariableKeys[number], string> = {
+  firstName: "Nome",
+  lastName: "Sobrenome",
+  fullName: "Nome completo",
+  email: "Email",
+  phone: "Telefone",
+  churchName: "Igreja"
 };
 
 export const MessagesPage: React.FC<Props> = ({ token, user }) => {
@@ -64,6 +84,9 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [generatedLinks, setGeneratedLinks] = useState<Array<{ name: string; url: string | null }>>([]);
   const [emailConfigured, setEmailConfigured] = useState(false);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [churchName, setChurchName] = useState("");
 
   const canSend = canManageModule(user.role, "messages");
 
@@ -71,6 +94,8 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
     loadPeople(token).then(setPeople).catch(() => setStatus("Nao foi possivel carregar pessoas."));
     loadGroups(token).then(setGroups).catch(() => setStatus("Nao foi possivel carregar grupos."));
     loadPeopleMessages(token).then(setMessages).catch(() => setStatus("Nao foi possivel carregar mensagens."));
+    loadMessageTemplates(token).then(setTemplates).catch(() => undefined);
+    loadChurchProfile(token).then((profile) => setChurchName(profile.name || "")).catch(() => undefined);
     loadEmailStatus().then((info) => setEmailConfigured(info.configured)).catch(() => setEmailConfigured(false));
   }, [token]);
 
@@ -132,7 +157,7 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
       } else {
         const links = selectedPeople.map((person) => ({
           name: `${person.firstName} ${person.lastName}`.trim(),
-          url: buildLink(channel, person, subject, body)
+          url: buildLink(channel, person, subject, body, churchName)
         }));
         setGeneratedLinks(links);
         const firstLink = links.find((link) => link.url);
@@ -154,6 +179,62 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
 
   const selectedMessage = messages.find((message) => message.id === selectedMessageId) || null;
   const personById = (id: string) => people.find((person) => person.id === id);
+
+  const loadTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    if (!id) return;
+    const template = templates.find((item) => item.id === id);
+    if (!template) return;
+    setSubject(template.subject);
+    setBody(template.body);
+    setChannel(template.channel);
+    setStatus(`Template "${template.name}" carregado.`);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!canSend) return;
+    const existing = templates.find((template) => template.id === selectedTemplateId);
+    const defaultName = existing?.name || subject || "Novo template";
+    const name = window.prompt("Nome do template:", defaultName);
+    if (!name?.trim()) return;
+
+    setStatus("Salvando template...");
+    try {
+      const payload = { name: name.trim(), channel, subject, body };
+      const result = existing
+        ? await updateMessageTemplate(token, existing.id, payload)
+        : await createMessageTemplate(token, payload);
+      setTemplates((current) => {
+        const without = current.filter((template) => template.id !== result.id);
+        return [...without, result].sort((a, b) => a.name.localeCompare(b.name));
+      });
+      setSelectedTemplateId(result.id);
+      setStatus(existing ? "Template atualizado." : "Template criado.");
+    } catch {
+      setStatus("Nao foi possivel salvar o template.");
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!canSend || !selectedTemplateId) return;
+    const template = templates.find((item) => item.id === selectedTemplateId);
+    if (!template) return;
+    if (!window.confirm(`Excluir o template "${template.name}"?`)) return;
+    setStatus("Removendo template...");
+    try {
+      await deleteMessageTemplate(token, template.id);
+      setTemplates((current) => current.filter((item) => item.id !== template.id));
+      setSelectedTemplateId("");
+      setStatus("Template removido.");
+    } catch {
+      setStatus("Nao foi possivel remover o template.");
+    }
+  };
+
+  const insertVariable = (key: string) => {
+    const placeholder = `{{${key}}}`;
+    setBody((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}${placeholder}`);
+  };
 
   return (
     <>
@@ -263,6 +344,40 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
         <Card>
           <h3>Compor mensagem</h3>
           <div className="messages-compose">
+            <div className="messages-template-row">
+              <label className="wide-field">
+                <FileText size={14} /> Modelo
+                <select value={selectedTemplateId} onChange={(event) => loadTemplate(event.target.value)}>
+                  <option value="">Sem modelo</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name} ({channelLabels[template.channel]})</option>
+                  ))}
+                </select>
+              </label>
+              <div className="response-actions">
+                <button className="secondary-button" type="button" onClick={handleSaveTemplate} disabled={!canSend}>
+                  <Save size={14} /> {selectedTemplateId ? "Atualizar" : "Salvar como modelo"}
+                </button>
+                {selectedTemplateId && (
+                  <button className="danger-outline-button" type="button" onClick={handleDeleteTemplate} disabled={!canSend}>
+                    <Trash2 size={14} /> Excluir
+                  </button>
+                )}
+                {!selectedTemplateId && canSend && (
+                  <button className="secondary-button" type="button" onClick={() => { setSubject(""); setBody(""); setStatus(""); }}>
+                    <Plus size={14} /> Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="messages-variables">
+              <span className="muted">Variaveis:</span>
+              {messageVariableKeys.map((key) => (
+                <button key={key} type="button" className="secondary-button" onClick={() => insertVariable(key)} disabled={!canSend}>
+                  {variableLabels[key]}
+                </button>
+              ))}
+            </div>
             <label>
               Canal
               <select value={channel} onChange={(event) => setChannel(event.target.value as MessageChannel)} disabled={!canSend}>
@@ -277,7 +392,7 @@ export const MessagesPage: React.FC<Props> = ({ token, user }) => {
             </label>
             <label>
               Mensagem
-              <textarea rows={6} value={body} onChange={(event) => setBody(event.target.value)} disabled={!canSend} placeholder="Escreva o corpo da mensagem..." />
+              <textarea rows={6} value={body} onChange={(event) => setBody(event.target.value)} disabled={!canSend} placeholder="Escreva o corpo da mensagem... use {{firstName}} para personalizar." />
             </label>
             <div className="form-footer">
               <button type="button" onClick={handleSend} disabled={!canSend || selectedIds.length === 0}>

@@ -12,10 +12,13 @@ const { readData } = await import("./dataStore.js");
 const { eventRepository } = await import("./eventRepository.js");
 const { financialTransactionRepository } = await import("./financialTransactionRepository.js");
 const { labelTemplateRepository } = await import("./labelTemplateRepository.js");
+const { eventRegistrationRepository, reservedQuantityFor } = await import("./eventRegistrationRepository.js");
+const { messageTemplateRepository } = await import("./messageTemplateRepository.js");
 const { personRepository } = await import("./personRepository.js");
 const { resourceRepository } = await import("./resourceRepository.js");
 const { servingPlanRepository } = await import("./servingPlanRepository.js");
 const { planCronOccurrences } = await import("../cron.js");
+const { substituteMessageVariables } = await import("@ecclesiaos/shared");
 
 before(async () => {
   await rm(process.env.ECCLESIAOS_DATA_FILE || "", { force: true });
@@ -165,6 +168,7 @@ test("planCronOccurrences expands a weekly cron up to recurrenceUntil", async ()
     registrationPrice: 0,
     registrationCurrency: "BRL",
     registrationSlug: "",
+    registrationRequiresEmailConfirmation: false,
     description: "",
     createdAt: "2026-05-01T00:00:00.000Z",
     updatedAt: "2026-05-01T00:00:00.000Z"
@@ -195,6 +199,7 @@ test("eventRepository materializes cron occurrences as children and removes them
     registrationPrice: 0,
     registrationCurrency: "BRL",
     registrationSlug: "",
+    registrationRequiresEmailConfirmation: false,
     description: ""
   });
 
@@ -261,6 +266,117 @@ test("labelTemplateRepository enforces single default per layout", async () => {
 
   await labelTemplateRepository.remove(created.id);
   await labelTemplateRepository.remove(second.id);
+});
+
+test("substituteMessageVariables replaces known placeholders and keeps unknown", async () => {
+  const result = substituteMessageVariables("Ola {{firstName}} {{lastName}}, bem-vindo a {{churchName}}! {{unknownKey}}", {
+    firstName: "Joao",
+    lastName: "Silva",
+    email: "joao@example.com",
+    phone: "999",
+    churchName: "Igreja Ecclesia"
+  });
+  assert.equal(result, "Ola Joao Silva, bem-vindo a Igreja Ecclesia! {{unknownKey}}");
+
+  const fullName = substituteMessageVariables("{{ fullName }}", {
+    firstName: "Ana",
+    lastName: "Souza",
+    email: "",
+    phone: "",
+    churchName: ""
+  });
+  assert.equal(fullName, "Ana Souza");
+});
+
+test("messageTemplateRepository creates, updates, sorts and removes templates", async () => {
+  const a = await messageTemplateRepository.create({
+    name: "Zeta",
+    channel: "email",
+    subject: "Ola",
+    body: "Texto"
+  });
+  const b = await messageTemplateRepository.create({
+    name: "Alpha",
+    channel: "whatsapp",
+    subject: "Oi",
+    body: "Texto"
+  });
+
+  const list = await messageTemplateRepository.list();
+  const ids = list.map((template) => template.id);
+  const indexA = ids.indexOf(a.id);
+  const indexB = ids.indexOf(b.id);
+  assert.ok(indexB < indexA, "list deve estar em ordem alfabetica por name");
+
+  const updated = await messageTemplateRepository.update(a.id, {
+    name: "Aaaa",
+    channel: "manual",
+    subject: "novo",
+    body: "novo body"
+  });
+  assert.equal(updated?.name, "Aaaa");
+  assert.equal(updated?.channel, "manual");
+
+  assert.equal(await messageTemplateRepository.remove(a.id), true);
+  assert.equal(await messageTemplateRepository.remove(b.id), true);
+  assert.equal(await messageTemplateRepository.remove("invalido"), false);
+});
+
+test("eventRegistrationRepository confirms email and counts capacity correctly", async () => {
+  const master = await eventRepository.create({
+    title: "Retiro 2026",
+    type: "outreach",
+    date: "2026-08-01",
+    startTime: "09:00",
+    endTime: "18:00",
+    location: "Sitio",
+    groupId: "",
+    recurrence: "none",
+    recurrenceUntil: "",
+    recurrenceRule: "",
+    parentEventId: "",
+    requestedTeamIds: [],
+    registrationEnabled: true,
+    registrationCapacity: 2,
+    registrationPrice: 0,
+    registrationCurrency: "BRL",
+    registrationSlug: "retiro-2026",
+    registrationRequiresEmailConfirmation: true,
+    description: ""
+  });
+
+  const created = await eventRegistrationRepository.create(master, {
+    name: "Maria",
+    email: "maria@example.com",
+    phone: "",
+    quantity: 1,
+    notes: ""
+  }, { emailConfirmationRequired: true });
+
+  assert.notEqual(created, "full");
+  if (created === "full") return;
+  assert.equal(created.registration.status, "pending_email_confirmation");
+  assert.ok(created.confirmationToken.length > 10);
+  assert.notEqual(created.registration.emailConfirmationTokenHash, "");
+  assert.notEqual(created.registration.emailConfirmationExpiresAt, "");
+
+  const all = await eventRegistrationRepository.list();
+  assert.equal(reservedQuantityFor(master, all), 1);
+
+  const invalid = await eventRegistrationRepository.confirmEmail("nope");
+  assert.equal(invalid, "invalid");
+
+  const confirmed = await eventRegistrationRepository.confirmEmail(created.confirmationToken);
+  assert.notEqual(confirmed, "invalid");
+  assert.notEqual(confirmed, "expired");
+  if (confirmed === "invalid" || confirmed === "expired") return;
+  assert.equal(confirmed.status, "confirmed");
+  assert.equal(confirmed.emailConfirmationTokenHash, "");
+
+  const reused = await eventRegistrationRepository.confirmEmail(created.confirmationToken);
+  assert.equal(reused, "invalid");
+
+  await eventRepository.remove(master.id);
 });
 
 test("resourceRepository blocks overlapping room reservations", async () => {

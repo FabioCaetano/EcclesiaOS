@@ -17,8 +17,11 @@ import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { MessagesPage } from "./MessagesPage";
 import { PeoplePage } from "./PeoplePage";
+import { EventRegistrationConfirmPage } from "./EventRegistrationConfirmPage";
+import { PublicEventCheckInPage } from "./PublicEventCheckInPage";
 import { PublicRegistrationPage } from "./PublicRegistrationPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
+import { VisitorRegistrationPage } from "./VisitorRegistrationPage";
 import { ResourcesPage } from "./ResourcesPage";
 import { ServingPage } from "./ServingPage";
 import { UsersPage } from "./UsersPage";
@@ -26,8 +29,19 @@ import type { AppView } from "./types";
 import "./styles.css";
 
 const App = () => {
+  const publicRegistrationConfirmMatch = window.location.pathname.match(/^\/register\/[^/]+\/confirm$/);
+  if (publicRegistrationConfirmMatch) {
+    const params = new URLSearchParams(window.location.search);
+    return <EventRegistrationConfirmPage token={params.get("token") || ""} />;
+  }
+
   const publicRegistrationMatch = window.location.pathname.match(/^\/register\/([^/]+)$/);
   if (publicRegistrationMatch) return <PublicRegistrationPage slug={publicRegistrationMatch[1]} />;
+
+  const publicEventCheckInMatch = window.location.pathname.match(/^\/event-checkin\/([^/]+)$/);
+  if (publicEventCheckInMatch) return <PublicEventCheckInPage slug={publicEventCheckInMatch[1]} />;
+
+  if (window.location.pathname === "/visitor") return <VisitorRegistrationPage />;
 
   if (window.location.pathname === "/forgot-password") return <ForgotPasswordPage />;
 

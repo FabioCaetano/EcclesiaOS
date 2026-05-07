@@ -22,6 +22,7 @@ export const defaultEvents: ChurchEvent[] = [
     registrationPrice: 0,
     registrationCurrency: "BRL",
     registrationSlug: "culto-dominical",
+    registrationRequiresEmailConfirmation: false,
     description: "Culto geral da igreja.",
     createdAt: now,
     updatedAt: now
@@ -45,6 +46,7 @@ export const defaultEvents: ChurchEvent[] = [
     registrationPrice: 0,
     registrationCurrency: "BRL",
     registrationSlug: "grupo-pequeno",
+    registrationRequiresEmailConfirmation: false,
     description: "Encontro semanal do grupo pequeno.",
     createdAt: now,
     updatedAt: now

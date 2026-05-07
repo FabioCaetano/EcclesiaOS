@@ -60,6 +60,7 @@ export const toEventInput = (event: ChurchEvent): ChurchEventInput => ({
   registrationPrice: event.registrationPrice,
   registrationCurrency: event.registrationCurrency,
   registrationSlug: event.registrationSlug,
+  registrationRequiresEmailConfirmation: event.registrationRequiresEmailConfirmation,
   description: event.description
 });
 

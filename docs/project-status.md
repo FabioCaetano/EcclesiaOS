@@ -40,7 +40,7 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Senha Segura | Concluido | Senhas em hash `scrypt` com upgrade automatico de legado. |
 | Auditoria | Implementado | Logs consultaveis no painel com filtros por acao, entidade, usuario, data e busca. |
 | Agenda E Eventos | Concluido | CRUD de eventos, inscricoes, locais sugeridos por Ambientes e expressao cron textual. |
-| Inscricoes De Eventos | Implementado | Link publico por slug, limite de vagas, participantes, status manual, recibo/ingresso, QR Code e check-in. |
+| Inscricoes De Eventos | Implementado | Link publico por slug, limite de vagas, participantes, status manual, recibo/ingresso, QR Code, check-in administrativo e self-service por `/event-checkin/<slug>`. |
 | Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario e bloqueio de conflito. |
 | Calendario | Concluido | Visao mensal/semanal, detalhe do dia e filtro por ambiente. |
 | Presenca Por Evento | Concluido | `eventId` em presenca, resumo por evento e consolidacao automatica de check-ins. |
@@ -48,8 +48,11 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 | Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
-| Equipes Por Evento | Concluido | Evento solicita equipes (`requestedTeamIds`); planos de escala sao sincronizados com `eventId`; lider edita atribuicoes do proprio plano com pessoas da equipe. |
+| Equipes Por Evento | Concluido | Evento solicita equipes (`requestedTeamIds`); planos de escala sao sincronizados com `eventId`; lider edita atribuicoes do proprio plano com pessoas da equipe; recusas geram substitutos sugeridos automaticamente. |
 | Etiquetas E Camera | Concluido | Camera QR funciona em qualquer navegador via `jsqr` fallback; templates de etiqueta cadastraveis com layouts `kids_checkin` e `visitor`; secao "Etiquetas" no cadastro da igreja. |
+| Pre-Cadastro De Visitantes | Concluido | Endpoint publico `POST /public/visitors` cria pessoa visitor; pagina `/visitor` sem login; ChurchPage exibe QR Code com download PNG. |
+| Templates De Mensagem | Concluido | Entidade `MessageTemplate` com CRUD em `/message-templates`; variaveis `{{firstName}}`, `{{lastName}}`, `{{fullName}}`, `{{email}}`, `{{phone}}`, `{{churchName}}` substituidas por destinatario no email/whatsapp/mailto. |
+| Confirmacao De Email Em Inscricoes | Concluido | Flag opcional por evento `registrationRequiresEmailConfirmation`; status `pending_email_confirmation`; token sha256 + 24h; endpoint publico `POST /public/event-registrations/confirm`; capacidade ignora pendentes expirados; admin pode reenviar/renovar confirmacao por `POST /event-registrations/:id/resend-confirmation`. |
 
 ## Usuarios De Desenvolvimento
 
@@ -94,6 +97,18 @@ A tela Inicio usa esse endpoint para listar os ultimos videos do canal configura
 - `POST /auth/login`
 - `POST /auth/register`
 - `GET /auth/me`
+- `POST /public/visitors`
+
+`POST /public/visitors` e publico, cria `PersonProfile` com status `visitor`, registra audit e dispara email de boas-vindas quando provedor configurado e visitante deu email. Resposta sempre 200 generica.
+
+### Templates De Mensagem
+
+- `GET /message-templates`
+- `POST /message-templates`
+- `PUT /message-templates/:id`
+- `DELETE /message-templates/:id`
+
+Leitura permitida a qualquer autenticado. Escrita restrita a `canManageModule("messages")`. Cada template guarda `name`, `channel`, `subject` e `body` com placeholders Mustache. `POST /people-messages` aplica `substituteMessageVariables` por destinatario antes do envio Resend.
 
 ### Usuarios
 
@@ -150,12 +165,15 @@ Pessoas podem possuir `guardianPersonIds`, usado para vincular criancas a respon
 
 - `GET /public/events/:slug`
 - `POST /public/events/:slug/registrations`
+- `POST /public/event-registrations/confirm`
+- `POST /public/event-registrations/checkin`
 - `GET /event-registrations`
+- `POST /event-registrations/:id/resend-confirmation`
 - `PATCH /event-registrations/:id/status`
 - `PATCH /event-registrations/:id/checkin`
 
 Admin pode confirmar pagamento, voltar para pendente ou cancelar inscricao. A tela Agenda exibe participantes do evento selecionado, filtros por status e recibo/ingresso imprimivel.
-Ingressos possuem `ticketCode` e QR Code. Admin pode validar ingresso por camera ou payload manual na tela Agenda.
+Ingressos possuem `ticketCode` e QR Code. Admin pode validar ingresso por camera ou payload manual na tela Agenda. O link `/event-checkin/<slug>` permite check-in self-service por tablet/celular, validando se o ingresso pertence ao evento. Inscricoes aguardando email podem ter a confirmacao reenviada; o token e renovado por mais 24 horas e o envio e best-effort via Resend.
 
 ### Ambientes E Reservas
 
@@ -187,9 +205,10 @@ Admin e lider podem registrar saida infantil diretamente. Membro autenticado pod
 - `PUT /serving-plans/:id`
 - `DELETE /serving-plans/:id`
 - `PATCH /serving-plans/:planId/assignments/:assignmentId/status`
+- `GET /serving-plans/:planId/substitutes/:assignmentId`
 - `GET /serving-notifications`
 
-As pessoas escaladas possuem status `pending`, `confirmed` ou `declined`. `PUT /serving-plans/:id` aceita admin ou lider do `groupId` do plano. Lider so pode atribuir pessoas da `memberPersonIds` da equipe; admin escala qualquer pessoa.
+As pessoas escaladas possuem status `pending`, `confirmed` ou `declined`. `PUT /serving-plans/:id` aceita admin ou lider do `groupId` do plano. Lider so pode atribuir pessoas da `memberPersonIds` da equipe; admin escala qualquer pessoa. Ao receber `declined`, o endpoint de status retorna `substituteSuggestions` automaticamente e inclui candidatos no email ao lider quando Resend esta configurado.
 
 ### Financeiro
 
@@ -258,6 +277,9 @@ Fluxos validados:
 - Cron Real Com Ocorrencias Materializadas: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run db:migrate:deploy`, `npm.cmd run reset-dev-data` e `npm.cmd run db:verify` concluidos; 21 testes passando.
 - Eventos Solicitam Equipes E Lider Escala A Propria: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run db:migrate:deploy`, `npm.cmd run reset-dev-data` e `npm.cmd run db:verify` concluidos; 22 testes passando.
 - Templates De Etiqueta E Camera QR Universal: `npm.cmd run build --workspace @ecclesiaos/shared`, `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 23 testes passando. Migration `20260502050000_label_templates` deve ser aplicada com `npm.cmd run db:migrate:deploy` quando o Postgres estiver acessivel; em producao roda automaticamente no comando de build do Render.
+- Pre-Cadastro De Visitantes Via QR: `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 28 testes passando.
+- Templates De Mensagem Com Variaveis: `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 31 testes passando. Migration `20260507100000_message_templates` deve ser aplicada com `npm.cmd run db:migrate:deploy` quando o Postgres estiver acessivel.
+- Confirmacao De Email No Registro Publico De Eventos: `npm.cmd run db:generate`, `npm.cmd run typecheck`, `npm.cmd run test` e `npm.cmd run build` concluidos; 33 testes passando. Migration `20260507110000_event_registration_email_confirmation` deve ser aplicada com `npm.cmd run db:migrate:deploy` quando o Postgres estiver acessivel.
 
 ## Riscos E Dividas Tecnicas
 

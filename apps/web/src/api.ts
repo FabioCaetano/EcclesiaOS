@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationInput, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -247,6 +247,45 @@ export const sendPeopleMessage = async (token: string, input: PeopleMessageInput
   return response.json() as Promise<PeopleMessageResponse>;
 };
 
+export const loadMessageTemplates = async (token: string): Promise<MessageTemplate[]> => {
+  const response = await fetch(`${apiBaseUrl}/message-templates`, {
+    headers: authHeaders(token)
+  });
+  if (!response.ok) throw new Error("message-templates-load-failed");
+  return response.json() as Promise<MessageTemplate[]>;
+};
+
+export const createMessageTemplate = async (token: string, input: MessageTemplateInput): Promise<MessageTemplate> => {
+  const response = await fetch(`${apiBaseUrl}/message-templates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+  if (response.status === 403) throw new Error("forbidden");
+  if (!response.ok) throw new Error("message-template-create-failed");
+  return response.json() as Promise<MessageTemplate>;
+};
+
+export const updateMessageTemplate = async (token: string, id: string, input: MessageTemplateInput): Promise<MessageTemplate> => {
+  const response = await fetch(`${apiBaseUrl}/message-templates/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+  if (response.status === 403) throw new Error("forbidden");
+  if (!response.ok) throw new Error("message-template-update-failed");
+  return response.json() as Promise<MessageTemplate>;
+};
+
+export const deleteMessageTemplate = async (token: string, id: string): Promise<void> => {
+  const response = await fetch(`${apiBaseUrl}/message-templates/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+  if (response.status === 403) throw new Error("forbidden");
+  if (!response.ok) throw new Error("message-template-delete-failed");
+};
+
 export const loadEmailStatus = async (): Promise<EmailStatus> => {
   const response = await fetch(`${apiBaseUrl}/system/email-status`);
   if (!response.ok) return { configured: false };
@@ -430,6 +469,16 @@ export const checkInEventRegistration = async (token: string, id: string, input:
   return response.json() as Promise<EventRegistration>;
 };
 
+export const resendEventRegistrationConfirmation = async (token: string, id: string): Promise<EventRegistrationResendConfirmationResponse> => {
+  const response = await fetch(`${apiBaseUrl}/event-registrations/${id}/resend-confirmation`, {
+    method: "POST",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("event-registration-resend-confirmation-failed");
+  return response.json() as Promise<EventRegistrationResendConfirmationResponse>;
+};
+
 export const loadResources = async (token: string): Promise<ChurchResource[]> => {
   const response = await fetch(`${apiBaseUrl}/resources`, {
     headers: authHeaders(token)
@@ -495,6 +544,17 @@ export const loadPublicEvent = async (slug: string): Promise<{ event: ChurchEven
   return response.json() as Promise<{ event: ChurchEvent; reservedQuantity: number; availableQuantity: number | null }>;
 };
 
+export const registerVisitor = async (input: VisitorRegistrationInput): Promise<VisitorRegistrationResponse> => {
+  const response = await fetch(`${apiBaseUrl}/public/visitors`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error("public-visitor-failed");
+  return response.json() as Promise<VisitorRegistrationResponse>;
+};
+
 export const registerForPublicEvent = async (slug: string, input: EventRegistrationInput): Promise<EventRegistration> => {
   const response = await fetch(`${apiBaseUrl}/public/events/${slug}/registrations`, {
     method: "POST",
@@ -503,6 +563,35 @@ export const registerForPublicEvent = async (slug: string, input: EventRegistrat
   });
 
   if (!response.ok) throw new Error("public-registration-failed");
+  return response.json() as Promise<EventRegistration>;
+};
+
+export const confirmEventRegistrationEmail = async (token: string): Promise<EventRegistrationConfirmResponse> => {
+  const response = await fetch(`${apiBaseUrl}/public/event-registrations/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token })
+  });
+
+  if (response.status === 400) {
+    const data = await response.json().catch(() => ({})) as { message?: string };
+    throw new Error(data.message || "Link invalido ou expirado.");
+  }
+  if (!response.ok) throw new Error("confirm-failed");
+  return response.json() as Promise<EventRegistrationConfirmResponse>;
+};
+
+export const selfCheckInEventRegistration = async (input: EventRegistrationSelfCheckInRequest): Promise<EventRegistration> => {
+  const response = await fetch(`${apiBaseUrl}/public/event-registrations/checkin`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({})) as { message?: string };
+    throw new Error(data.message || "Nao foi possivel validar este ingresso.");
+  }
   return response.json() as Promise<EventRegistration>;
 };
 
@@ -596,7 +685,7 @@ export const deleteServingPlan = async (token: string, id: string) => {
   if (!response.ok) throw new Error("serving-plan-delete-failed");
 };
 
-export const updateServingAssignmentStatus = async (token: string, planId: string, assignmentId: string, input: ServingAssignmentStatusUpdate): Promise<ServingPlan> => {
+export const updateServingAssignmentStatus = async (token: string, planId: string, assignmentId: string, input: ServingAssignmentStatusUpdate): Promise<ServingAssignmentStatusResponse> => {
   const response = await fetch(`${apiBaseUrl}/serving-plans/${planId}/assignments/${assignmentId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
@@ -604,7 +693,7 @@ export const updateServingAssignmentStatus = async (token: string, planId: strin
   });
 
   if (!response.ok) throw new Error("serving-assignment-status-update-failed");
-  return response.json() as Promise<ServingPlan>;
+  return response.json() as Promise<ServingAssignmentStatusResponse>;
 };
 
 export const loadServingNotifications = async (token: string): Promise<ServingNotification[]> => {

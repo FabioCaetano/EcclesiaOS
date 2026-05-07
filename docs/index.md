@@ -4,17 +4,16 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 59 - Lembretes Automaticos De Escala Por Email**.
+Fase atual concluida: **Fase 65 - Substituto Automatico Para Recusas Em Escala**.
 
 Ultimo modulo entregue:
 
-- camera QR Code agora abre em qualquer navegador moderno via fallback `jsqr` (alem do `BarcodeDetector` quando disponivel);
-- `facingMode` da camera passa a ser ideal e nao obrigatorio para suportar laptops sem camera traseira;
-- mensagens de diagnostico amigaveis para permissao negada, sem suporte e sem cameras disponiveis;
-- entidade `LabelTemplate` com layouts `kids_checkin` e `visitor`;
-- secao "Etiquetas" no cadastro da igreja com CRUD, marca de padrao por layout e botao "Imprimir teste";
-- Check-in usa templates de Kids da API com fallback fixo;
-- Pessoas ganha botao "Imprimir etiqueta visitante" usando o template `visitor` padrao.
+- ao recusar escala, API calcula automaticamente substitutos da mesma equipe;
+- sugestoes respeitam pessoas ja escaladas, recusas e bloqueios de data;
+- candidatos sao ranqueados por menor carga recente nos ultimos 30 dias;
+- email ao lider inclui lista de substitutos quando Resend esta configurado;
+- resposta de `PATCH /serving-plans/:planId/assignments/:assignmentId/status` inclui `substituteSuggestions`;
+- tela Escalas mostra automaticamente sugestoes retornadas apos recusa.
 
 Ambiente atual:
 
@@ -99,6 +98,12 @@ Ambiente atual:
 - [[phases/phase-57-serving-notifications|Fase 57 - Notificacoes De Escala Por Email]]
 - [[phases/phase-58-serving-matrix-view|Fase 58 - Matrix View De Equipes Em Escalas]]
 - [[phases/phase-59-serving-reminder-emails|Fase 59 - Lembretes Automaticos De Escala Por Email]]
+- [[phases/phase-60-visitor-qr-registration|Fase 60 - Pre-Cadastro De Visitantes Via QR Code]]
+- [[phases/phase-61-message-templates-variables|Fase 61 - Templates De Mensagem Com Variaveis]]
+- [[phases/phase-62-event-registration-email-confirmation|Fase 62 - Confirmacao De Email No Registro Publico De Eventos]]
+- [[phases/phase-63-event-registration-confirmation-resend|Fase 63 - Reenvio De Confirmacao De Inscricao Em Eventos]]
+- [[phases/phase-64-event-self-service-checkin|Fase 64 - Check-in Self-Service De Eventos]]
+- [[phases/phase-65-serving-auto-substitutes|Fase 65 - Substituto Automatico Para Recusas Em Escala]]
 
 ## Decisoes
 
@@ -162,14 +167,20 @@ Ambiente atual:
 - [[decisions/0058-serving-notifications-email|0058 - Notificacoes De Escala Por Email]]
 - [[decisions/0059-serving-matrix-view|0059 - Matrix View De Equipes Em Escalas]]
 - [[decisions/0060-serving-reminder-emails|0060 - Lembretes Automaticos De Escala Por Email]]
+- [[decisions/0061-visitor-self-checkin-qr|0061 - Pre-Cadastro De Visitantes Via QR Code]]
+- [[decisions/0062-message-templates-with-variables|0062 - Templates De Mensagem Com Variaveis]]
+- [[decisions/0063-event-registration-email-confirmation|0063 - Confirmacao De Email No Registro Publico De Eventos]]
+- [[decisions/0064-event-registration-confirmation-resend|0064 - Reenvio De Confirmacao De Inscricao Em Eventos]]
+- [[decisions/0065-event-self-service-checkin|0065 - Check-in Self-Service De Eventos]]
+- [[decisions/0066-serving-auto-substitutes|0066 - Substituto Automatico Para Recusas Em Escala]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Mensagens Em Lote**: filtros dinamicos em Pessoas e registro de envio.
-2. **Troca/Reset De Senha**: fluxo proprio de troca e reset administrativo.
-3. **Substituto Automatico Para Recusas**: continuar evolucao da Fase 45.
-4. **Check-in Kids Avancado**: painel de atraso e historico.
+1. **Auditoria Avancada E Relatorios**: diff de campos, filtros backend e exportacoes.
+2. **Mensagens Em Lote Com Historico**: campanhas rastreaveis com enviados, pulados e falhas.
+3. **Check-in Self-Service Kids**: avaliar fluxo separado para criancas com responsavel logado/seguranca.
+4. **Convite De Substituto Por Link**: enviar convite diretamente ao candidato sugerido.
 
-Recomendacao atual: Troca/Reset de senha (fecha risco operacional) ou Mensagens em lote.
+Recomendacao atual: Auditoria avancada e relatorios, para aumentar confiabilidade antes de novas automacoes.

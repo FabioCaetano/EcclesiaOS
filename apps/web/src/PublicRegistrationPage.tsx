@@ -61,7 +61,12 @@ export const PublicRegistrationPage: React.FC<Props> = ({ slug }) => {
       const registration = await registerForPublicEvent(slug, form);
       setRegistration(registration);
       setForm(emptyRegistration);
-      setStatus(registration.status === "pending_payment" ? "Inscricao recebida. Pagamento pendente." : "Inscricao confirmada.");
+      const message = registration.status === "pending_email_confirmation"
+        ? "Inscricao recebida. Verifique seu email para confirmar."
+        : registration.status === "pending_payment"
+          ? "Inscricao recebida. Pagamento pendente."
+          : "Inscricao confirmada.";
+      setStatus(message);
       await refresh();
     } catch {
       setStatus("Nao foi possivel concluir a inscricao.");
@@ -105,7 +110,7 @@ export const PublicRegistrationPage: React.FC<Props> = ({ slug }) => {
             <h3>{event.title}</h3>
             <p>Participante: {registration.name}</p>
             <p>Quantidade: {registration.quantity}</p>
-            <p>Status: {registration.status === "pending_payment" ? "Pagamento pendente" : registration.status === "cancelled" ? "Cancelada" : "Confirmada"}</p>
+            <p>Status: {registration.status === "pending_payment" ? "Pagamento pendente" : registration.status === "pending_email_confirmation" ? "Aguardando email" : registration.status === "cancelled" ? "Cancelada" : "Confirmada"}</p>
             <p>Valor: {event.registrationCurrency} {registration.amountDue.toFixed(2)}</p>
             <TicketQrCode value={ticketPayload(registration)} />
             <strong>{registration.id}</strong>

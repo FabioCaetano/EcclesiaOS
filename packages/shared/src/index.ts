@@ -52,6 +52,46 @@ export interface PeopleMessageResponse {
   delivery: PeopleMessageDelivery;
 }
 
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  channel: MessageChannel;
+  subject: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MessageTemplateInput = Pick<MessageTemplate, "name" | "channel" | "subject" | "body">;
+
+export interface MessageVariableContext {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  churchName: string;
+}
+
+export const messageVariableKeys = ["firstName", "lastName", "fullName", "email", "phone", "churchName"] as const;
+export type MessageVariableKey = typeof messageVariableKeys[number];
+
+export const substituteMessageVariables = (text: string, context: MessageVariableContext): string => {
+  if (!text) return text;
+  const fullName = `${context.firstName} ${context.lastName}`.trim();
+  const replacements: Record<MessageVariableKey, string> = {
+    firstName: context.firstName,
+    lastName: context.lastName,
+    fullName,
+    email: context.email,
+    phone: context.phone,
+    churchName: context.churchName
+  };
+  return text.replace(/\{\{\s*([a-zA-Z]+)\s*\}\}/g, (match, key: string) => {
+    const replacement = replacements[key as MessageVariableKey];
+    return replacement === undefined ? match : replacement;
+  });
+};
+
 export interface EmailStatus {
   configured: boolean;
 }
@@ -96,6 +136,19 @@ export interface ResetPasswordInput {
 }
 
 export interface PasswordResetGenericResponse {
+  ok: true;
+  message: string;
+}
+
+export interface VisitorRegistrationInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  notes: string;
+}
+
+export interface VisitorRegistrationResponse {
   ok: true;
   message: string;
 }
@@ -269,6 +322,7 @@ export interface ChurchEvent {
   registrationPrice: number;
   registrationCurrency: string;
   registrationSlug: string;
+  registrationRequiresEmailConfirmation: boolean;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -282,7 +336,7 @@ export interface CronGenerationResult {
   total: number;
 }
 
-export type EventRegistrationStatus = "confirmed" | "pending_payment" | "cancelled";
+export type EventRegistrationStatus = "confirmed" | "pending_payment" | "pending_email_confirmation" | "cancelled";
 
 export interface EventRegistration {
   id: string;
@@ -297,6 +351,8 @@ export interface EventRegistration {
   checkedInAt: string;
   checkedInByUserId: string;
   notes: string;
+  emailConfirmationTokenHash: string;
+  emailConfirmationExpiresAt: string;
   createdAt: string;
 }
 
@@ -308,6 +364,27 @@ export interface EventRegistrationStatusUpdate {
 
 export interface EventRegistrationCheckInRequest {
   ticketCode: string;
+}
+
+export interface EventRegistrationSelfCheckInRequest {
+  ticketPayload: string;
+  eventSlug: string;
+}
+
+export interface EventRegistrationConfirmInput {
+  token: string;
+}
+
+export interface EventRegistrationConfirmResponse {
+  ok: boolean;
+  status: EventRegistrationStatus;
+}
+
+export interface EventRegistrationResendConfirmationResponse {
+  ok: boolean;
+  status: EventRegistrationStatus;
+  emailSent: boolean;
+  expiresAt: string;
 }
 
 export interface ChurchResource {
@@ -370,6 +447,11 @@ export type ServingPlanInput = Omit<ServingPlan, "id" | "createdAt" | "updatedAt
 export interface ServingAssignmentStatusUpdate {
   status: ServingAssignmentStatus;
   notes: string;
+}
+
+export interface ServingAssignmentStatusResponse extends ServingPlan {
+  substituteSuggestions: SubstituteSuggestion[];
+  substituteEmailSent: boolean;
 }
 
 export interface ServingNotification {

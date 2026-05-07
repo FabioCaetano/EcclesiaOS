@@ -100,6 +100,7 @@ export const emptyEventInput: ChurchEventInput = {
   registrationPrice: 0,
   registrationCurrency: "BRL",
   registrationSlug: "",
+  registrationRequiresEmailConfirmation: false,
   description: ""
 };
 

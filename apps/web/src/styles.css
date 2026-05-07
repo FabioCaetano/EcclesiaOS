@@ -1340,6 +1340,30 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
 }
 .scanner-canvas { display: none; }
 
+.self-checkin-panel {
+  width: min(100%, 560px);
+}
+.self-checkin-result {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.self-checkin-result svg { color: var(--color-brand); }
+.self-checkin-result.success {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+}
+.self-checkin-result.success svg { color: var(--color-success); }
+.public-scanner { margin-bottom: 0; }
+
 /* Child labels */
 .child-label-preview { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
 .batch-label-preview { display: none; }
@@ -1395,6 +1419,24 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
 .ticket-qr.placeholder {
   background: repeating-linear-gradient(45deg, var(--color-surface-muted), var(--color-surface-muted) 6px, var(--color-surface) 6px, var(--color-surface) 12px);
 }
+
+.visitor-qr-block {
+  display: flex; gap: var(--space-4);
+  align-items: flex-start; flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+.visitor-qr-image {
+  width: 220px; height: 220px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+.visitor-qr-image.placeholder {
+  background: repeating-linear-gradient(45deg, var(--color-surface-muted), var(--color-surface-muted) 6px, var(--color-surface) 6px, var(--color-surface) 12px);
+}
+.visitor-qr-info { flex: 1 1 220px; min-width: 220px; }
+.visitor-qr-info p { margin: 0 0 var(--space-2); }
 
 .event-ticket-print {
   margin-top: var(--space-5);
@@ -1838,6 +1880,17 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
 .messages-compose label { display: grid; gap: 4px; font-size: var(--text-sm); font-weight: 500; }
 .messages-links { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .messages-links h4 { font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-2); }
+
+.messages-template-row {
+  display: grid; gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+}
+.messages-template-row .response-actions { flex-wrap: wrap; }
+.messages-variables { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.messages-variables .secondary-button { padding: 4px 10px; font-size: var(--text-xs); }
 
 .messages-history {
   display: grid; gap: var(--space-2);
