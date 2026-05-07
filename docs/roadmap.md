@@ -888,6 +888,16 @@ Antes de desenvolver, perguntar:
 
 Decisao: tab bar Lista/Matriz no ServingPage; janela 4/8/12 semanas; sem edicao inline; reaproveita endpoints existentes.
 
+## Fase 59: Lembretes Automaticos De Escala Por Email
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos enviar lembrete automatico de escala uns dias antes do servico?
+
+Decisao: lazy no GET `/serving-notifications`; campo `reminderSentAt` na atribuicao garante uma vez so; janela em `REMINDER_DAYS_BEFORE` (default 2); sem cron job dedicado.
+
 Antes de desenvolver, perguntar:
 
 > Vamos liberar o "esqueci minha senha" agora que temos provedor de email?

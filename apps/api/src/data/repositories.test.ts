@@ -100,9 +100,9 @@ test("servingPlanRepository normalizes assignment status and ignores empty rows"
     eventId: "",
     notes: "",
     assignments: [
-      { id: "", personId: " per_001 ", role: " Louvor ", status: "confirmed", notes: " ok " },
-      { id: "", personId: "per_002", role: "Recepcao", status: "unknown" as never, notes: "" },
-      { id: "", personId: "", role: "", status: "declined", notes: "" }
+      { id: "", personId: " per_001 ", role: " Louvor ", status: "confirmed", notes: " ok ", reminderSentAt: "" },
+      { id: "", personId: "per_002", role: "Recepcao", status: "unknown" as never, notes: "", reminderSentAt: "" },
+      { id: "", personId: "", role: "", status: "declined", notes: "", reminderSentAt: "" }
     ]
   });
 

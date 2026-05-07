@@ -39,6 +39,7 @@ const generateTemporaryPassword = (): string => {
 const port = Number(process.env.PORT || 4000);
 const tokenSecret = process.env.AUTH_TOKEN_SECRET || "ecclesiaos-development-secret";
 const webBaseUrl = (process.env.WEB_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+const reminderDaysBefore = Math.max(0, Number(process.env.REMINDER_DAYS_BEFORE) || 2);
 const passwordResetGenericMessage = "Se o email estiver cadastrado, voce recebera um link para redefinir a senha.";
 const passwordResetGenericError = "Link invalido ou expirado. Solicite um novo email.";
 
@@ -1644,6 +1645,64 @@ const notifyNewAssignment = async (personId: string, plan: { title: string; date
   }
 };
 
+const processUpcomingReminders = async () => {
+  if (!isEmailConfigured()) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() + reminderDaysBefore);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+  const plans = await servingPlanRepository.list();
+  const upcoming = plans.filter((plan) => plan.date >= todayStr && plan.date <= cutoffStr);
+  if (upcoming.length === 0) return;
+
+  const people = await personRepository.list();
+  const peopleById = new Map(people.map((person) => [person.id, person]));
+
+  const updates: Array<{ planId: string; assignmentId: string; sentAt: string }> = [];
+
+  for (const plan of upcoming) {
+    for (const assignment of plan.assignments) {
+      if (!assignment.personId) continue;
+      if (assignment.status === "declined") continue;
+      if (assignment.reminderSentAt) continue;
+
+      const person = peopleById.get(assignment.personId);
+      if (!person?.email) continue;
+
+      const role = assignment.role || "Funcao a definir";
+      const link = `${webBaseUrl}/`;
+      const subject = `Lembrete: voce esta escalado em ${plan.title}`;
+      const text = `Ola ${person.firstName},\n\nLembrete: voce esta escalado para servir em "${plan.title}" no dia ${plan.date}.\nFuncao: ${role}\n\nAcesse ${link} para ver detalhes.\n\nObrigado!`;
+      const html = `<p>Ola, <strong>${person.firstName}</strong>.</p>
+<p>Este e um lembrete: voce esta escalado para servir em <strong>${plan.title}</strong> no dia <strong>${plan.date}</strong>.</p>
+<p>Funcao: ${role}</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>
+<p style="color:#5c6b78;font-size:13px;">Obrigado por servir!</p>`;
+
+      try {
+        const result = await sendEmail({ to: person.email, subject, text, html });
+        if (result.ok) {
+          updates.push({ planId: plan.id, assignmentId: assignment.id, sentAt: new Date().toISOString() });
+        }
+      } catch {
+        // best effort
+      }
+    }
+  }
+
+  if (updates.length > 0) {
+    try {
+      await servingPlanRepository.markRemindersSent(updates);
+    } catch {
+      // ignore — reminder just may go again next run
+    }
+  }
+};
+
 const notifyAssignmentResponse = async (
   plan: { title: string; date: string; groupId: string },
   assignment: { personId: string; role: string },
@@ -1718,6 +1777,8 @@ const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: Se
 const handleListServingNotifications = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
   if (!user) return;
+
+  await processUpcomingReminders();
 
   const notifications = await servingPlanRepository.listNotifications(user.personId, user.role === "admin");
   sendJson(res, 200, notifications);

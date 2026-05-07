@@ -133,7 +133,11 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
   })),
   servingPlans: (data.servingPlans || defaultServingPlans).map((plan) => ({
     ...plan,
-    eventId: plan.eventId || ""
+    eventId: plan.eventId || "",
+    assignments: (plan.assignments || []).map((assignment) => ({
+      ...assignment,
+      reminderSentAt: assignment.reminderSentAt || ""
+    }))
   })),
   users: (data.users || defaultUsers).map((user) => ({ ...user, personId: user.personId || "" }))
 });

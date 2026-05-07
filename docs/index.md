@@ -4,7 +4,7 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 58 - Matrix View De Equipes Em Escalas**.
+Fase atual concluida: **Fase 59 - Lembretes Automaticos De Escala Por Email**.
 
 Ultimo modulo entregue:
 
@@ -98,6 +98,7 @@ Ambiente atual:
 - [[phases/phase-56-forgot-password|Fase 56 - Reset De Senha Por Email]]
 - [[phases/phase-57-serving-notifications|Fase 57 - Notificacoes De Escala Por Email]]
 - [[phases/phase-58-serving-matrix-view|Fase 58 - Matrix View De Equipes Em Escalas]]
+- [[phases/phase-59-serving-reminder-emails|Fase 59 - Lembretes Automaticos De Escala Por Email]]
 
 ## Decisoes
 
@@ -160,6 +161,7 @@ Ambiente atual:
 - [[decisions/0057-forgot-password-by-email|0057 - Reset De Senha Por Email]]
 - [[decisions/0058-serving-notifications-email|0058 - Notificacoes De Escala Por Email]]
 - [[decisions/0059-serving-matrix-view|0059 - Matrix View De Equipes Em Escalas]]
+- [[decisions/0060-serving-reminder-emails|0060 - Lembretes Automaticos De Escala Por Email]]
 
 ## Proximos Caminhos
 

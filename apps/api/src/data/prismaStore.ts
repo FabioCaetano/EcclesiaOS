@@ -11,9 +11,20 @@ const asStringArray = (value: Prisma.JsonValue): string[] => (
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
 );
 
-const asAssignments = (value: Prisma.JsonValue): ServingAssignment[] => (
-  Array.isArray(value) ? value as unknown as ServingAssignment[] : []
-);
+const asAssignments = (value: Prisma.JsonValue): ServingAssignment[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw) => {
+    const item = raw as Partial<ServingAssignment>;
+    return {
+      id: typeof item.id === "string" ? item.id : "",
+      personId: typeof item.personId === "string" ? item.personId : "",
+      role: typeof item.role === "string" ? item.role : "",
+      status: item.status === "confirmed" || item.status === "declined" ? item.status : "pending",
+      notes: typeof item.notes === "string" ? item.notes : "",
+      reminderSentAt: typeof item.reminderSentAt === "string" ? item.reminderSentAt : ""
+    };
+  });
+};
 
 const toGroup = (group: {
   id: string;

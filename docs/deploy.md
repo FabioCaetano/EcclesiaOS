@@ -34,6 +34,7 @@ AUTH_TOKEN_SECRET=<chave longa e secreta>
 RESEND_API_KEY=<opcional; chave da Resend>
 EMAIL_FROM=<opcional; ex.: "Sua Igreja <noreply@suaigreja.com>">
 WEB_BASE_URL=<opcional; URL publica do frontend, padrao http://localhost:5173>
+REMINDER_DAYS_BEFORE=<opcional; dias antes do servico para enviar lembrete; default 2>
 ```
 
 `RESEND_API_KEY` e `EMAIL_FROM` sao opcionais. Quando ausentes:
@@ -48,6 +49,8 @@ Quando configurados:
 - Ate verificar, voce so consegue enviar para o email cadastrado na conta Resend (modo de teste).
 
 `WEB_BASE_URL` define o link enviado nos emails de "esqueci minha senha". Em producao na Vercel, ajuste para `https://seu-frontend.vercel.app` (ou seu dominio proprio).
+
+`REMINDER_DAYS_BEFORE` define a janela de lembretes de escala. Quando alguem abre o painel de Escalas, o backend varre planos com data dentro dessa janela e envia lembrete por email para cada atribuicao ainda nao avisada. Default 2 (dois dias antes do servico).
 
 ## Migration Em Producao
 

@@ -350,6 +350,7 @@ export interface ServingAssignment {
   role: string;
   status: ServingAssignmentStatus;
   notes: string;
+  reminderSentAt: string;
 }
 
 export interface ServingPlan {

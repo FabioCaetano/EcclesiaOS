@@ -11,8 +11,8 @@ export const defaultServingPlans: ServingPlan[] = [
     eventId: "",
     notes: "Escala inicial do culto.",
     assignments: [
-      { id: "asg_001", personId: "per_001", role: "Louvor", status: "confirmed", notes: "Vocal" },
-      { id: "asg_002", personId: "per_002", role: "Recepcao", status: "pending", notes: "" }
+      { id: "asg_001", personId: "per_001", role: "Louvor", status: "confirmed", notes: "Vocal", reminderSentAt: "" },
+      { id: "asg_002", personId: "per_002", role: "Recepcao", status: "pending", notes: "", reminderSentAt: "" }
     ],
     createdAt: now,
     updatedAt: now

@@ -23,7 +23,8 @@ const emptyAssignment = (): ServingAssignment => ({
   personId: "",
   role: "",
   status: "pending",
-  notes: ""
+  notes: "",
+  reminderSentAt: ""
 });
 
 const assignmentStatusLabels: Record<ServingAssignment["status"], string> = {

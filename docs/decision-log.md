@@ -106,6 +106,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 89. ServingPage ganha tab Lista/Matriz; aba Matriz mostra grid panoramico (membros da equipe x planos no periodo) com filtro de equipe `ministry`/`team` e janela 4/8/12 semanas; reaproveita `/serving-plans` existente, sem mudar backend; primeira coluna sticky a esquerda, header sticky no topo, scroll horizontal.
 
+90. Lembretes automaticos de escala por email em modo lazy: `GET /serving-notifications` varre planos dentro de `REMINDER_DAYS_BEFORE` (default 2 dias) e envia email para atribuicoes sem `reminderSentAt`, com email cadastrado e status diferente de `declined`; sem cron job dedicado; campo `reminderSentAt` adicionado ao tipo `ServingAssignment`; envios best-effort silenciosos quando provedor ausente; sem multiplos lembretes por atribuicao, sem SMS, sem cron externo.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

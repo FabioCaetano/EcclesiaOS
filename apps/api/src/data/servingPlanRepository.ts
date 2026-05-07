@@ -14,7 +14,8 @@ const normalizeAssignments = (assignments: ServingAssignment[]): ServingAssignme
   personId: String(assignment.personId || "").trim(),
   role: String(assignment.role || "").trim(),
   status: normalizeStatus(assignment.status),
-  notes: String(assignment.notes || "").trim()
+  notes: String(assignment.notes || "").trim(),
+  reminderSentAt: String(assignment.reminderSentAt || "").trim()
 })).filter((assignment) => assignment.personId || assignment.role);
 
 const normalizeInput = (input: ServingPlanInput): ServingPlanInput => ({
@@ -103,6 +104,31 @@ export const servingPlanRepository = {
 
     await writeData({ ...data, servingPlans: data.servingPlans.map((plan) => plan.id === planId ? updated : plan) });
     return updated;
+  },
+
+  async markRemindersSent(updates: Array<{ planId: string; assignmentId: string; sentAt: string }>): Promise<void> {
+    if (updates.length === 0) return;
+    const data = await readData();
+    const updateByPlan = new Map<string, Map<string, string>>();
+    for (const update of updates) {
+      if (!updateByPlan.has(update.planId)) updateByPlan.set(update.planId, new Map());
+      updateByPlan.get(update.planId)!.set(update.assignmentId, update.sentAt);
+    }
+
+    const nextPlans = data.servingPlans.map((plan) => {
+      const planUpdates = updateByPlan.get(plan.id);
+      if (!planUpdates) return plan;
+      return {
+        ...plan,
+        assignments: plan.assignments.map((assignment) => {
+          const sentAt = planUpdates.get(assignment.id);
+          return sentAt ? { ...assignment, reminderSentAt: sentAt } : assignment;
+        }),
+        updatedAt: new Date().toISOString()
+      };
+    });
+
+    await writeData({ ...data, servingPlans: nextPlans });
   },
 
   async listNotifications(personId?: string, includeAll = false): Promise<ServingNotification[]> {
