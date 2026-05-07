@@ -247,6 +247,7 @@ export interface GroupProfile {
   description: string;
   leaderPersonId: string;
   memberPersonIds: string[];
+  servicePositions: string[];
   createdAt: string;
   updatedAt: string;
 }

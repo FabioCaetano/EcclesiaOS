@@ -30,7 +30,8 @@ export const toGroupInput = (group: GroupProfile): GroupInput => ({
   type: group.type,
   description: group.description,
   leaderPersonId: group.leaderPersonId,
-  memberPersonIds: group.memberPersonIds
+  memberPersonIds: group.memberPersonIds,
+  servicePositions: group.servicePositions || []
 });
 
 export const toAttendanceInput = (record: AttendanceRecord): AttendanceInput => ({

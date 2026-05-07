@@ -701,7 +701,10 @@ const sanitizeGroupInput = (body: GroupInput): GroupInput => ({
   type: ["small_group", "ministry", "class", "team"].includes(body.type) ? body.type : "small_group",
   description: String(body.description || "").trim(),
   leaderPersonId: String(body.leaderPersonId || "").trim(),
-  memberPersonIds: Array.isArray(body.memberPersonIds) ? body.memberPersonIds.map(String) : []
+  memberPersonIds: Array.isArray(body.memberPersonIds) ? body.memberPersonIds.map(String) : [],
+  servicePositions: Array.isArray(body.servicePositions)
+    ? body.servicePositions.map((position) => String(position || "").trim()).filter(Boolean)
+    : []
 });
 
 const handleListGroups = async (req: IncomingMessage, res: ServerResponse) => {

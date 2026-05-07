@@ -24,7 +24,7 @@ Prioridades abertas:
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
 - Check-in ganhou aba Etiquetas na Fase 67, mas ainda pode evoluir para dashboard operacional mais completo de Kids/Eventos.
 - Escalas foi reorganizada na Fase 68: membro ve proprias escalas, lider ve equipes lideradas, matriz fica para admin/lider e indisponibilidade fica no modulo.
-- Grupos/ministerios precisam suportar posicoes operacionais, como vocal, bateria, guitarra, camera e transmissao.
+- Grupos/ministerios suportam posicoes operacionais desde a Fase 69; ainda falta vincular posicoes a pessoas especificas.
 - Ambientes teve mensagens e formularios separados na Fase 67; ainda pode receber polimento visual adicional.
 - Igreja precisa permitir upload de logo e remover a area de etiquetas para o modulo Check-in.
 
@@ -39,11 +39,11 @@ Prioridades abertas:
 | Persistencia inicial | Concluido | Dados em JSON local. |
 | Igreja | Concluido | Igreja unica simples, sem campus, com canal do YouTube configuravel. |
 | Pessoas | Concluido | CRUD minimo por admin, leitura por autenticados e responsaveis vinculados. |
-| Grupos e Ministerios | Concluido | CRUD minimo por admin, leitura por autenticados. |
+| Grupos e Ministerios | Concluido | CRUD minimo por admin, leitura por autenticados e posicoes de servico em ministerios/equipes. |
 | Layout e Navegacao | Concluido | Inicio, Igreja, Pessoas e Grupos em secoes navegaveis. |
 | Presenca | Oculto no menu | Codigo e endpoints mantidos; fluxo operacional migrou para Agenda/Check-in. |
 | Relatorios de Presenca | Implementado | Indicadores client-side mantidos na pagina Presenca, hoje fora da navegacao principal. |
-| Escalas e Cultos | Implementado | Planos por equipe; admin cria/remove, lider opera equipes lideradas e membro ve apenas suas proprias escalas. |
+| Escalas e Cultos | Implementado | Planos por equipe e posicao; admin cria/remove, lider opera equipes lideradas e membro ve apenas suas proprias escalas. |
 | Confirmacao de Escala | Implementado | Membro/lider responde a propria escala; pendencias aparecem filtradas por perfil. |
 | Financeiro | Implementado | Lancamentos, filtros, resumos por fundo/categoria e recibo inicial. |
 | Testes Automatizados | Implementado | `node:test` cobrindo repositorios e endpoints HTTP da API. |
@@ -313,6 +313,8 @@ Fluxos validados:
 - Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
 - A materializacao sob demanda passou a usar escrita incremental no Prisma para novos eventos filhos e planos de escala; publicacao ainda pendente nesta sessao.
 - A reorganizacao de Escalas da Fase 68 passou em `build:web`, `build:api` e 37 testes da API em 2026-05-07.
+- A Fase 69 adicionou `servicePositions` em ministerios/equipes e requer migration Prisma `20260507130000_group_service_positions`.
+- A Fase 69 passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -325,4 +327,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: publicar a estabilizacao acumulada e depois seguir para **Fase 69 - Posicoes Em Ministerios**.
+Proxima recomendacao: publicar a Fase 69 e depois seguir para **Fase 70 - Marca Da Igreja E Refinos De Conta**.

@@ -10,6 +10,7 @@ export const defaultGroups: GroupProfile[] = [
     description: "Grupo pequeno semanal para comunhao e estudo.",
     leaderPersonId: "per_001",
     memberPersonIds: ["per_001", "per_002"],
+    servicePositions: [],
     createdAt: now,
     updatedAt: now
   },
@@ -20,6 +21,7 @@ export const defaultGroups: GroupProfile[] = [
     description: "Ministerio responsavel pela musica dos cultos.",
     leaderPersonId: "per_001",
     memberPersonIds: ["per_001"],
+    servicePositions: ["Vocal", "Bateria", "Guitarra", "Teclado", "Baixo"],
     createdAt: now,
     updatedAt: now
   }

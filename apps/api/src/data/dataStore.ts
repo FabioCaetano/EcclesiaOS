@@ -107,7 +107,10 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     registrationRequiresEmailConfirmation: Boolean(event.registrationRequiresEmailConfirmation)
   })),
   financialTransactions: data.financialTransactions || defaultFinancialTransactions,
-  groups: data.groups || defaultGroups,
+  groups: (data.groups || defaultGroups).map((group) => ({
+    ...group,
+    servicePositions: Array.isArray(group.servicePositions) ? group.servicePositions : []
+  })),
   labelTemplates: (data.labelTemplates || defaultLabelTemplates).map((template) => ({
     ...template,
     layout: template.layout === "visitor" ? "visitor" : "kids_checkin",

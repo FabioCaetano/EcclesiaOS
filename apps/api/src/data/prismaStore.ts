@@ -33,12 +33,14 @@ const toGroup = (group: {
   description: string;
   leaderPersonId: string;
   memberPersonIds: Prisma.JsonValue;
+  servicePositions?: Prisma.JsonValue;
   createdAt: Date;
   updatedAt: Date;
 }): GroupProfile => ({
   ...group,
   type: group.type === "ministry" || group.type === "class" || group.type === "team" ? group.type : "small_group",
   memberPersonIds: asStringArray(group.memberPersonIds),
+  servicePositions: asStringArray(group.servicePositions ?? []),
   createdAt: group.createdAt.toISOString(),
   updatedAt: group.updatedAt.toISOString()
 });
@@ -387,6 +389,7 @@ export const writePrismaData = async (data: DataFile) => {
         data: {
           ...group,
           memberPersonIds: group.memberPersonIds,
+          servicePositions: group.servicePositions as unknown as Prisma.InputJsonValue,
           createdAt: new Date(group.createdAt),
           updatedAt: new Date(group.updatedAt)
         }

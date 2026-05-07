@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 68 - Escalas Operacionais E Indisponibilidade**.
+O EcclesiaOS concluiu ate a **Fase 69 - Posicoes Em Ministerios**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -12,7 +12,7 @@ A base atual ja cobre:
 - PostgreSQL/Prisma como banco real local e JSON como fallback/teste;
 - igreja unica com canal do YouTube, QR de visitante e templates de etiqueta;
 - Inicio operacional com videos reais do canal via feed publico;
-- pessoas, grupos, ministerios, visitantes e mensagens em lote;
+- pessoas, grupos, ministerios com posicoes de servico, visitantes e mensagens em lote;
 - templates de mensagem com variaveis por destinatario;
 - provedor de email via Resend com fallback seguro quando nao configurado;
 - presenca historica consolidada a partir de check-ins;
@@ -20,7 +20,7 @@ A base atual ja cobre:
 - cron real com ocorrencias materializadas como eventos filhos;
 - ambientes, reservas e calendario mensal/semanal;
 - check-in de evento, Kids, administracao kids, QR universal e etiquetas Brother;
-- escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos para recusas;
+- escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe por posicao, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos para recusas;
 - financeiro com filtros/resumos/recibos;
 - auditoria administrativa;
 - testes automatizados de API, smoke tests do frontend e build/typecheck recorrentes.
@@ -48,23 +48,13 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar o hotfix/estabilizacao no GitHub e redeployar Render/Vercel.
-2. Posicoes de ministerios ainda precisam entrar para escalas por funcao real.
+1. Publicar a Fase 69 no GitHub e redeployar Render/Vercel.
+2. Aplicar migration Prisma `20260507130000_group_service_positions` no ambiente publicado.
 3. Igreja ainda precisa upload de logo e refinamento de identidade visual.
 4. Check-in ainda precisa dashboard operacional mais claro para Kids/Eventos.
-5. Rodar smoke tests visuais/autenticados do frontend antes de nova publicacao grande.
+5. Posicoes por pessoa ainda precisam entrar para substitutos mais precisos.
 
 ## Proximas Fases Recomendadas
-
-### Fase 69 - Posicoes Em Ministerios
-
-Escopo provavel:
-
-- adicionar posicoes configuraveis em ministerios/equipes;
-- diferenciar grupo comum de ministerio/equipe operacional;
-- usar posicoes na montagem da escala.
-
-Valor: permite escalar louvor, midia e outras equipes por funcao real.
 
 ### Fase 70 - Marca Da Igreja E Refinos De Conta
 
@@ -79,6 +69,6 @@ Valor: melhora identidade visual e seguranca percebida.
 
 ## Recomendacao Atual
 
-Primeiro publicar a estabilizacao acumulada. Depois seguir para **Fase 69 - Posicoes Em Ministerios**.
+Primeiro publicar a Fase 69. Depois seguir para **Fase 70 - Marca Da Igreja E Refinos De Conta**.
 
-Motivo: Escalas ja foi organizada por perfil na Fase 68; o proximo salto de valor e permitir escala por funcao real dentro de ministerios.
+Motivo: Escalas ja possui posicoes por ministerio; o proximo bloco aberto do feedback e identidade visual da igreja e refinamentos de conta.

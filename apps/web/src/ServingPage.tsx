@@ -257,6 +257,10 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
     plan.assignments.find((assignment) => assignment.personId === personId) || null;
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
+  const selectedPlanGroup = groups.find((group) => group.id === (selectedPlan?.groupId || planForm.groupId)) || null;
+  const selectedGroupPositions = selectedPlanGroup && (selectedPlanGroup.type === "ministry" || selectedPlanGroup.type === "team")
+    ? selectedPlanGroup.servicePositions || []
+    : [];
   const canManagePlan = (plan: ServingPlan | null) => {
     if (user.role === "admin") return true;
     if (!plan) return false;
@@ -536,7 +540,19 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                             <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
                           ))}
                         </select>
-                        <input className="pp-role" placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
+                        {selectedGroupPositions.length > 0 ? (
+                          <select className="pp-role" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)}>
+                            <option value="">Posicao</option>
+                            {assignment.role && !selectedGroupPositions.includes(assignment.role) && (
+                              <option value={assignment.role}>{assignment.role}</option>
+                            )}
+                            {selectedGroupPositions.map((position) => (
+                              <option value={position} key={position}>{position}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input className="pp-role" placeholder="Funcao" value={assignment.role} onChange={(event) => updateAssignment(index, "role", event.target.value)} />
+                        )}
                         <select className="pp-status" value={assignment.status} onChange={(event) => updateAssignment(index, "status", event.target.value)}>
                           <option value="pending">Pendente</option>
                           <option value="confirmed">Confirmado</option>

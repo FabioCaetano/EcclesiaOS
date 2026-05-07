@@ -59,7 +59,8 @@ export const emptyGroupInput: GroupInput = {
   type: "small_group",
   description: "",
   leaderPersonId: "",
-  memberPersonIds: []
+  memberPersonIds: [],
+  servicePositions: []
 };
 
 export const attendanceTypeLabels: Record<AttendanceInput["type"], string> = {

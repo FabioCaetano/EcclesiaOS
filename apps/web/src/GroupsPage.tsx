@@ -41,6 +41,16 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
     setGroupForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateServicePositions = (value: string) => {
+    setGroupForm((current) => ({
+      ...current,
+      servicePositions: value
+        .split(/\n|,/)
+        .map((position) => position.trim())
+        .filter(Boolean)
+    }));
+  };
+
   const toggleGroupMember = (personId: string) => {
     setGroupForm((current) => {
       const exists = current.memberPersonIds.includes(personId);
@@ -105,7 +115,10 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
           ) : groups.map((group) => (
             <button className={group.id === selectedGroupId ? "person-row selected" : "person-row"} key={group.id} type="button" onClick={() => selectGroup(group)}>
               <strong>{group.name}</strong>
-              <span>{groupTypeLabels[group.type]} - {group.memberPersonIds.length} pessoa(s)</span>
+              <span>
+                {groupTypeLabels[group.type]} - {group.memberPersonIds.length} pessoa(s)
+                {(group.type === "ministry" || group.type === "team") && group.servicePositions?.length > 0 ? ` - ${group.servicePositions.length} posicao(oes)` : ""}
+              </span>
             </button>
           ))}
         </div>
@@ -131,6 +144,18 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
             </select>
           </label>
           <label className="wide-field">Descricao<textarea disabled={user.role !== "admin"} value={groupForm.description} onChange={(event) => updateGroupField("description", event.target.value)} /></label>
+
+          {(groupForm.type === "ministry" || groupForm.type === "team") && (
+            <label className="wide-field">
+              Posicoes de servico
+              <textarea
+                disabled={user.role !== "admin"}
+                value={groupForm.servicePositions.join("\n")}
+                onChange={(event) => updateServicePositions(event.target.value)}
+                placeholder={"Vocal\nBateria\nGuitarra\nCamera\nTransmissao"}
+              />
+            </label>
+          )}
 
           <fieldset className="member-picker">
             <legend>Membros</legend>

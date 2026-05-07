@@ -1127,7 +1127,7 @@ Entregue:
 
 ## Fase 69: Posicoes Em Ministerios
 
-Status atual: planejada.
+Status atual: concluida.
 
 Antes de desenvolver, perguntar:
 
@@ -1139,6 +1139,13 @@ Possivel escopo:
 - exemplos: vocal, bateria, guitarra, teclado, camera, transmissao, slides;
 - usar posicoes na montagem da escala;
 - manter grupos comuns sem obrigatoriedade de posicoes.
+
+Entregue:
+
+- `servicePositions` em ministerios/equipes;
+- UI em Grupos para editar posicoes por linha ou virgula;
+- Escalas usa seletor de posicao quando o grupo possui posicoes;
+- migration Prisma para persistir posicoes.
 
 ## Fase 70: Marca Da Igreja E Refinos De Conta
 

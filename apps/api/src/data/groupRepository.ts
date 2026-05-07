@@ -6,13 +6,18 @@ const createId = () => `grp_${Date.now().toString(36)}_${Math.random().toString(
 const normalizeInput = (input: GroupInput): GroupInput => {
   const memberPersonIds = Array.isArray(input.memberPersonIds) ? [...new Set(input.memberPersonIds.filter(Boolean))] : [];
   const leaderPersonId = String(input.leaderPersonId || "").trim();
+  const servicePositions = Array.isArray(input.servicePositions)
+    ? [...new Set(input.servicePositions.map((position) => String(position || "").trim()).filter(Boolean))]
+    : [];
+  const type = ["small_group", "ministry", "class", "team"].includes(input.type) ? input.type : "small_group";
 
   return {
     name: String(input.name || "").trim(),
-    type: ["small_group", "ministry", "class", "team"].includes(input.type) ? input.type : "small_group",
+    type,
     description: String(input.description || "").trim(),
     leaderPersonId,
-    memberPersonIds: leaderPersonId && !memberPersonIds.includes(leaderPersonId) ? [leaderPersonId, ...memberPersonIds] : memberPersonIds
+    memberPersonIds: leaderPersonId && !memberPersonIds.includes(leaderPersonId) ? [leaderPersonId, ...memberPersonIds] : memberPersonIds,
+    servicePositions: type === "ministry" || type === "team" ? servicePositions : []
   };
 };
 
