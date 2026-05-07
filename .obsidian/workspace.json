@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "c1d2eb81558b9aa9",
+        "id": "d8768cea1174d93f",
         "type": "tabs",
         "children": [
           {
-            "id": "da07ccca998715b3",
+            "id": "88b545964bc09b8a",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "docs/feedback-2026-05-07.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "feedback-2026-05-07"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
             }
           }
         ]
@@ -53,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "feedback",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -181,8 +177,11 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "da07ccca998715b3",
+  "active": "88b545964bc09b8a",
   "lastOpenFiles": [
+    "docs/decisions/0068-resources-checkin-ux.md",
+    "docs/phases/phase-67-resources-checkin-ux.md",
+    "docs/feedback-2026-05-07.md",
     "docs/decisions/0067-agenda-recurrence-public-routes.md",
     "docs/phases/phase-66-agenda-recurrence-public-routes.md",
     "apps/web/dist/assets/index-bWdNBSzP.js",
@@ -217,9 +216,6 @@
     "docs/phases/phase-42-ux-home-agenda-checkin.md",
     "docs/decisions/0042-checkin-to-attendance.md",
     "docs/phases/phase-41-checkin-to-attendance.md",
-    "docs/decisions/0041-audit-screen.md",
-    "docs/phases/phase-40-audit-screen.md",
-    "docs/decisions/0040-child-label-batch-printing.md",
     "node_modules/pngjs/coverage/lcov-report/sort-arrow-sprite.png",
     "node_modules/pngjs/coverage/lcov-report/favicon.png",
     "node_modules/playwright-core/lib/vite/traceViewer/playwright-logo.svg",

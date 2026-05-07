@@ -541,5 +541,8 @@ export const writePrismaData = async (data: DataFile) => {
         }
       });
     }
+  }, {
+    maxWait: 10000,
+    timeout: 60000
   });
 };

@@ -504,7 +504,7 @@ export const saveResource = async (token: string, input: ChurchResourceInput, id
     body: JSON.stringify(input)
   });
 
-  if (!response.ok) throw new Error("resource-save-failed");
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar o ambiente."));
   return response.json() as Promise<ChurchResource>;
 };
 
@@ -533,7 +533,7 @@ export const saveRoomReservation = async (token: string, input: RoomReservationI
     body: JSON.stringify(input)
   });
 
-  if (!response.ok) throw new Error(response.status === 409 ? "room-reservation-conflict" : "room-reservation-save-failed");
+  if (!response.ok) throw new Error(response.status === 409 ? "Conflito: este ambiente ja esta reservado neste horario." : await readApiErrorMessage(response, "Nao foi possivel salvar a reserva."));
   return response.json() as Promise<RoomReservation>;
 };
 

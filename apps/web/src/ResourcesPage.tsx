@@ -19,7 +19,8 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
   const [resourceForm, setResourceForm] = useState<ChurchResourceInput>(emptyResourceInput);
   const [reservationForm, setReservationForm] = useState<RoomReservationInput>(emptyRoomReservationInput);
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
-  const [status, setStatus] = useState("");
+  const [resourceStatus, setResourceStatus] = useState("");
+  const [reservationStatus, setReservationStatus] = useState("");
 
   const activeResources = resources.filter((resource) => resource.isActive);
   const filteredReservations = useMemo(() => reservations.filter((reservation) => !monthFilter || reservation.date.startsWith(monthFilter)), [reservations, monthFilter]);
@@ -39,7 +40,10 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
   };
 
   useEffect(() => {
-    refresh().catch(() => setStatus("Nao foi possivel carregar ambientes."));
+    refresh().catch(() => {
+      setResourceStatus("Nao foi possivel carregar ambientes.");
+      setReservationStatus("Nao foi possivel carregar reservas.");
+    });
   }, [token]);
 
   const resourceName = (id: string) => resources.find((resource) => resource.id === id)?.name || "Ambiente removido";
@@ -54,13 +58,13 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
       description: resource.description,
       isActive: resource.isActive
     });
-    setStatus("");
+    setResourceStatus("");
   };
 
   const startNewResource = () => {
     setSelectedResourceId(null);
     setResourceForm(emptyResourceInput);
-    setStatus("");
+    setResourceStatus("");
   };
 
   const selectReservation = (reservation: RoomReservation) => {
@@ -76,13 +80,13 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
       status: reservation.status,
       notes: reservation.notes
     });
-    setStatus("");
+    setReservationStatus("");
   };
 
   const startNewReservation = () => {
     setSelectedReservationId(null);
     setReservationForm({ ...emptyRoomReservationInput, resourceId: selectedResourceId || resources[0]?.id || "" });
-    setStatus("");
+    setReservationStatus("");
   };
 
   const updateResourceField = (field: keyof ChurchResourceInput, value: string) => {
@@ -103,14 +107,19 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
     event.preventDefault();
     if (user.role !== "admin") return;
 
-    setStatus("Salvando ambiente...");
+    if (!resourceForm.name.trim()) {
+      setResourceStatus("Informe o nome do ambiente.");
+      return;
+    }
+
+    setResourceStatus("Salvando ambiente...");
     try {
       const saved = await saveResource(token, resourceForm, selectedResourceId || undefined);
       await refresh();
       selectResource(saved);
-      setStatus("Ambiente salvo.");
-    } catch {
-      setStatus("Nao foi possivel salvar o ambiente.");
+      setResourceStatus("Ambiente salvo.");
+    } catch (error) {
+      setResourceStatus(error instanceof Error ? error.message : "Nao foi possivel salvar o ambiente.");
     }
   };
 
@@ -118,14 +127,27 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
     event.preventDefault();
     if (user.role !== "admin") return;
 
-    setStatus("Salvando reserva...");
+    if (!reservationForm.resourceId) {
+      setReservationStatus("Selecione o ambiente da reserva.");
+      return;
+    }
+    if (!reservationForm.title.trim()) {
+      setReservationStatus("Informe o titulo da reserva.");
+      return;
+    }
+    if (!reservationForm.date || !reservationForm.startTime || !reservationForm.endTime) {
+      setReservationStatus("Informe data, inicio e fim da reserva.");
+      return;
+    }
+
+    setReservationStatus("Salvando reserva...");
     try {
       const saved = await saveRoomReservation(token, reservationForm, selectedReservationId || undefined);
       await refresh();
       selectReservation(saved);
-      setStatus("Reserva salva.");
+      setReservationStatus("Reserva salva.");
     } catch (error) {
-      setStatus(error instanceof Error && error.message === "room-reservation-conflict" ? "Conflito: este ambiente ja esta reservado neste horario." : "Nao foi possivel salvar a reserva.");
+      setReservationStatus(error instanceof Error ? error.message : "Nao foi possivel salvar a reserva.");
     }
   };
 
@@ -133,14 +155,14 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
     if (!selectedResourceId || user.role !== "admin") return;
     if (!window.confirm("Remover este ambiente?")) return;
 
-    setStatus("Removendo ambiente...");
+    setResourceStatus("Removendo ambiente...");
     try {
       await deleteResource(token, selectedResourceId);
       await refresh();
       startNewResource();
-      setStatus("Ambiente removido.");
+      setResourceStatus("Ambiente removido.");
     } catch {
-      setStatus("Nao foi possivel remover o ambiente. Verifique se existem reservas vinculadas.");
+      setResourceStatus("Nao foi possivel remover o ambiente. Verifique se existem reservas vinculadas.");
     }
   };
 
@@ -148,14 +170,14 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
     if (!selectedReservationId || user.role !== "admin") return;
     if (!window.confirm("Remover esta reserva?")) return;
 
-    setStatus("Removendo reserva...");
+    setReservationStatus("Removendo reserva...");
     try {
       await deleteRoomReservation(token, selectedReservationId);
       await refresh();
       startNewReservation();
-      setStatus("Reserva removida.");
+      setReservationStatus("Reserva removida.");
     } catch {
-      setStatus("Nao foi possivel remover a reserva.");
+      setReservationStatus("Nao foi possivel remover a reserva.");
     }
   };
 
@@ -201,6 +223,14 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
         </div>
       </div>
 
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Ambientes</p>
+          <h2>Criar e editar ambientes</h2>
+        </div>
+        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewResource}>Novo ambiente</button>}
+      </div>
+
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de ambientes">
           {resources.map((resource) => (
@@ -227,8 +257,17 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedResourceId ? "Salvar ambiente" : "Criar ambiente"}</button>}
             {user.role === "admin" && selectedResourceId && <button className="danger-button" type="button" onClick={handleDeleteResource}>Remover</button>}
+            <p>{user.role === "admin" ? resourceStatus : "Somente administradores podem alterar ambientes."}</p>
           </div>
         </form>
+      </div>
+
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Reservas</p>
+          <h2>Criar e controlar reservas</h2>
+        </div>
+        {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewReservation}>Nova reserva</button>}
       </div>
 
       <div className="people-layout">
@@ -273,7 +312,7 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedReservationId ? "Salvar reserva" : "Criar reserva"}</button>}
             {user.role === "admin" && selectedReservationId && <button className="danger-button" type="button" onClick={handleDeleteReservation}>Remover</button>}
-            <p>{user.role === "admin" ? status : "Somente administradores podem alterar ambientes e reservas."}</p>
+            <p>{user.role === "admin" ? reservationStatus : "Somente administradores podem alterar reservas."}</p>
           </div>
         </form>
       </div>

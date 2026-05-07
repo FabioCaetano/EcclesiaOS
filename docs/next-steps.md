@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas**.
+O EcclesiaOS concluiu ate a **Fase 67 - UX De Ambientes E Check-in**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -48,25 +48,13 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Ambientes mistura criacao de ambiente e reserva, e erros de criacao aparecem no formulario errado.
-2. Check-in ainda concentra muitas funcoes em uma tela confusa para operacao real.
-3. Etiquetas e impressoras ainda precisam migrar da Igreja para Check-in com preview configuravel.
-4. Escalas ainda precisa amadurecer permissoes, visualizacao e indisponibilidade.
+1. Validar build/testes da Fase 67 quando o ambiente local permitir executar comandos novamente.
+2. Transformar materializacao de ocorrencias em escrita incremental no Prisma, removendo dependencia do `writePrismaData` completo em producao.
+3. Escalas ainda precisa amadurecer permissoes, visualizacao e indisponibilidade.
+4. Posicoes de ministerios ainda precisam entrar para escalas por funcao real.
+5. Igreja ainda precisa upload de logo e refinamento de identidade visual.
 
 ## Proximas Fases Recomendadas
-
-### Fase 67 - UX De Ambientes E Check-in
-
-Escopo provavel:
-
-- separar criacao de ambiente e criacao de reserva;
-- mostrar erros no formulario correto;
-- mover etiquetas e configuracao de impressao para Check-in;
-- criar preview de etiqueta com campos selecionaveis;
-- organizar Check-in em Evento, Kids e Administracao;
-- criar dashboard do dia para eventos e kids.
-
-Valor: reduz confusao operacional nas telas usadas durante culto/evento.
 
 ### Fase 68 - Escalas Operacionais E Indisponibilidade
 
@@ -103,6 +91,6 @@ Valor: melhora identidade visual e seguranca percebida.
 
 ## Recomendacao Atual
 
-Seguir para **Fase 67 - UX De Ambientes E Check-in**.
+Seguir para **Fase 68 - Escalas Operacionais E Indisponibilidade**.
 
-Motivo: a Fase 66 desbloqueou Agenda e rotas publicas; o proximo maior atrito esta na organizacao de Ambientes, etiquetas e Check-in.
+Motivo: a Fase 67 iniciou a organizacao de Ambientes e Check-in; o proximo maior risco operacional esta nas permissoes e visualizacao de Escalas.

@@ -29,7 +29,7 @@ const emptyChildCheckIn: ChildCheckInInput = {
 };
 
 type PrintMode = "single" | "batch" | null;
-type CheckInView = "events" | "kids" | "admin";
+type CheckInView = "events" | "kids" | "admin" | "labels";
 
 const FALLBACK_TEMPLATES: LabelTemplate[] = [
   {
@@ -128,6 +128,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [kidsTemplates, setKidsTemplates] = useState<LabelTemplate[]>(FALLBACK_TEMPLATES);
   const [labelTemplateId, setLabelTemplateId] = useState<string>(FALLBACK_TEMPLATES[0]!.id);
+  const [labelFields, setLabelFields] = useState({
+    age: true,
+    guardianPhone: true,
+    notes: false,
+    qr: true
+  });
   const [printMode, setPrintMode] = useState<PrintMode>(null);
   const [activeView, setActiveView] = useState<CheckInView>("events");
   const [scannerActive, setScannerActive] = useState(false);
@@ -197,11 +203,23 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const selectedLabelQrValue = selectedLabel ? `ecclesiaos-child-checkout:${selectedLabel.id}:${selectedLabel.securityCode}` : "";
   const selectedBatchLabels = childCheckIns.filter((item) => selectedBatchIds.includes(item.id));
   const selectedTemplate = kidsTemplates.find((template) => template.id === labelTemplateId) || kidsTemplates[0] || null;
+  const selectedLabelPerson = selectedLabel?.childPersonId ? people.find((person) => person.id === selectedLabel.childPersonId) || null : null;
   const consolidatedAttendance = attendance.filter((record) => record.eventId);
   const consolidatedPeopleCount = consolidatedAttendance.reduce((sum, record) => sum + record.presentPersonIds.length, 0);
   const linkedGuardians = childForm.childPersonId
     ? people.filter((person) => people.find((child) => child.id === childForm.childPersonId)?.guardianPersonIds.includes(person.id))
     : [];
+
+  const childAge = (person: PersonProfile | null): string => {
+    if (!person?.birthDate) return "";
+    const birth = new Date(`${person.birthDate}T00:00:00`);
+    if (Number.isNaN(birth.getTime())) return "";
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const hadBirthday = now.getMonth() > birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
+    if (!hadBirthday) age -= 1;
+    return age >= 0 ? `${age} ano(s)` : "";
+  };
 
   const updateChildPerson = (personId: string) => {
     const person = people.find((item) => item.id === personId);
@@ -358,6 +376,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         <button className={activeView === "events" ? "active" : ""} type="button" onClick={() => setActiveView("events")}>Eventos</button>
         <button className={activeView === "kids" ? "active" : ""} type="button" onClick={() => setActiveView("kids")}>Kids</button>
         <button className={activeView === "admin" ? "active" : ""} type="button" onClick={() => setActiveView("admin")}>Administracao kids</button>
+        <button className={activeView === "labels" ? "active" : ""} type="button" onClick={() => setActiveView("labels")}>Etiquetas</button>
       </div>
 
       {activeView === "admin" && <div className="scanner-panel">
@@ -599,6 +618,45 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </div>
       )}
 
+      {activeView === "labels" && (
+        <div className="report-columns">
+          <div>
+            <h3>Etiquetas do Check-in</h3>
+            <p className="muted">Selecione uma crianca ativa ou um check-in infantil para visualizar e imprimir a etiqueta.</p>
+            <div className="batch-toolbar">
+              <button className="secondary-button" type="button" onClick={selectOpenBatchLabels}>Selecionar criancas ativas</button>
+              <button className="secondary-button" type="button" onClick={() => setSelectedBatchIds([])}>Limpar selecao</button>
+              <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={selectedBatchLabels.length === 0}>
+                <Printer size={14} /> Imprimir lote
+              </button>
+              <span>{selectedBatchLabels.length} selecionada(s)</span>
+            </div>
+            <div className="checkin-grid">
+              {childCheckIns.map((item) => (
+                <article className="checkin-card" key={item.id}>
+                  <Avatar name={item.childName} size="md" tone={item.checkedOutAt ? "muted" : "info"} />
+                  <div className="checkin-card-text">
+                    <strong>{item.childName}</strong>
+                    <span>{eventName(item.eventId)} - codigo {item.securityCode}</span>
+                  </div>
+                  <button className="secondary-button btn-sm" type="button" onClick={() => setSelectedLabelId(item.id)}>
+                    <Tag size={14} /> Preview
+                  </button>
+                </article>
+              ))}
+            </div>
+          </div>
+          <aside className="checkin-side">
+            <h3>Campos da etiqueta</h3>
+            <label className="checkbox-inline"><input type="checkbox" checked={labelFields.age} onChange={(event) => setLabelFields((current) => ({ ...current, age: event.target.checked }))} /> Idade</label>
+            <label className="checkbox-inline"><input type="checkbox" checked={labelFields.guardianPhone} onChange={(event) => setLabelFields((current) => ({ ...current, guardianPhone: event.target.checked }))} /> Telefone do responsavel</label>
+            <label className="checkbox-inline"><input type="checkbox" checked={labelFields.notes} onChange={(event) => setLabelFields((current) => ({ ...current, notes: event.target.checked }))} /> Observacoes</label>
+            <label className="checkbox-inline"><input type="checkbox" checked={labelFields.qr} onChange={(event) => setLabelFields((current) => ({ ...current, qr: event.target.checked }))} /> QR Code</label>
+            <p className="muted">Templates e impressora usam os modelos cadastrados no sistema.</p>
+          </aside>
+        </div>
+      )}
+
       {selectedLabel && selectedTemplate && (
         <div className="child-label-preview">
           <div className="section-heading">
@@ -623,12 +681,14 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
             <h3>{selectedLabel.childName}</h3>
             <div className="child-label-code-row">
               <strong>{selectedLabel.securityCode}</strong>
-              <ChildQrCode value={selectedLabelQrValue} />
+              {labelFields.qr && <ChildQrCode value={selectedLabelQrValue} />}
             </div>
             <p>{eventName(selectedLabel.eventId)}</p>
             <p>Responsavel: {selectedLabel.guardianName}</p>
-            <p>Telefone: {selectedLabel.guardianPhone || "Nao informado"}</p>
-            <p>QR: {selectedLabel.id}</p>
+            {labelFields.age && childAge(selectedLabelPerson) && <p>Idade: {childAge(selectedLabelPerson)}</p>}
+            {labelFields.guardianPhone && <p>Telefone: {selectedLabel.guardianPhone || "Nao informado"}</p>}
+            {labelFields.notes && selectedLabel.notes && <p>Obs.: {selectedLabel.notes}</p>}
+            {labelFields.qr && <p>QR: {selectedLabel.id}</p>}
             {selectedLabel.checkedOutAt && <p>Retirado por: {personName(selectedLabel.checkedOutByPersonId)}</p>}
           </div>
         </div>
@@ -643,12 +703,13 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               <h3>{label.childName}</h3>
               <div className="child-label-code-row">
                 <strong>{label.securityCode}</strong>
-                <ChildQrCode value={`ecclesiaos-child-checkout:${label.id}:${label.securityCode}`} />
+                {labelFields.qr && <ChildQrCode value={`ecclesiaos-child-checkout:${label.id}:${label.securityCode}`} />}
               </div>
               <p>{eventName(label.eventId)}</p>
               <p>Responsavel: {label.guardianName}</p>
-              <p>Telefone: {label.guardianPhone || "Nao informado"}</p>
-              <p>QR: {label.id}</p>
+              {labelFields.guardianPhone && <p>Telefone: {label.guardianPhone || "Nao informado"}</p>}
+              {labelFields.notes && label.notes && <p>Obs.: {label.notes}</p>}
+              {labelFields.qr && <p>QR: {label.id}</p>}
             </div>
           ))}
         </div>

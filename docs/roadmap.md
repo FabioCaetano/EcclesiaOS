@@ -1084,7 +1084,7 @@ Fora de escopo:
 
 ## Fase 67: UX De Ambientes E Check-in
 
-Status atual: planejada.
+Status atual: implementada; validacao automatica pendente por bloqueio de execucao local.
 
 Antes de desenvolver, perguntar:
 

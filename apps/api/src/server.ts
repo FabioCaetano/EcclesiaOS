@@ -1314,7 +1314,12 @@ const handleListEvents = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  await eventRepository.materializeCronOccurrences();
+  try {
+    await eventRepository.materializeCronOccurrences();
+  } catch (error) {
+    console.error("Failed to materialize recurring event occurrences while listing events.", error);
+  }
+
   sendJson(res, 200, await eventRepository.list());
 };
 
@@ -1322,9 +1327,16 @@ const handleGenerateEventOccurrences = async (req: IncomingMessage, res: ServerR
   const user = await requireAdmin(req, res);
   if (!user) return;
 
-  const result = await eventRepository.regenerateForMaster(id);
-  if (!result) {
-    sendError(res, 404, "not_found", "Evento nao encontrado.");
+  let result;
+  try {
+    result = await eventRepository.regenerateForMaster(id);
+    if (!result) {
+      sendError(res, 404, "not_found", "Evento nao encontrado.");
+      return;
+    }
+  } catch (error) {
+    console.error("Failed to generate recurring event occurrences.", error);
+    sendError(res, 400, "invalid_json", "Nao foi possivel gerar ocorrencias agora. Tente novamente em alguns instantes.");
     return;
   }
 

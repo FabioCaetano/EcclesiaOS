@@ -20,11 +20,12 @@ Feedback consolidado em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]
 Prioridades abertas:
 
 - Agenda ja foi estabilizada na Fase 66 com erros especificos, Ambiente em vez de Local e recorrencias materializadas.
+- Hotfix aplicado: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API.
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
-- Check-in precisa concentrar etiquetas/impressoras, preview de etiqueta e administracao de Kids/Eventos.
+- Check-in ganhou aba Etiquetas na Fase 67, mas ainda pode evoluir para dashboard operacional mais completo de Kids/Eventos.
 - Escalas precisa restringir criacao/edicao a admin/lider, simplificar a tela e trazer indisponibilidade para o modulo.
 - Grupos/ministerios precisam suportar posicoes operacionais, como vocal, bateria, guitarra, camera e transmissao.
-- Ambientes precisa separar criacao de ambiente e criacao de reserva, com erro exibido no formulario correto.
+- Ambientes teve mensagens e formularios separados na Fase 67; ainda pode receber polimento visual adicional.
 - Igreja precisa permitir upload de logo e remover a area de etiquetas para o modulo Check-in.
 
 ## Modulos Implementados
@@ -55,10 +56,10 @@ Prioridades abertas:
 | Auditoria | Implementado | Logs consultaveis no painel com filtros por acao, entidade, usuario, data e busca. |
 | Agenda E Eventos | Concluido | CRUD de eventos, inscricoes, Ambiente selecionado a partir de Ambientes ativos, expressao cron textual e recorrencias materializadas. |
 | Inscricoes De Eventos | Implementado | Link publico por slug, limite de vagas, participantes, status manual, recibo/ingresso, QR Code, check-in administrativo e self-service por `/event-checkin/<slug>`. |
-| Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario e bloqueio de conflito. |
+| Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario, bloqueio de conflito e mensagens separadas por formulario. |
 | Calendario | Concluido | Visao mensal/semanal, detalhe do dia e filtro por ambiente. |
 | Presenca Por Evento | Concluido | `eventId` em presenca, resumo por evento e consolidacao automatica de check-ins. |
-| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, administracao kids interna, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
+| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, administracao kids interna, aba Etiquetas, preview configuravel, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 | Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
@@ -310,6 +311,7 @@ Fluxos validados:
 - Leitura de QR Code por camera funciona em qualquer navegador moderno: usa `BarcodeDetector` quando disponivel e cai para `jsqr` quando nao; ainda depende de HTTPS/localhost e permissao de camera.
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
 - Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
+- A materializacao sob demanda ainda usa escrita agregada pelo `writePrismaData`; em producao isso recebeu hotfix, mas deve virar escrita incremental no Prisma.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -322,4 +324,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: **Fase 67 - UX De Ambientes E Check-in**.
+Proxima recomendacao: **Fase 68 - Escalas Operacionais E Indisponibilidade**.

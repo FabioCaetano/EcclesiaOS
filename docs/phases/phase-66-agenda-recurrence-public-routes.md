@@ -30,6 +30,17 @@ Corrigir os bloqueios apontados no feedback de produto de 2026-05-07 para libera
 - `npm.cmd run build:web`
 - `npm.cmd test --workspace @ecclesiaos/api`
 
+## Hotfix Posterior
+
+Na Fase 67 foi identificado em producao erro Prisma `P2028` ao materializar recorrencias durante `GET /events`. Foi aplicado hotfix para:
+
+- capturar falha de materializacao automatica sem derrubar a API;
+- retornar a lista de eventos mesmo quando a geracao lazy falhar;
+- aumentar `maxWait` e `timeout` da transacao Prisma;
+- tratar erro da geracao manual de ocorrencias com mensagem amigavel.
+
+A melhoria estrutural futura e criar persistencia incremental de ocorrencias no Prisma, sem regravar todo o banco via `writePrismaData`.
+
 ## Proxima Fase Recomendada
 
 Fase 67 - UX De Ambientes E Check-in.

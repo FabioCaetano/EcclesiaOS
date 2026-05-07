@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas**.
+Fase atual concluida: **Fase 67 - UX De Ambientes E Check-in**.
 
 Ultimo modulo entregue:
 
-- Agenda usa `Ambiente` em vez de `Local` e seleciona ambientes ativos cadastrados;
-- validacao de evento retorna mensagens especificas em vez de erro bruto do Prisma;
-- slug publico duplicado retorna conflito compreensivel;
-- recorrencias `weekly`, `monthly` e `cron` podem gerar ocorrencias materializadas;
-- Vercel possui rewrite SPA para rotas publicas como `/visitor`, `/forgot-password`, `/register/*` e `/event-checkin/*`.
+- Ambientes separa melhor cadastro de ambiente e reserva;
+- mensagens de erro de ambiente e reserva aparecem no contexto correto;
+- Check-in ganhou aba `Etiquetas`;
+- preview de etiqueta infantil permite ligar/desligar idade, telefone, observacoes e QR Code;
+- impressao em lote de etiquetas fica acessivel dentro do Check-in.
 
 Ambiente atual:
 
@@ -105,6 +105,7 @@ Ambiente atual:
 - [[phases/phase-64-event-self-service-checkin|Fase 64 - Check-in Self-Service De Eventos]]
 - [[phases/phase-65-serving-auto-substitutes|Fase 65 - Substituto Automatico Para Recusas Em Escala]]
 - [[phases/phase-66-agenda-recurrence-public-routes|Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
+- [[phases/phase-67-resources-checkin-ux|Fase 67 - UX De Ambientes E Check-in]]
 
 ## Decisoes
 
@@ -175,14 +176,15 @@ Ambiente atual:
 - [[decisions/0065-event-self-service-checkin|0065 - Check-in Self-Service De Eventos]]
 - [[decisions/0066-serving-auto-substitutes|0066 - Substituto Automatico Para Recusas Em Escala]]
 - [[decisions/0067-agenda-recurrence-public-routes|0067 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
+- [[decisions/0068-resources-checkin-ux|0068 - UX De Ambientes E Check-in]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Fase 67 - UX De Ambientes E Check-in**: separar criacao de ambiente/reserva, mover etiquetas para Check-in, criar preview de etiqueta e dashboard operacional de Kids/Eventos.
-2. **Fase 68 - Escalas Operacionais E Indisponibilidade**: restringir criacao/edicao a admin/lider, simplificar visao, mostrar pendencias relevantes e mover indisponibilidade para Escalas.
-3. **Fase 69 - Posicoes Em Ministerios**: permitir funcoes configuraveis por ministerio/equipe para escala por posicao.
-4. **Fase 70 - Marca Da Igreja E Refinos De Conta**: upload de logo, uso visual no app e notificacao por email apos alteracao de senha.
+1. **Fase 68 - Escalas Operacionais E Indisponibilidade**: restringir criacao/edicao a admin/lider, simplificar visao, mostrar pendencias relevantes e mover indisponibilidade para Escalas.
+2. **Fase 69 - Posicoes Em Ministerios**: permitir funcoes configuraveis por ministerio/equipe para escala por posicao.
+3. **Fase 70 - Marca Da Igreja E Refinos De Conta**: upload de logo, uso visual no app e notificacao por email apos alteracao de senha.
+4. **Validar Fase 67**: rodar build/testes assim que o sandbox permitir execucao local novamente.
 
-Recomendacao atual: iniciar pela **Fase 67**, pois Ambientes e Check-in foram os proximos pontos de maior confusao operacional no feedback.
+Recomendacao atual: validar a Fase 67 localmente e seguir para **Fase 68**.
