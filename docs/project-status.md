@@ -372,3 +372,21 @@ Fase 76 concluida. O EcclesiaOS agora possui o modulo `Musicas`, com cadastro de
 - `npm run db:generate`: passou.
 - `npm run build:api`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 38 testes.
+# Status Atual - Fase 77
+
+Fase 77 concluida. O EcclesiaOS agora possui liturgia/checklist por culto/evento dentro da area de Musicas, com responsaveis, horarios, notas e marcacao de concluido.
+
+## Entregue na fase
+
+- Entidade `ServiceChecklist`.
+- Rotas protegidas de API.
+- Persistencia local e PostgreSQL/Prisma.
+- UI de planejamento e acompanhamento.
+- Teste de permissao: lider gerencia, membro visualiza.
+
+## Validacao
+
+- `npm run db:generate`: passou.
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 39 testes.

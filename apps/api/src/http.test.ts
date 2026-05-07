@@ -155,7 +155,7 @@ test("public visitor registration creates a visitor person without user", async 
 });
 
 test("authenticated list endpoints reject missing token and accept member token", async () => {
-  const protectedPaths = ["/people", "/groups", "/attendance", "/events", "/resources", "/room-reservations", "/serving-plans", "/songs", "/worship-sets"];
+  const protectedPaths = ["/people", "/groups", "/attendance", "/events", "/resources", "/room-reservations", "/serving-plans", "/songs", "/worship-sets", "/service-checklists"];
 
   for (const path of protectedPaths) {
     const anonymous = await requestJson<{ error: string }>(path);
@@ -216,6 +216,39 @@ test("leaders can manage songs and worship sets while members only read", async 
   });
   assert.equal(memberList.response.status, 200);
   assert.equal(memberList.body?.some((item) => item.title === "Grande Amor"), true);
+});
+
+test("leaders can manage service liturgy checklists while members only read", async () => {
+  const forbidden = await requestJson<{ error: string }>("/service-checklists", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ title: "Liturgia bloqueada" })
+  });
+  assert.equal(forbidden.response.status, 403);
+
+  const checklist = await requestJson<{ id: string; items: Array<{ title: string; completed: boolean; order: number }> }>("/service-checklists", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      eventId: "",
+      title: "Culto Domingo",
+      date: "2026-05-10",
+      notes: "Liturgia da manha",
+      items: [
+        { id: "", title: "Boas-vindas", responsiblePersonId: "", scheduledTime: "10:00", notes: "", completed: false, order: 1 },
+        { id: "", title: "Louvor", responsiblePersonId: "", scheduledTime: "10:10", notes: "", completed: true, order: 2 }
+      ]
+    })
+  });
+  assert.equal(checklist.response.status, 201);
+  assert.equal(checklist.body?.items.length, 2);
+  assert.equal(checklist.body?.items[1]?.completed, true);
+
+  const memberList = await requestJson<Array<{ title: string }>>("/service-checklists", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(memberList.response.status, 200);
+  assert.equal(memberList.body?.some((item) => item.title === "Culto Domingo"), true);
 });
 
 test("admin can create events while member cannot", async () => {

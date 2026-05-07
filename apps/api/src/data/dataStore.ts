@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -41,6 +41,7 @@ export interface DataFile {
   people: PersonProfile[];
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
+  serviceChecklists: ServiceChecklist[];
   servingPlans: ServingPlan[];
   songs: Song[];
   users: UserRecord[];
@@ -68,6 +69,7 @@ const defaultData = (): DataFile => ({
   people: defaultPeople,
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
+  serviceChecklists: [],
   servingPlans: defaultServingPlans,
   songs: [],
   users: defaultUsers.map((user) => ({
@@ -135,6 +137,21 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
   })),
   resources: data.resources || defaultResources,
   roomReservations: (data.roomReservations || defaultRoomReservations).map((reservation) => ({ ...reservation, status: reservation.status === "cancelled" ? "cancelled" : "confirmed" })),
+  serviceChecklists: (data.serviceChecklists || []).map((checklist) => ({
+    ...checklist,
+    eventId: checklist.eventId || "",
+    date: checklist.date || "",
+    notes: checklist.notes || "",
+    items: (checklist.items || []).map((item, index) => ({
+      id: item.id || `item_${index + 1}`,
+      title: item.title || "",
+      responsiblePersonId: item.responsiblePersonId || "",
+      scheduledTime: item.scheduledTime || "",
+      notes: item.notes || "",
+      completed: Boolean(item.completed),
+      order: Number(item.order) || index + 1
+    })).filter((item) => item.title)
+  })),
   peopleMessages: (data.peopleMessages || []).map((message) => ({
     ...message,
     channel: message.channel === "email" || message.channel === "whatsapp" ? message.channel : "manual",

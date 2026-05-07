@@ -154,3 +154,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0076-music-repertoire-foundation.md`
 - Criado modulo proprio para Musicas, separando biblioteca de cancoes e repertorios por culto/evento.
+# Decisao 0077
+
+- `docs/decisions/0077-service-liturgy-checklist.md`
+- Criada entidade propria para liturgia/checklist vinculada ao culto/evento, separada do repertorio musical.

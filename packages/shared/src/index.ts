@@ -509,6 +509,29 @@ export interface WorshipSet {
 
 export type WorshipSetInput = Omit<WorshipSet, "id" | "createdAt" | "updatedAt">;
 
+export interface ServiceChecklistItem {
+  id: string;
+  title: string;
+  responsiblePersonId: string;
+  scheduledTime: string;
+  notes: string;
+  completed: boolean;
+  order: number;
+}
+
+export interface ServiceChecklist {
+  id: string;
+  eventId: string;
+  title: string;
+  date: string;
+  notes: string;
+  items: ServiceChecklistItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ServiceChecklistInput = Omit<ServiceChecklist, "id" | "createdAt" | "updatedAt">;
+
 export type FinancialTransactionType = "income" | "expense";
 
 export type FinancialPaymentMethod = "cash" | "card" | "transfer" | "check" | "other";

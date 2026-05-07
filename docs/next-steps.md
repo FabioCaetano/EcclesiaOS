@@ -133,3 +133,13 @@ Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em
    - checklist/liturgia;
    - equipes solicitadas.
 4. Em seguida iniciar Formularios customizados.
+# Proximos Passos Apos Fase 77
+
+1. Subir a migracao `20260507170000_service_checklists` no ambiente publicado.
+2. Conectar Agenda com preparo do culto:
+   - repertorio vinculado;
+   - liturgia/checklist vinculada;
+   - equipes solicitadas;
+   - escala gerada.
+3. Melhorar edicao do repertorio e da liturgia dentro da propria tela.
+4. Iniciar Fase 78 - Formularios customizados.

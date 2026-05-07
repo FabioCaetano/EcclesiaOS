@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServiceChecklist, ServiceChecklistItem, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
 import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -46,6 +46,22 @@ const asWorshipSetItems = (value: Prisma.JsonValue): WorshipSetItem[] => {
       order: Number(item.order) || index + 1
     };
   }).filter((item) => item.songId);
+};
+
+const asServiceChecklistItems = (value: Prisma.JsonValue): ServiceChecklistItem[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw, index) => {
+    const item = raw as Partial<ServiceChecklistItem>;
+    return {
+      id: typeof item.id === "string" ? item.id : `item_${index + 1}`,
+      title: typeof item.title === "string" ? item.title : "",
+      responsiblePersonId: typeof item.responsiblePersonId === "string" ? item.responsiblePersonId : "",
+      scheduledTime: typeof item.scheduledTime === "string" ? item.scheduledTime : "",
+      notes: typeof item.notes === "string" ? item.notes : "",
+      completed: Boolean(item.completed),
+      order: Number(item.order) || index + 1
+    };
+  }).filter((item) => item.title);
 };
 
 const toGroup = (group: {
@@ -216,6 +232,22 @@ const toWorshipSet = (set: {
   updatedAt: set.updatedAt.toISOString()
 });
 
+const toServiceChecklist = (checklist: {
+  id: string;
+  eventId: string;
+  title: string;
+  date: string;
+  notes: string;
+  items: Prisma.JsonValue;
+  createdAt: Date;
+  updatedAt: Date;
+}): ServiceChecklist => ({
+  ...checklist,
+  items: asServiceChecklistItems(checklist.items),
+  createdAt: checklist.createdAt.toISOString(),
+  updatedAt: checklist.updatedAt.toISOString()
+});
+
 const toRegistrationStatus = (status: string): EventRegistrationStatus => (
   status === "pending_payment" || status === "cancelled" || status === "pending_email_confirmation" ? status : "confirmed"
 );
@@ -311,7 +343,7 @@ const toMessageTemplate = (template: {
 });
 
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -326,6 +358,7 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.servingPlanRecord.findMany(),
     prisma.songRecord.findMany({ orderBy: { title: "asc" } }),
     prisma.worshipSetRecord.findMany({ orderBy: { date: "asc" } }),
+    prisma.serviceChecklistRecord.findMany({ orderBy: { date: "asc" } }),
     prisma.financialTransactionRecord.findMany(),
     prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.labelTemplateRecord.findMany(),
@@ -397,6 +430,7 @@ export const readPrismaData = async (): Promise<DataFile> => {
     servingPlans: servingPlans.map(toServingPlan),
     songs: songs.map(toSong),
     worshipSets: worshipSets.map(toWorshipSet),
+    serviceChecklists: serviceChecklists.map(toServiceChecklist),
     financialTransactions: financialTransactions.map(toFinancialTransaction),
     auditLogs: auditLogs.map((log): AuditLogEntry => ({
       ...log,
@@ -427,6 +461,7 @@ export const writePrismaData = async (data: DataFile) => {
     await tx.eventCheckInRecord.deleteMany();
     await tx.eventRecord.deleteMany();
     await tx.servingPlanRecord.deleteMany();
+    await tx.serviceChecklistRecord.deleteMany();
     await tx.worshipSetRecord.deleteMany();
     await tx.songRecord.deleteMany();
     await tx.attendanceRecord.deleteMany();
@@ -562,6 +597,17 @@ export const writePrismaData = async (data: DataFile) => {
           items: set.items as unknown as Prisma.InputJsonValue,
           createdAt: new Date(set.createdAt),
           updatedAt: new Date(set.updatedAt)
+        }
+      });
+    }
+
+    for (const checklist of data.serviceChecklists) {
+      await tx.serviceChecklistRecord.create({
+        data: {
+          ...checklist,
+          items: checklist.items as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(checklist.createdAt),
+          updatedAt: new Date(checklist.updatedAt)
         }
       });
     }

@@ -213,6 +213,20 @@ model WorshipSetRecord {
   @@index([date])
 }
 
+model ServiceChecklistRecord {
+  id        String   @id
+  eventId   String   @default("")
+  title     String
+  date      String   @default("")
+  notes     String   @default("")
+  items     Json     @default("[]")
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([eventId])
+  @@index([date])
+}
+
 model FinancialTransactionRecord {
   id            String   @id
   date          String

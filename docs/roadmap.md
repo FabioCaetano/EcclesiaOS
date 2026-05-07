@@ -1341,3 +1341,12 @@ Possivel escopo:
 - Exibir repertorio dentro da Agenda.
 - Formularios customizados.
 - Relatorios avancados.
+# Roadmap - Atualizacao Fase 77
+
+## Concluido
+
+- Fase 77 - Liturgia e Checklist do Culto.
+
+## Proxima fase sugerida
+
+- Integracao da Agenda com repertorio/liturgia ou Fase 78 - Formularios customizados.

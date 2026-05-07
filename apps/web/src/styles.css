@@ -1118,6 +1118,30 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
 .report-row span { color: var(--color-text); font-size: var(--text-sm); }
 .report-row strong { color: var(--color-text); font-weight: 600; font-size: var(--text-sm); }
 
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.section-title-row h3 {
+  margin: 0;
+}
+
+.checklist-editor-row {
+  display: grid;
+  grid-template-columns: 120px 120px minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checklist-editor-row:last-child {
+  border-bottom: 0;
+}
+
 .report-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2181,6 +2205,8 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
 
   .people-layout { grid-template-columns: 1fr; }
   .people-list { max-height: 280px; }
+
+  .checklist-editor-row { grid-template-columns: 1fr; }
 
   .report-columns { grid-template-columns: 1fr; }
   .report-grid { grid-template-columns: 1fr 1fr; }

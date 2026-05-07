@@ -209,3 +209,7 @@ Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
 
 - `docs/phases/phase-76-music-repertoire.md`: modulo inicial de Musicas e Repertorio com biblioteca de musicas e playlists por culto/evento.
 - `docs/decisions/0076-music-repertoire-foundation.md`: decisao de separar biblioteca (`Song`) de repertorios por culto (`WorshipSet`).
+# Atualizacao - Fase 77
+
+- `docs/phases/phase-77-service-liturgy-checklist.md`: liturgia/checklist por culto/evento com itens ordenados e marcacao de concluido.
+- `docs/decisions/0077-service-liturgy-checklist.md`: decisao de separar liturgia em entidade propria vinculada ao culto.

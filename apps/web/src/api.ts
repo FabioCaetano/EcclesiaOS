@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -435,6 +435,35 @@ export const deleteWorshipSet = async (token: string, id: string) => {
   });
 
   if (!response.ok) throw new Error("worship-set-delete-failed");
+};
+
+export const loadServiceChecklists = async (token: string): Promise<ServiceChecklist[]> => {
+  const response = await fetch(`${apiBaseUrl}/service-checklists`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("service-checklists-load-failed");
+  return response.json() as Promise<ServiceChecklist[]>;
+};
+
+export const saveServiceChecklist = async (token: string, input: ServiceChecklistInput, id?: string): Promise<ServiceChecklist> => {
+  const response = await fetch(id ? `${apiBaseUrl}/service-checklists/${id}` : `${apiBaseUrl}/service-checklists`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar a liturgia."));
+  return response.json() as Promise<ServiceChecklist>;
+};
+
+export const deleteServiceChecklist = async (token: string, id: string) => {
+  const response = await fetch(`${apiBaseUrl}/service-checklists/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("service-checklist-delete-failed");
 };
 
 export const loadAttendance = async (token: string): Promise<AttendanceRecord[]> => {

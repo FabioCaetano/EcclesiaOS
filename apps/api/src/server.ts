@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -21,6 +21,7 @@ import { blockOutRepository, isPersonBlockedOnDate } from "./data/blockOutReposi
 import { passwordResetTokenRepository } from "./data/passwordResetTokenRepository.js";
 import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
+import { serviceChecklistRepository } from "./data/serviceChecklistRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
 import { userRepository } from "./data/userRepository.js";
 import { isValidCronExpression } from "./cron.js";
@@ -906,6 +907,71 @@ const handleDeleteWorshipSet = async (req: IncomingMessage, res: ServerResponse,
   const removed = await musicRepository.removeSet(id);
   if (!removed) {
     sendError(res, 404, "not_found", "Repertorio nao encontrado.");
+    return;
+  }
+  sendJson(res, 200, { ok: true });
+};
+
+const sanitizeServiceChecklistInput = (body: ServiceChecklistInput): ServiceChecklistInput => ({
+  eventId: String(body.eventId || "").trim(),
+  title: String(body.title || "").trim(),
+  date: String(body.date || "").trim(),
+  notes: String(body.notes || "").trim(),
+  items: (Array.isArray(body.items) ? body.items : []).map((item, index) => ({
+    id: String(item.id || "").trim(),
+    title: String(item.title || "").trim(),
+    responsiblePersonId: String(item.responsiblePersonId || "").trim(),
+    scheduledTime: String(item.scheduledTime || "").trim(),
+    notes: String(item.notes || "").trim(),
+    completed: Boolean(item.completed),
+    order: Math.max(1, Number(item.order) || index + 1)
+  })).filter((item) => item.title)
+});
+
+const handleListServiceChecklists = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  sendJson(res, 200, await serviceChecklistRepository.list());
+};
+
+const handleCreateServiceChecklist = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<ServiceChecklistInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo da liturgia.");
+    return;
+  }
+
+  sendJson(res, 201, await serviceChecklistRepository.create(sanitizeServiceChecklistInput(body)));
+};
+
+const handleUpdateServiceChecklist = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<ServiceChecklistInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo da liturgia.");
+    return;
+  }
+
+  const checklist = await serviceChecklistRepository.update(id, sanitizeServiceChecklistInput(body));
+  if (!checklist) {
+    sendError(res, 404, "not_found", "Liturgia nao encontrada.");
+    return;
+  }
+  sendJson(res, 200, checklist);
+};
+
+const handleDeleteServiceChecklist = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const removed = await serviceChecklistRepository.remove(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Liturgia nao encontrada.");
     return;
   }
   sendJson(res, 200, { ok: true });
@@ -2576,6 +2642,27 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (worshipSetMatch && req.method === "DELETE") {
     void handleDeleteWorshipSet(req, res, worshipSetMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/service-checklists") {
+    void handleListServiceChecklists(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/service-checklists") {
+    void handleCreateServiceChecklist(req, res);
+    return;
+  }
+
+  const serviceChecklistMatch = url.pathname.match(/^\/service-checklists\/([^/]+)$/);
+  if (serviceChecklistMatch && req.method === "PUT") {
+    void handleUpdateServiceChecklist(req, res, serviceChecklistMatch[1]);
+    return;
+  }
+
+  if (serviceChecklistMatch && req.method === "DELETE") {
+    void handleDeleteServiceChecklist(req, res, serviceChecklistMatch[1]);
     return;
   }
 
