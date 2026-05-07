@@ -704,7 +704,13 @@ const sanitizeGroupInput = (body: GroupInput): GroupInput => ({
   memberPersonIds: Array.isArray(body.memberPersonIds) ? body.memberPersonIds.map(String) : [],
   servicePositions: Array.isArray(body.servicePositions)
     ? body.servicePositions.map((position) => String(position || "").trim()).filter(Boolean)
-    : []
+    : [],
+  memberServicePositions: Object.fromEntries(
+    Object.entries(body.memberServicePositions || {}).map(([personId, positions]) => [
+      String(personId),
+      Array.isArray(positions) ? positions.map((position) => String(position || "").trim()).filter(Boolean) : []
+    ])
+  )
 });
 
 const handleListGroups = async (req: IncomingMessage, res: ServerResponse) => {
@@ -1186,7 +1192,7 @@ const handleDeleteBlockOut = async (req: IncomingMessage, res: ServerResponse, i
   sendJson(res, 200, { ok: true });
 };
 
-const buildSubstituteSuggestions = async (plan: ServingPlan, group: GroupProfile | undefined): Promise<SubstituteSuggestion[]> => {
+const buildSubstituteSuggestions = async (plan: ServingPlan, group: GroupProfile | undefined, role = ""): Promise<SubstituteSuggestion[]> => {
   if (!group) return [];
 
   const [blockOuts, allPlans, people] = await Promise.all([
@@ -1211,8 +1217,10 @@ const buildSubstituteSuggestions = async (plan: ServingPlan, group: GroupProfile
   }
 
   const alreadyAssigned = new Set(plan.assignments.map((item) => item.personId).filter(Boolean));
+  const requiresPosition = Boolean(role && group.servicePositions.includes(role));
   return group.memberPersonIds
     .filter((personId) => !alreadyAssigned.has(personId))
+    .filter((personId) => !requiresPosition || (group.memberServicePositions[personId] || []).includes(role))
     .map((personId) => {
       const person = people.find((item) => item.id === personId);
       const name = person ? `${person.firstName} ${person.lastName}`.trim() : "Pessoa";
@@ -1257,7 +1265,7 @@ const handleSuggestSubstitutes = async (req: IncomingMessage, res: ServerRespons
     return;
   }
 
-  sendJson(res, 200, await buildSubstituteSuggestions(plan, group));
+  sendJson(res, 200, await buildSubstituteSuggestions(plan, group, assignment.role));
 };
 
 const handleListAttendance = async (req: IncomingMessage, res: ServerResponse) => {
@@ -2144,7 +2152,7 @@ const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: Se
     if (updatedAssignment) {
       if (update.status === "declined") {
         const group = (await groupRepository.list()).find((item) => item.id === plan.groupId);
-        substituteSuggestions = await buildSubstituteSuggestions(plan, group);
+        substituteSuggestions = await buildSubstituteSuggestions(plan, group, updatedAssignment.role);
       }
       substituteEmailSent = await notifyAssignmentResponse(
         { title: plan.title, date: plan.date, groupId: plan.groupId },

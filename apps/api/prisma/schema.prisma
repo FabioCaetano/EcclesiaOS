@@ -53,6 +53,7 @@ model GroupRecord {
   leaderPersonId  String
   memberPersonIds Json
   servicePositions Json @default("[]")
+  memberServicePositions Json @default("{}")
   createdAt       DateTime
   updatedAt       DateTime
 }

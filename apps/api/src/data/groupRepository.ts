@@ -10,14 +10,27 @@ const normalizeInput = (input: GroupInput): GroupInput => {
     ? [...new Set(input.servicePositions.map((position) => String(position || "").trim()).filter(Boolean))]
     : [];
   const type = ["small_group", "ministry", "class", "team"].includes(input.type) ? input.type : "small_group";
+  const nextMemberPersonIds = leaderPersonId && !memberPersonIds.includes(leaderPersonId) ? [leaderPersonId, ...memberPersonIds] : memberPersonIds;
+  const memberServicePositions = Object.fromEntries(
+    Object.entries(input.memberServicePositions || {})
+      .filter(([personId]) => nextMemberPersonIds.includes(personId))
+      .map(([personId, positions]) => [
+        personId,
+        [...new Set((Array.isArray(positions) ? positions : [])
+          .map((position) => String(position || "").trim())
+          .filter((position) => servicePositions.includes(position)))]
+      ])
+      .filter(([, positions]) => positions.length > 0)
+  );
 
   return {
     name: String(input.name || "").trim(),
     type,
     description: String(input.description || "").trim(),
     leaderPersonId,
-    memberPersonIds: leaderPersonId && !memberPersonIds.includes(leaderPersonId) ? [leaderPersonId, ...memberPersonIds] : memberPersonIds,
-    servicePositions: type === "ministry" || type === "team" ? servicePositions : []
+    memberPersonIds: nextMemberPersonIds,
+    servicePositions: type === "ministry" || type === "team" ? servicePositions : [],
+    memberServicePositions: type === "ministry" || type === "team" ? memberServicePositions : {}
   };
 };
 

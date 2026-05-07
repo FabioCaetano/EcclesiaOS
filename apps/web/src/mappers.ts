@@ -31,7 +31,8 @@ export const toGroupInput = (group: GroupProfile): GroupInput => ({
   description: group.description,
   leaderPersonId: group.leaderPersonId,
   memberPersonIds: group.memberPersonIds,
-  servicePositions: group.servicePositions || []
+  servicePositions: group.servicePositions || [],
+  memberServicePositions: group.memberServicePositions || {}
 });
 
 export const toAttendanceInput = (record: AttendanceRecord): AttendanceInput => ({

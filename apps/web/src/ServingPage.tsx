@@ -261,6 +261,11 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const selectedGroupPositions = selectedPlanGroup && (selectedPlanGroup.type === "ministry" || selectedPlanGroup.type === "team")
     ? selectedPlanGroup.servicePositions || []
     : [];
+  const personCanServePosition = (personId: string, position: string) => {
+    if (!personId || !position || selectedGroupPositions.length === 0) return true;
+    if (!selectedGroupPositions.includes(position)) return true;
+    return (selectedPlanGroup?.memberServicePositions?.[personId] || []).includes(position);
+  };
   const canManagePlan = (plan: ServingPlan | null) => {
     if (user.role === "admin") return true;
     if (!plan) return false;
@@ -528,6 +533,10 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             <div className="plan-positions">
               {planForm.assignments.map((assignment, index) => {
                 const blocked = selectedPlan ? isBlockedOnDate(assignment.personId, selectedPlan.date) : false;
+                const positionMismatch = Boolean(assignment.personId && assignment.role && !personCanServePosition(assignment.personId, assignment.role));
+                const assignmentPeople = assignment.role
+                  ? eligiblePeople.filter((person) => personCanServePosition(person.id, assignment.role) || person.id === assignment.personId)
+                  : eligiblePeople;
                 const suggestions = substitutesByAssignment[assignment.id];
                 return (
                   <div key={`${assignment.id || "new"}-${index}`}>
@@ -536,7 +545,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                         <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
                         <select className="pp-name" value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
                           <option value="">Selecionar pessoa</option>
-                          {eligiblePeople.map((person) => (
+                          {assignmentPeople.map((person) => (
                             <option value={person.id} key={person.id}>{person.firstName} {person.lastName}</option>
                           ))}
                         </select>
@@ -586,6 +595,12 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                     {blocked && (
                       <p className="plan-position-warning">
                         <AlertTriangle size={14} /> Esta pessoa marcou indisponibilidade em {selectedPlan?.date}.
+                      </p>
+                    )}
+
+                    {positionMismatch && (
+                      <p className="plan-position-warning">
+                        <AlertTriangle size={14} /> Esta pessoa nao esta habilitada para {assignment.role} neste ministerio.
                       </p>
                     )}
 

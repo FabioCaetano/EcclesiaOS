@@ -11,6 +11,7 @@ export const defaultGroups: GroupProfile[] = [
     leaderPersonId: "per_001",
     memberPersonIds: ["per_001", "per_002"],
     servicePositions: [],
+    memberServicePositions: {},
     createdAt: now,
     updatedAt: now
   },
@@ -22,6 +23,9 @@ export const defaultGroups: GroupProfile[] = [
     leaderPersonId: "per_001",
     memberPersonIds: ["per_001"],
     servicePositions: ["Vocal", "Bateria", "Guitarra", "Teclado", "Baixo"],
+    memberServicePositions: {
+      per_001: ["Vocal", "Guitarra", "Teclado"]
+    },
     createdAt: now,
     updatedAt: now
   }

@@ -11,6 +11,15 @@ const asStringArray = (value: Prisma.JsonValue): string[] => (
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
 );
 
+const asStringArrayRecord = (value: Prisma.JsonValue): Record<string, string[]> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, item]) => [key, asStringArray(item as Prisma.JsonValue)] as const)
+      .filter(([, positions]) => positions.length > 0)
+  );
+};
+
 const asAssignments = (value: Prisma.JsonValue): ServingAssignment[] => {
   if (!Array.isArray(value)) return [];
   return value.map((raw) => {
@@ -34,6 +43,7 @@ const toGroup = (group: {
   leaderPersonId: string;
   memberPersonIds: Prisma.JsonValue;
   servicePositions?: Prisma.JsonValue;
+  memberServicePositions?: Prisma.JsonValue;
   createdAt: Date;
   updatedAt: Date;
 }): GroupProfile => ({
@@ -41,6 +51,7 @@ const toGroup = (group: {
   type: group.type === "ministry" || group.type === "class" || group.type === "team" ? group.type : "small_group",
   memberPersonIds: asStringArray(group.memberPersonIds),
   servicePositions: asStringArray(group.servicePositions ?? []),
+  memberServicePositions: asStringArrayRecord(group.memberServicePositions ?? {}),
   createdAt: group.createdAt.toISOString(),
   updatedAt: group.updatedAt.toISOString()
 });
@@ -390,6 +401,7 @@ export const writePrismaData = async (data: DataFile) => {
           ...group,
           memberPersonIds: group.memberPersonIds,
           servicePositions: group.servicePositions as unknown as Prisma.InputJsonValue,
+          memberServicePositions: group.memberServicePositions as unknown as Prisma.InputJsonValue,
           createdAt: new Date(group.createdAt),
           updatedAt: new Date(group.updatedAt)
         }

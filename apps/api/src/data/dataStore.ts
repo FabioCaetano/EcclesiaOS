@@ -109,7 +109,8 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
   financialTransactions: data.financialTransactions || defaultFinancialTransactions,
   groups: (data.groups || defaultGroups).map((group) => ({
     ...group,
-    servicePositions: Array.isArray(group.servicePositions) ? group.servicePositions : []
+    servicePositions: Array.isArray(group.servicePositions) ? group.servicePositions : [],
+    memberServicePositions: group.memberServicePositions && typeof group.memberServicePositions === "object" ? group.memberServicePositions : {}
   })),
   labelTemplates: (data.labelTemplates || defaultLabelTemplates).map((template) => ({
     ...template,

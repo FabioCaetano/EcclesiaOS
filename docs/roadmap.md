@@ -1149,7 +1149,7 @@ Entregue:
 
 ## Fase 70: Marca Da Igreja E Refinos De Conta
 
-Status atual: planejada.
+Status atual: pulada temporariamente por decisao do usuario.
 
 Antes de desenvolver, perguntar:
 
@@ -1164,7 +1164,7 @@ Possivel escopo:
 
 ## Fase 71: Auditoria, Relatorios E Mensagens Avancadas
 
-Status atual: planejada.
+Status atual: pulada temporariamente por decisao do usuario.
 
 Antes de desenvolver, perguntar:
 
@@ -1177,3 +1177,26 @@ Possivel escopo:
 - campanhas de mensagem com historico;
 - enviados, pulados, falhas e reenvio;
 - relatorios de eventos, visitantes e follow-up.
+
+## Fase 72: Posicoes Por Pessoa E Substitutos Mais Precisos
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos completar posicoes por pessoa para melhorar escalas e substitutos?
+
+Possivel escopo:
+
+- vincular pessoas a posicoes especificas dentro de ministerios/equipes;
+- filtrar candidatos por posicao na escala;
+- sugerir substitutos considerando a posicao recusada;
+- manter alerta para excecoes manuais.
+
+Entregue:
+
+- `memberServicePositions` em ministerios/equipes;
+- UI em Grupos para marcar posicoes por membro;
+- Escalas filtra pessoas por posicao;
+- substitutos automaticos respeitam a posicao da recusa;
+- migration Prisma para persistir posicoes por pessoa.

@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 69 - Posicoes Em Ministerios**.
+Fase atual concluida: **Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos**.
 
 Ultimo modulo entregue:
 
-- Ministerios/equipes podem ter posicoes de servico configuraveis;
-- grupos comuns continuam simples, sem exigir posicoes;
-- Escalas usa um seletor de posicao quando o ministerio possui posicoes cadastradas;
-- Louvor recebeu posicoes iniciais no seed;
-- Prisma ganhou migration para persistir `servicePositions`.
+- Ministerios/equipes podem definir posicoes por pessoa;
+- Escalas filtra pessoas pela posicao selecionada;
+- Escalas alerta quando alguem foi escalado fora das posicoes habilitadas;
+- substitutos automaticos respeitam a posicao recusada;
+- Prisma ganhou migration para persistir `memberServicePositions`.
 
 Ambiente atual:
 
@@ -108,6 +108,7 @@ Ambiente atual:
 - [[phases/phase-67-resources-checkin-ux|Fase 67 - UX De Ambientes E Check-in]]
 - [[phases/phase-68-serving-operations-availability|Fase 68 - Escalas Operacionais E Indisponibilidade]]
 - [[phases/phase-69-ministry-service-positions|Fase 69 - Posicoes Em Ministerios]]
+- [[phases/phase-72-member-service-positions-substitutes|Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos]]
 
 ## Decisoes
 
@@ -182,14 +183,15 @@ Ambiente atual:
 - [[decisions/0069-incremental-prisma-event-occurrences|0069 - Escrita Incremental De Ocorrencias No Prisma]]
 - [[decisions/0070-serving-operations-availability|0070 - Escalas Por Perfil E Indisponibilidade No Modulo]]
 - [[decisions/0071-ministry-service-positions|0071 - Posicoes Configuraveis Em Ministerios]]
+- [[decisions/0072-member-service-positions-substitutes|0072 - Posicoes Por Pessoa E Substitutos Por Posicao]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 69**: subir para GitHub, redeployar Render/Vercel e aplicar migration Prisma.
-2. **Fase 70 - Marca Da Igreja E Refinos De Conta**: upload de logo, uso visual no app e notificacao por email apos alteracao de senha.
-3. **Fase 71 - Auditoria, Relatorios E Mensagens Avancadas**: aprofundar historico, exportacoes e acompanhamento de campanhas.
-4. **Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos**: vincular pessoas a posicoes especificas dentro do ministerio.
+1. **Publicar Fase 72**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma.
+2. **Check-in UX 2**: dashboard operacional para Kids/Eventos e administracao do dia mais clara.
+3. **Financeiro 2**: relatorios, exportacoes e visao por periodo/fundo/categoria.
+4. **Fase 70 - Marca Da Igreja E Refinos De Conta**: mantida pulada por decisao temporaria.
 
-Recomendacao atual: publicar a Fase 69 e seguir para **Fase 70**.
+Recomendacao atual: publicar a Fase 72 e seguir para **Check-in UX 2**.

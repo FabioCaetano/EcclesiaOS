@@ -120,6 +120,12 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 96. Substituto automatico para recusas em escala: quando uma atribuicao recebe status `declined`, o backend calcula substitutos da mesma equipe, exclui pessoas ja escaladas ou bloqueadas na data, ranqueia por menor carga recente e retorna `substituteSuggestions` na resposta; o email ao lider inclui a lista quando Resend esta configurado; a aplicacao do substituto continua manual por lider/admin.
 
+97. Escalas por perfil e indisponibilidade no modulo: admin ve todas as escalas, lider ve equipes que lidera e membro ve apenas suas proprias escalas; indisponibilidade foi movida para dentro de Escalas, mantendo `PersonBlockOut`.
+
+98. Posicoes configuraveis em ministerios: `GroupProfile.servicePositions` define funcoes disponiveis em ministerios/equipes; Escalas continua gravando a funcao em `ServingAssignment.role`, mas passa a oferecer seletor quando houver posicoes configuradas.
+
+99. Posicoes por pessoa e substitutos por posicao: `GroupProfile.memberServicePositions` define quais posicoes cada pessoa pode servir; Escalas filtra candidatos por posicao e substitutos automaticos respeitam a posicao recusada quando ela pertence ao ministerio/equipe.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

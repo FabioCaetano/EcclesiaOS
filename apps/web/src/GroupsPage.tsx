@@ -55,7 +55,24 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
     setGroupForm((current) => {
       const exists = current.memberPersonIds.includes(personId);
       const memberPersonIds = exists ? current.memberPersonIds.filter((id) => id !== personId) : [...current.memberPersonIds, personId];
-      return { ...current, memberPersonIds };
+      const memberServicePositions = { ...current.memberServicePositions };
+      if (exists) delete memberServicePositions[personId];
+      return { ...current, memberPersonIds, memberServicePositions };
+    });
+  };
+
+  const toggleMemberServicePosition = (personId: string, position: string) => {
+    setGroupForm((current) => {
+      const currentPositions = current.memberServicePositions[personId] || [];
+      const exists = currentPositions.includes(position);
+      const nextPositions = exists ? currentPositions.filter((item) => item !== position) : [...currentPositions, position];
+      return {
+        ...current,
+        memberServicePositions: {
+          ...current.memberServicePositions,
+          [personId]: nextPositions
+        }
+      };
     });
   };
 
@@ -166,6 +183,35 @@ export const GroupsPage: React.FC<Props> = ({ token, user }) => {
               </label>
             ))}
           </fieldset>
+
+          {(groupForm.type === "ministry" || groupForm.type === "team") && groupForm.servicePositions.length > 0 && (
+            <fieldset className="member-picker wide-field">
+              <legend>Posicoes por membro</legend>
+              {groupForm.memberPersonIds.length === 0 ? (
+                <p className="muted">Selecione membros para habilitar posicoes.</p>
+              ) : groupForm.memberPersonIds.map((personId) => {
+                const person = people.find((item) => item.id === personId);
+                return (
+                  <div className="substitute-panel" key={personId}>
+                    <h4>{person ? `${person.firstName} ${person.lastName}`.trim() : "Pessoa"}</h4>
+                    <div className="filter-bar">
+                      {groupForm.servicePositions.map((position) => (
+                        <label key={position}>
+                          <input
+                            disabled={user.role !== "admin"}
+                            type="checkbox"
+                            checked={(groupForm.memberServicePositions[personId] || []).includes(position)}
+                            onChange={() => toggleMemberServicePosition(personId, position)}
+                          />
+                          {position}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </fieldset>
+          )}
 
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedGroupId ? "Salvar grupo" : "Criar grupo"}</button>}
