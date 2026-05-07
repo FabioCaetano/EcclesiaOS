@@ -23,7 +23,7 @@ Prioridades abertas:
 - Estabilizacao aplicada: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API, e novas ocorrencias usam escrita incremental no Prisma.
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
 - Check-in ganhou aba Etiquetas na Fase 67, mas ainda pode evoluir para dashboard operacional mais completo de Kids/Eventos.
-- Escalas precisa restringir criacao/edicao a admin/lider, simplificar a tela e trazer indisponibilidade para o modulo.
+- Escalas foi reorganizada na Fase 68: membro ve proprias escalas, lider ve equipes lideradas, matriz fica para admin/lider e indisponibilidade fica no modulo.
 - Grupos/ministerios precisam suportar posicoes operacionais, como vocal, bateria, guitarra, camera e transmissao.
 - Ambientes teve mensagens e formularios separados na Fase 67; ainda pode receber polimento visual adicional.
 - Igreja precisa permitir upload de logo e remover a area de etiquetas para o modulo Check-in.
@@ -43,8 +43,8 @@ Prioridades abertas:
 | Layout e Navegacao | Concluido | Inicio, Igreja, Pessoas e Grupos em secoes navegaveis. |
 | Presenca | Oculto no menu | Codigo e endpoints mantidos; fluxo operacional migrou para Agenda/Check-in. |
 | Relatorios de Presenca | Implementado | Indicadores client-side mantidos na pagina Presenca, hoje fora da navegacao principal. |
-| Escalas e Cultos | Implementado | Planos simples com pessoas escaladas por funcao; typecheck concluido. |
-| Confirmacao de Escala | Implementado | Admin ajusta status; membro/lider responde a propria escala. |
+| Escalas e Cultos | Implementado | Planos por equipe; admin cria/remove, lider opera equipes lideradas e membro ve apenas suas proprias escalas. |
+| Confirmacao de Escala | Implementado | Membro/lider responde a propria escala; pendencias aparecem filtradas por perfil. |
 | Financeiro | Implementado | Lancamentos, filtros, resumos por fundo/categoria e recibo inicial. |
 | Testes Automatizados | Implementado | `node:test` cobrindo repositorios e endpoints HTTP da API. |
 | Testes Do Frontend | Implementado | Playwright cobrindo login, navegacao e Financeiro. |
@@ -311,7 +311,8 @@ Fluxos validados:
 - Leitura de QR Code por camera funciona em qualquer navegador moderno: usa `BarcodeDetector` quando disponivel e cai para `jsqr` quando nao; ainda depende de HTTPS/localhost e permissao de camera.
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
 - Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
-- A materializacao sob demanda passou a usar escrita incremental no Prisma para novos eventos filhos e planos de escala; validacao/publicacao ainda pendente nesta sessao.
+- A materializacao sob demanda passou a usar escrita incremental no Prisma para novos eventos filhos e planos de escala; publicacao ainda pendente nesta sessao.
+- A reorganizacao de Escalas da Fase 68 passou em `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -324,4 +325,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: **Fase 68 - Escalas Operacionais E Indisponibilidade**.
+Proxima recomendacao: publicar a estabilizacao acumulada e depois seguir para **Fase 69 - Posicoes Em Ministerios**.

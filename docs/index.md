@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 67 - UX De Ambientes E Check-in**.
+Fase atual concluida: **Fase 68 - Escalas Operacionais E Indisponibilidade**.
 
 Ultimo modulo entregue:
 
-- Ambientes separa melhor cadastro de ambiente e reserva;
-- mensagens de erro de ambiente e reserva aparecem no contexto correto;
-- Check-in ganhou aba `Etiquetas`;
-- preview de etiqueta infantil permite ligar/desligar idade, telefone, observacoes e QR Code;
-- impressao em lote de etiquetas fica acessivel dentro do Check-in.
+- Escalas agora respeita melhor o perfil do usuario;
+- membro ve apenas as proprias escalas e pendencias;
+- lider ve planos das equipes que lidera;
+- matriz fica restrita a admin/lider;
+- indisponibilidade foi movida para dentro da aba Escalas.
 
 Ambiente atual:
 
@@ -106,6 +106,7 @@ Ambiente atual:
 - [[phases/phase-65-serving-auto-substitutes|Fase 65 - Substituto Automatico Para Recusas Em Escala]]
 - [[phases/phase-66-agenda-recurrence-public-routes|Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
 - [[phases/phase-67-resources-checkin-ux|Fase 67 - UX De Ambientes E Check-in]]
+- [[phases/phase-68-serving-operations-availability|Fase 68 - Escalas Operacionais E Indisponibilidade]]
 
 ## Decisoes
 
@@ -178,14 +179,15 @@ Ambiente atual:
 - [[decisions/0067-agenda-recurrence-public-routes|0067 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
 - [[decisions/0068-resources-checkin-ux|0068 - UX De Ambientes E Check-in]]
 - [[decisions/0069-incremental-prisma-event-occurrences|0069 - Escrita Incremental De Ocorrencias No Prisma]]
+- [[decisions/0070-serving-operations-availability|0070 - Escalas Por Perfil E Indisponibilidade No Modulo]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Fase 68 - Escalas Operacionais E Indisponibilidade**: restringir criacao/edicao a admin/lider, simplificar visao, mostrar pendencias relevantes e mover indisponibilidade para Escalas.
+1. **Validar/Publicar Estabilizacao**: rodar build/testes assim que o sandbox permitir execucao local novamente, subir para GitHub e redeployar Render/Vercel.
 2. **Fase 69 - Posicoes Em Ministerios**: permitir funcoes configuraveis por ministerio/equipe para escala por posicao.
 3. **Fase 70 - Marca Da Igreja E Refinos De Conta**: upload de logo, uso visual no app e notificacao por email apos alteracao de senha.
-4. **Validar/Publicar Estabilizacao**: rodar build/testes assim que o sandbox permitir execucao local novamente, subir para GitHub e redeployar Render/Vercel.
+4. **Fase 71 - Auditoria, Relatorios E Mensagens Avancadas**: aprofundar historico, exportacoes e acompanhamento de campanhas.
 
-Recomendacao atual: validar/publicar a estabilizacao e seguir para **Fase 68**.
+Recomendacao atual: validar/publicar a estabilizacao e seguir para **Fase 69**.

@@ -1084,7 +1084,7 @@ Fora de escopo:
 
 ## Fase 67: UX De Ambientes E Check-in
 
-Status atual: implementada; validacao automatica pendente por bloqueio de execucao local.
+Status atual: concluida.
 
 Antes de desenvolver, perguntar:
 
@@ -1102,7 +1102,7 @@ Possivel escopo:
 
 ## Fase 68: Escalas Operacionais E Indisponibilidade
 
-Status atual: planejada.
+Status atual: implementada; validacao automatica pendente por bloqueio de execucao local.
 
 Antes de desenvolver, perguntar:
 
@@ -1116,6 +1116,14 @@ Possivel escopo:
 - simplificar a visualizacao para pendencias e escala mensal;
 - manter sugestoes de substituto para recusas;
 - preparar o modelo para posicoes de ministerio.
+
+Entregue:
+
+- membro visualiza apenas escalas em que foi incluido;
+- lider visualiza planos das equipes que lidera;
+- matriz de escala fica restrita a admin/lider;
+- pendencias sao filtradas por perfil;
+- indisponibilidade foi movida para dentro de Escalas.
 
 ## Fase 69: Posicoes Em Ministerios
 
