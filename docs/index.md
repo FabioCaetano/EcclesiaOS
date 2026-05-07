@@ -213,3 +213,11 @@ Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
 
 - `docs/phases/phase-77-service-liturgy-checklist.md`: liturgia/checklist por culto/evento com itens ordenados e marcacao de concluido.
 - `docs/decisions/0077-service-liturgy-checklist.md`: decisao de separar liturgia em entidade propria vinculada ao culto.
+# Atualizacao - Fase 78
+
+- `docs/phases/phase-78-event-service-prep.md`: Agenda agora exibe resumo de preparo do culto com equipes, escalas, repertorio e liturgia.
+- `docs/decisions/0078-event-service-prep-summary.md`: decisao de integrar por resumo usando os vinculos existentes por `eventId`.
+# Atualizacao - Fase 79
+
+- `docs/phases/phase-79-custom-forms.md`: modulo de formularios customizados com campos, responsaveis, link publico e respostas.
+- `docs/decisions/0079-custom-forms.md`: decisao de separar configuração do formulario e respostas publicas.

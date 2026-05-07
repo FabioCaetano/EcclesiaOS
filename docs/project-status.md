@@ -374,7 +374,7 @@ Fase 76 concluida. O EcclesiaOS agora possui o modulo `Musicas`, com cadastro de
 - `npm test --workspace @ecclesiaos/api`: passou com 38 testes.
 # Status Atual - Fase 77
 
-Fase 77 concluida. O EcclesiaOS agora possui liturgia/checklist por culto/evento dentro da area de Musicas, com responsaveis, horarios, notas e marcacao de concluido.
+Fase 77 concluida. O EcclesiaOS agora possui uma aba propria de Liturgia/checklist por culto/evento, com responsaveis, horarios, notas e marcacao de concluido.
 
 ## Entregue na fase
 
@@ -382,6 +382,7 @@ Fase 77 concluida. O EcclesiaOS agora possui liturgia/checklist por culto/evento
 - Rotas protegidas de API.
 - Persistencia local e PostgreSQL/Prisma.
 - UI de planejamento e acompanhamento.
+- Liturgia separada da aba Musicas.
 - Teste de permissao: lider gerencia, membro visualiza.
 
 ## Validacao
@@ -390,3 +391,38 @@ Fase 77 concluida. O EcclesiaOS agora possui liturgia/checklist por culto/evento
 - `npm run build:web`: passou.
 - `npm run build:api`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 39 testes.
+# Status Atual - Fase 78
+
+Fase 78 concluida. A Agenda agora mostra o preparo do culto no evento selecionado, consolidando equipes solicitadas, escalas, repertorios e liturgias vinculadas.
+
+## Entregue na fase
+
+- Painel `Preparo` dentro da Agenda.
+- Resumo de equipes solicitadas.
+- Resumo de escalas vinculadas.
+- Resumo de repertorios vinculados.
+- Resumo de liturgia/checklist vinculada.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 39 testes.
+# Status Atual - Fase 79
+
+Fase 79 concluida. O EcclesiaOS agora possui uma area de Formularios customizados, com criação de campos, responsaveis, link publico e acompanhamento das respostas.
+
+## Entregue na fase
+
+- Modulo `Formularios`.
+- Link publico `/forms/:slug`.
+- Respostas publicas persistidas.
+- Gestão por lider/admin.
+- Persistencia local e PostgreSQL/Prisma.
+
+## Validacao
+
+- `npm run db:generate`: passou.
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.

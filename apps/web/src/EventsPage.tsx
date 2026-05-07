@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { CalendarDays, Plus } from "lucide-react";
-import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile } from "@ecclesiaos/shared";
-import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
+import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
+import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
 import { useQrScanner } from "./useQrScanner";
@@ -59,6 +59,9 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [resources, setResources] = useState<ChurchResource[]>([]);
+  const [servingPlans, setServingPlans] = useState<ServingPlan[]>([]);
+  const [worshipSets, setWorshipSets] = useState<WorshipSet[]>([]);
+  const [serviceChecklists, setServiceChecklists] = useState<ServiceChecklist[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [registrationStatusFilter, setRegistrationStatusFilter] = useState<EventRegistrationStatus | "all">("all");
@@ -92,6 +95,9 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   useEffect(() => {
     loadGroups(token).then(setGroups).catch(() => setStatus("Nao foi possivel carregar grupos."));
     loadResources(token).then(setResources).catch(() => setStatus("Nao foi possivel carregar ambientes."));
+    loadServingPlans(token).then(setServingPlans).catch(() => setStatus("Nao foi possivel carregar escalas."));
+    loadWorshipSets(token).then(setWorshipSets).catch(() => setStatus("Nao foi possivel carregar repertorios."));
+    loadServiceChecklists(token).then(setServiceChecklists).catch(() => setStatus("Nao foi possivel carregar liturgias."));
     loadEmailStatus().then((info) => setEmailConfigured(info.configured)).catch(() => setEmailConfigured(false));
     refreshEvents().catch(() => setStatus("Nao foi possivel carregar eventos."));
   }, [token]);
@@ -213,6 +219,15 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const selectedEventRegistrations = registrations.filter((registration) => registration.eventId === selectedEventId);
   const filteredRegistrations = selectedEventRegistrations.filter((registration) => registrationStatusFilter === "all" || registration.status === registrationStatusFilter);
   const selectedRegistration = registrations.find((registration) => registration.id === selectedRegistrationId) || null;
+  const selectedServingPlans = selectedEvent ? servingPlans.filter((plan) => plan.eventId === selectedEvent.id) : [];
+  const selectedWorshipSets = selectedEvent ? worshipSets.filter((set) => set.eventId === selectedEvent.id) : [];
+  const selectedServiceChecklists = selectedEvent ? serviceChecklists.filter((checklist) => checklist.eventId === selectedEvent.id) : [];
+  const selectedRequestedTeams = selectedEvent ? selectedEvent.requestedTeamIds.map((id) => groupName(id)) : [];
+  const selectedAssignments = selectedServingPlans.flatMap((plan) => plan.assignments);
+  const confirmedAssignments = selectedAssignments.filter((assignment) => assignment.status === "confirmed").length;
+  const declinedAssignments = selectedAssignments.filter((assignment) => assignment.status === "declined").length;
+  const checklistItems = selectedServiceChecklists.flatMap((checklist) => checklist.items);
+  const completedChecklistItems = checklistItems.filter((item) => item.completed).length;
   const confirmedQuantity = selectedEventRegistrations.filter((registration) => registration.status === "confirmed").reduce((sum, registration) => sum + registration.quantity, 0);
   const pendingQuantity = selectedEventRegistrations.filter((registration) => registration.status === "pending_payment" || registration.status === "pending_email_confirmation").reduce((sum, registration) => sum + registration.quantity, 0);
   const cancelledQuantity = selectedEventRegistrations.filter((registration) => registration.status === "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
@@ -424,6 +439,58 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
               <p><span>API</span><strong>{apiBaseUrl}/public/events/{selectedEvent?.registrationSlug}</strong></p>
               <p><span>Check-in</span><strong>{selectedCheckInLink}</strong></p>
             </div>
+          )}
+
+          {selectedEvent && (
+            <section className="receipt-preview wide-field" aria-label="Preparo do culto">
+              <div>
+                <p className="eyebrow">Preparo</p>
+                <h3>{selectedEvent.title}</h3>
+              </div>
+              <div className="report-grid compact-grid">
+                <article><span>Equipes</span><strong>{selectedRequestedTeams.length}</strong></article>
+                <article><span>Escalados</span><strong>{selectedAssignments.length}</strong></article>
+                <article><span>Repertorios</span><strong>{selectedWorshipSets.length}</strong></article>
+                <article><span>Liturgias</span><strong>{selectedServiceChecklists.length}</strong></article>
+              </div>
+
+              <div className="report-columns">
+                <div>
+                  <h3>Equipes solicitadas</h3>
+                  {selectedRequestedTeams.length === 0 ? <p className="muted">Nenhuma equipe solicitada.</p> : selectedRequestedTeams.map((name) => (
+                    <p className="report-row" key={name}><span>{name}</span><strong>Solicitada</strong></p>
+                  ))}
+                </div>
+                <div>
+                  <h3>Escalas</h3>
+                  {selectedServingPlans.length === 0 ? <p className="muted">Nenhuma escala vinculada.</p> : (
+                    <>
+                      <p className="report-row"><span>Confirmados</span><strong>{confirmedAssignments}</strong></p>
+                      <p className="report-row"><span>Pendentes</span><strong>{Math.max(0, selectedAssignments.length - confirmedAssignments - declinedAssignments)}</strong></p>
+                      <p className="report-row"><span>Recusados</span><strong>{declinedAssignments}</strong></p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="report-columns">
+                <div>
+                  <h3>Repertorio</h3>
+                  {selectedWorshipSets.length === 0 ? <p className="muted">Nenhum repertorio vinculado.</p> : selectedWorshipSets.map((set) => (
+                    <p className="report-row" key={set.id}><span>{set.title}</span><strong>{set.items.length} musica{set.items.length === 1 ? "" : "s"}</strong></p>
+                  ))}
+                </div>
+                <div>
+                  <h3>Liturgia</h3>
+                  {selectedServiceChecklists.length === 0 ? <p className="muted">Nenhuma liturgia vinculada.</p> : (
+                    <>
+                      <p className="report-row"><span>Itens</span><strong>{checklistItems.length}</strong></p>
+                      <p className="report-row"><span>Concluidos</span><strong>{completedChecklistItems}</strong></p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
           )}
 
           <div className="form-footer">

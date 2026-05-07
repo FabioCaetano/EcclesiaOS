@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormResponse, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -28,6 +28,8 @@ export interface DataFile {
   auditLogs: AuditLogEntry[];
   childCheckIns: ChildCheckIn[];
   church: ChurchProfile;
+  customForms: CustomForm[];
+  customFormResponses: CustomFormResponse[];
   eventCheckIns: EventCheckIn[];
   eventRegistrations: EventRegistration[];
   events: ChurchEvent[];
@@ -56,6 +58,8 @@ const defaultData = (): DataFile => ({
   auditLogs: [],
   childCheckIns: [],
   church: defaultChurch,
+  customForms: [],
+  customFormResponses: [],
   eventCheckIns: [],
   eventRegistrations: [],
   events: defaultEvents,
@@ -89,6 +93,25 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     checkedOutByPersonId: checkIn.checkedOutByPersonId || ""
   })),
   church: { ...defaultChurch, ...(data.church || {}) },
+  customForms: (data.customForms || []).map((form) => ({
+    ...form,
+    description: form.description || "",
+    slug: form.slug || form.id,
+    responsiblePersonIds: Array.isArray(form.responsiblePersonIds) ? form.responsiblePersonIds.map(String) : [],
+    isActive: form.isActive !== false,
+    fields: (form.fields || []).map((field, index) => ({
+      id: field.id || `field_${index + 1}`,
+      label: field.label || "",
+      type: ["textarea", "email", "phone", "number", "date", "select", "checkbox"].includes(field.type) ? field.type : "text",
+      required: Boolean(field.required),
+      options: Array.isArray(field.options) ? field.options.map(String).filter(Boolean) : [],
+      order: Number(field.order) || index + 1
+    })).filter((field) => field.label)
+  })),
+  customFormResponses: (data.customFormResponses || []).map((response) => ({
+    ...response,
+    answers: response.answers && typeof response.answers === "object" ? response.answers : {}
+  })),
   eventCheckIns: data.eventCheckIns || [],
   eventRegistrations: (data.eventRegistrations || []).map((registration) => ({
     ...registration,

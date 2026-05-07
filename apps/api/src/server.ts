@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -12,6 +12,7 @@ import { financialTransactionRepository } from "./data/financialTransactionRepos
 import { eventRepository } from "./data/eventRepository.js";
 import { eventRegistrationRepository, reservedQuantityFor } from "./data/eventRegistrationRepository.js";
 import { checkInRepository } from "./data/checkInRepository.js";
+import { customFormRepository } from "./data/customFormRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { messageTemplateRepository } from "./data/messageTemplateRepository.js";
@@ -975,6 +976,113 @@ const handleDeleteServiceChecklist = async (req: IncomingMessage, res: ServerRes
     return;
   }
   sendJson(res, 200, { ok: true });
+};
+
+const requireFormManager = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return null;
+  if (user.role !== "admin" && user.role !== "leader") {
+    sendError(res, 403, "forbidden", "Apenas administradores e lideres podem gerenciar formularios.");
+    return null;
+  }
+  return user;
+};
+
+const sanitizeCustomFormInput = (body: CustomFormInput): CustomFormInput => ({
+  title: String(body.title || "").trim(),
+  description: String(body.description || "").trim(),
+  slug: String(body.slug || "").trim(),
+  responsiblePersonIds: Array.isArray(body.responsiblePersonIds) ? body.responsiblePersonIds.map(String).filter(Boolean) : [],
+  isActive: body.isActive !== false,
+  fields: (Array.isArray(body.fields) ? body.fields : []).map((field, index) => {
+    const type: CustomFormFieldType = field.type === "textarea" || field.type === "email" || field.type === "phone" || field.type === "number" || field.type === "date" || field.type === "select" || field.type === "checkbox" ? field.type : "text";
+    return {
+      id: String(field.id || "").trim(),
+      label: String(field.label || "").trim(),
+      type,
+      required: Boolean(field.required),
+      options: Array.isArray(field.options) ? field.options.map((option) => String(option || "").trim()).filter(Boolean) : [],
+      order: Math.max(1, Number(field.order) || index + 1)
+    };
+  }).filter((field) => field.label)
+});
+
+const handleListCustomForms = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireFormManager(req, res);
+  if (!user) return;
+  sendJson(res, 200, await customFormRepository.listForms());
+};
+
+const handleCreateCustomForm = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireFormManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<CustomFormInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo do formulario.");
+    return;
+  }
+
+  sendJson(res, 201, await customFormRepository.createForm(sanitizeCustomFormInput(body)));
+};
+
+const handleUpdateCustomForm = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireFormManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<CustomFormInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo do formulario.");
+    return;
+  }
+
+  const form = await customFormRepository.updateForm(id, sanitizeCustomFormInput(body));
+  if (!form) {
+    sendError(res, 404, "not_found", "Formulario nao encontrado.");
+    return;
+  }
+  sendJson(res, 200, form);
+};
+
+const handleDeleteCustomForm = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireFormManager(req, res);
+  if (!user) return;
+
+  const removed = await customFormRepository.removeForm(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Formulario nao encontrado.");
+    return;
+  }
+  sendJson(res, 200, { ok: true });
+};
+
+const handleListCustomFormResponses = async (req: IncomingMessage, res: ServerResponse, formId?: string) => {
+  const user = await requireFormManager(req, res);
+  if (!user) return;
+  sendJson(res, 200, await customFormRepository.listResponses(formId));
+};
+
+const handleGetPublicCustomForm = async (_req: IncomingMessage, res: ServerResponse, slug: string) => {
+  const form = await customFormRepository.findPublicForm(slug);
+  if (!form) {
+    sendError(res, 404, "not_found", "Formulario nao encontrado.");
+    return;
+  }
+  sendJson(res, 200, form);
+};
+
+const handleSubmitPublicCustomForm = async (req: IncomingMessage, res: ServerResponse, slug: string) => {
+  const body = await readJson<CustomFormSubmissionInput>(req);
+  try {
+    const response = await customFormRepository.submit(slug, { answers: body?.answers || {} });
+    if (!response) {
+      sendError(res, 404, "not_found", "Formulario nao encontrado.");
+      return;
+    }
+    sendJson(res, 201, response);
+  } catch {
+    sendError(res, 400, "invalid_json", "Revise os campos obrigatorios do formulario.");
+  }
 };
 
 const sanitizeAttendanceInput = (body: AttendanceInput): AttendanceInput => ({
@@ -2499,6 +2607,17 @@ export const createEcclesiaServer = () => createServer((req, res) => {
     return;
   }
 
+  const publicFormMatch = url.pathname.match(/^\/public\/forms\/([^/]+)$/);
+  if (publicFormMatch && req.method === "GET") {
+    void handleGetPublicCustomForm(req, res, publicFormMatch[1]);
+    return;
+  }
+
+  if (publicFormMatch && req.method === "POST") {
+    void handleSubmitPublicCustomForm(req, res, publicFormMatch[1]);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/auth/me") {
     void handleMe(req, res);
     return;
@@ -2663,6 +2782,38 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (serviceChecklistMatch && req.method === "DELETE") {
     void handleDeleteServiceChecklist(req, res, serviceChecklistMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/forms") {
+    void handleListCustomForms(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/forms") {
+    void handleCreateCustomForm(req, res);
+    return;
+  }
+
+  const formResponsesMatch = url.pathname.match(/^\/forms\/([^/]+)\/responses$/);
+  if (formResponsesMatch && req.method === "GET") {
+    void handleListCustomFormResponses(req, res, formResponsesMatch[1]);
+    return;
+  }
+
+  const formMatch = url.pathname.match(/^\/forms\/([^/]+)$/);
+  if (formMatch && req.method === "PUT") {
+    void handleUpdateCustomForm(req, res, formMatch[1]);
+    return;
+  }
+
+  if (formMatch && req.method === "DELETE") {
+    void handleDeleteCustomForm(req, res, formMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/form-responses") {
+    void handleListCustomFormResponses(req, res);
     return;
   }
 

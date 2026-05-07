@@ -1082,6 +1082,10 @@ h3 { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
   margin-bottom: var(--space-5);
 }
 
+.report-grid.compact-grid {
+  margin-bottom: var(--space-4);
+}
+
 .report-grid article {
   display: grid; gap: 4px;
   padding: var(--space-4);

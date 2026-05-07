@@ -143,3 +143,22 @@ Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em
    - escala gerada.
 3. Melhorar edicao do repertorio e da liturgia dentro da propria tela.
 4. Iniciar Fase 78 - Formularios customizados.
+# Proximos Passos Apos Fase 78
+
+1. Criar navegação/atalhos entre Agenda e:
+   - Escalas;
+   - Musicas/Repertorio;
+   - Liturgia.
+2. Criar uma visão única operacional do culto.
+3. Iniciar Fase 79 - Formularios customizados.
+4. Depois evoluir Relatorios com dados de culto, check-in, presença e formulários.
+# Proximos Passos Apos Fase 79
+
+1. Subir a migracao `20260507180000_custom_forms` no ambiente publicado.
+2. Evoluir Formularios:
+   - notificacao/email para responsaveis;
+   - exportacao CSV;
+   - filtros por periodo/formulario;
+   - relatorios.
+3. Melhorar UX de criação dos campos.
+4. Retomar visão unica operacional do culto.

@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -464,6 +464,53 @@ export const deleteServiceChecklist = async (token: string, id: string) => {
   });
 
   if (!response.ok) throw new Error("service-checklist-delete-failed");
+};
+
+export const loadCustomForms = async (token: string): Promise<CustomForm[]> => {
+  const response = await fetch(`${apiBaseUrl}/forms`, { headers: authHeaders(token) });
+  if (!response.ok) throw new Error("forms-load-failed");
+  return response.json() as Promise<CustomForm[]>;
+};
+
+export const saveCustomForm = async (token: string, input: CustomFormInput, id?: string): Promise<CustomForm> => {
+  const response = await fetch(id ? `${apiBaseUrl}/forms/${id}` : `${apiBaseUrl}/forms`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar o formulario."));
+  return response.json() as Promise<CustomForm>;
+};
+
+export const deleteCustomForm = async (token: string, id: string) => {
+  const response = await fetch(`${apiBaseUrl}/forms/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+  if (!response.ok) throw new Error("form-delete-failed");
+};
+
+export const loadCustomFormResponses = async (token: string, formId?: string): Promise<CustomFormResponse[]> => {
+  const url = formId ? `${apiBaseUrl}/forms/${formId}/responses` : `${apiBaseUrl}/form-responses`;
+  const response = await fetch(url, { headers: authHeaders(token) });
+  if (!response.ok) throw new Error("form-responses-load-failed");
+  return response.json() as Promise<CustomFormResponse[]>;
+};
+
+export const loadPublicCustomForm = async (slug: string): Promise<CustomForm> => {
+  const response = await fetch(`${apiBaseUrl}/public/forms/${slug}`);
+  if (!response.ok) throw new Error("public-form-load-failed");
+  return response.json() as Promise<CustomForm>;
+};
+
+export const submitPublicCustomForm = async (slug: string, input: CustomFormSubmissionInput): Promise<CustomFormResponse> => {
+  const response = await fetch(`${apiBaseUrl}/public/forms/${slug}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel enviar o formulario."));
+  return response.json() as Promise<CustomFormResponse>;
 };
 
 export const loadAttendance = async (token: string): Promise<AttendanceRecord[]> => {

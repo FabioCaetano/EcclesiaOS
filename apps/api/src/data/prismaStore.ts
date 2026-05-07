@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServiceChecklist, ServiceChecklistItem, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormField, CustomFormFieldType, CustomFormResponse, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServiceChecklist, ServiceChecklistItem, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
 import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -62,6 +62,27 @@ const asServiceChecklistItems = (value: Prisma.JsonValue): ServiceChecklistItem[
       order: Number(item.order) || index + 1
     };
   }).filter((item) => item.title);
+};
+
+const asCustomFormFields = (value: Prisma.JsonValue): CustomFormField[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw, index) => {
+    const field = raw as Partial<CustomFormField>;
+    const type: CustomFormFieldType = field.type === "textarea" || field.type === "email" || field.type === "phone" || field.type === "number" || field.type === "date" || field.type === "select" || field.type === "checkbox" ? field.type : "text";
+    return {
+      id: typeof field.id === "string" ? field.id : `field_${index + 1}`,
+      label: typeof field.label === "string" ? field.label : "",
+      type,
+      required: Boolean(field.required),
+      options: asStringArray(field.options as Prisma.JsonValue),
+      order: Number(field.order) || index + 1
+    };
+  }).filter((field) => field.label);
+};
+
+const asAnswerRecord = (value: Prisma.JsonValue): Record<string, string> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item || "")]));
 };
 
 const toGroup = (group: {
@@ -248,6 +269,35 @@ const toServiceChecklist = (checklist: {
   updatedAt: checklist.updatedAt.toISOString()
 });
 
+const toCustomForm = (form: {
+  id: string;
+  title: string;
+  description: string;
+  slug: string;
+  responsiblePersonIds: Prisma.JsonValue;
+  fields: Prisma.JsonValue;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): CustomForm => ({
+  ...form,
+  responsiblePersonIds: asStringArray(form.responsiblePersonIds),
+  fields: asCustomFormFields(form.fields),
+  createdAt: form.createdAt.toISOString(),
+  updatedAt: form.updatedAt.toISOString()
+});
+
+const toCustomFormResponse = (response: {
+  id: string;
+  formId: string;
+  answers: Prisma.JsonValue;
+  submittedAt: Date;
+}): CustomFormResponse => ({
+  ...response,
+  answers: asAnswerRecord(response.answers),
+  submittedAt: response.submittedAt.toISOString()
+});
+
 const toRegistrationStatus = (status: string): EventRegistrationStatus => (
   status === "pending_payment" || status === "cancelled" || status === "pending_email_confirmation" ? status : "confirmed"
 );
@@ -343,7 +393,7 @@ const toMessageTemplate = (template: {
 });
 
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, customForms, customFormResponses, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -359,6 +409,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.songRecord.findMany({ orderBy: { title: "asc" } }),
     prisma.worshipSetRecord.findMany({ orderBy: { date: "asc" } }),
     prisma.serviceChecklistRecord.findMany({ orderBy: { date: "asc" } }),
+    prisma.customFormRecord.findMany({ orderBy: { title: "asc" } }),
+    prisma.customFormResponseRecord.findMany({ orderBy: { submittedAt: "desc" } }),
     prisma.financialTransactionRecord.findMany(),
     prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.labelTemplateRecord.findMany(),
@@ -431,6 +483,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     songs: songs.map(toSong),
     worshipSets: worshipSets.map(toWorshipSet),
     serviceChecklists: serviceChecklists.map(toServiceChecklist),
+    customForms: customForms.map(toCustomForm),
+    customFormResponses: customFormResponses.map(toCustomFormResponse),
     financialTransactions: financialTransactions.map(toFinancialTransaction),
     auditLogs: auditLogs.map((log): AuditLogEntry => ({
       ...log,
@@ -461,6 +515,8 @@ export const writePrismaData = async (data: DataFile) => {
     await tx.eventCheckInRecord.deleteMany();
     await tx.eventRecord.deleteMany();
     await tx.servingPlanRecord.deleteMany();
+    await tx.customFormResponseRecord.deleteMany();
+    await tx.customFormRecord.deleteMany();
     await tx.serviceChecklistRecord.deleteMany();
     await tx.worshipSetRecord.deleteMany();
     await tx.songRecord.deleteMany();
@@ -608,6 +664,28 @@ export const writePrismaData = async (data: DataFile) => {
           items: checklist.items as unknown as Prisma.InputJsonValue,
           createdAt: new Date(checklist.createdAt),
           updatedAt: new Date(checklist.updatedAt)
+        }
+      });
+    }
+
+    for (const form of data.customForms) {
+      await tx.customFormRecord.create({
+        data: {
+          ...form,
+          responsiblePersonIds: form.responsiblePersonIds as unknown as Prisma.InputJsonValue,
+          fields: form.fields as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(form.createdAt),
+          updatedAt: new Date(form.updatedAt)
+        }
+      });
+    }
+
+    for (const response of data.customFormResponses) {
+      await tx.customFormResponseRecord.create({
+        data: {
+          ...response,
+          answers: response.answers as unknown as Prisma.InputJsonValue,
+          submittedAt: new Date(response.submittedAt)
         }
       });
     }

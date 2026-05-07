@@ -227,6 +227,30 @@ model ServiceChecklistRecord {
   @@index([date])
 }
 
+model CustomFormRecord {
+  id                   String   @id
+  title                String
+  description          String   @default("")
+  slug                 String   @unique
+  responsiblePersonIds Json     @default("[]")
+  fields               Json     @default("[]")
+  isActive             Boolean  @default(true)
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([slug])
+}
+
+model CustomFormResponseRecord {
+  id          String   @id
+  formId      String
+  answers     Json     @default("{}")
+  submittedAt DateTime
+
+  @@index([formId])
+  @@index([submittedAt])
+}
+
 model FinancialTransactionRecord {
   id            String   @id
   date          String

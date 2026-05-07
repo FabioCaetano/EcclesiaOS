@@ -15,7 +15,7 @@ Adicionar uma area para planejar e acompanhar a liturgia/checklist de cada culto
   - status de concluido;
   - ordem.
 - Vinculo opcional com culto/evento da Agenda.
-- Area de `Liturgia e checklist` dentro da tela `Musicas`.
+- Aba propria `Liturgia` no menu de Operacao.
 - Permissao:
   - membros visualizam;
   - lideres e administradores criam, editam e removem.
@@ -38,7 +38,9 @@ Adicionar uma area para planejar e acompanhar a liturgia/checklist de cada culto
 - `apps/api/prisma/schema.prisma`
 - `apps/api/prisma/migrations/20260507170000_service_checklists/migration.sql`
 - `apps/api/src/http.test.ts`
-- `apps/web/src/MusicPage.tsx`
+- `apps/web/src/LiturgyPage.tsx`
+- `apps/web/src/AppLayout.tsx`
+- `apps/web/src/main.tsx`
 - `apps/web/src/api.ts`
 - `apps/web/src/styles.css`
 

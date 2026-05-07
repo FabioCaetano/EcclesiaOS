@@ -1350,3 +1350,30 @@ Possivel escopo:
 ## Proxima fase sugerida
 
 - Integracao da Agenda com repertorio/liturgia ou Fase 78 - Formularios customizados.
+# Roadmap - Atualizacao Fase 78
+
+## Concluido
+
+- Fase 78 - Agenda com preparo do culto.
+
+## Proxima fase sugerida
+
+- Fase 79 - Formularios customizados.
+
+## Alternativa antes dos formularios
+
+- Visao unica operacional do culto com Agenda, Escalas, Repertorio e Liturgia.
+# Roadmap - Atualizacao Fase 79
+
+## Concluido
+
+- Fase 79 - Formularios customizados.
+
+## Proxima fase sugerida
+
+- Notificacoes e exportacao de respostas dos formularios.
+
+## Depois
+
+- Relatorios avancados.
+- Visao unica operacional do culto.

@@ -16,6 +16,6 @@ Criar a entidade `ServiceChecklist`, vinculavel a um evento/culto, com itens ord
 
 ## Consequencias
 
-- A primeira interface fica dentro de `Musicas`, por ser a area atual de preparo do culto.
+- Liturgia deve ter aba propria no menu, separada de `Musicas`, por ser uma area operacional do culto e nao apenas repertorio musical.
 - A Agenda ainda nao exibe a liturgia embutida.
 - A proxima evolucao deve aproximar Agenda, Repertorio e Liturgia numa mesma visao de culto.

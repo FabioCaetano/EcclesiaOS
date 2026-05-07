@@ -11,15 +11,18 @@ import { ChurchPage } from "./ChurchPage";
 import { CheckInPage } from "./CheckInPage";
 import { FinancePage } from "./FinancePage";
 import { EventsPage } from "./EventsPage";
+import { FormsPage } from "./FormsPage";
 import { GroupsPage } from "./GroupsPage";
 import { HomePage } from "./HomePage";
 import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
+import { LiturgyPage } from "./LiturgyPage";
 import { MessagesPage } from "./MessagesPage";
 import { MusicPage } from "./MusicPage";
 import { PeoplePage } from "./PeoplePage";
 import { EventRegistrationConfirmPage } from "./EventRegistrationConfirmPage";
 import { PublicEventCheckInPage } from "./PublicEventCheckInPage";
+import { PublicCustomFormPage } from "./PublicCustomFormPage";
 import { PublicRegistrationPage } from "./PublicRegistrationPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { VisitorRegistrationPage } from "./VisitorRegistrationPage";
@@ -42,6 +45,9 @@ const App = () => {
 
   const publicEventCheckInMatch = window.location.pathname.match(/^\/event-checkin\/([^/]+)$/);
   if (publicEventCheckInMatch) return <PublicEventCheckInPage slug={publicEventCheckInMatch[1]} />;
+
+  const publicCustomFormMatch = window.location.pathname.match(/^\/forms\/([^/]+)$/);
+  if (publicCustomFormMatch) return <PublicCustomFormPage slug={publicCustomFormMatch[1]} />;
 
   if (window.location.pathname === "/visitor") return <VisitorRegistrationPage />;
 
@@ -108,6 +114,8 @@ const App = () => {
       {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} />}
       {currentView === "serving" && <ServingPage token={session.token} user={session.user} />}
       {currentView === "music" && <MusicPage token={session.token} user={session.user} />}
+      {currentView === "liturgy" && <LiturgyPage token={session.token} user={session.user} />}
+      {currentView === "forms" && <FormsPage token={session.token} user={session.user} />}
       {currentView === "finance" && <FinancePage token={session.token} user={session.user} />}
       {currentView === "reports" && <ReportsPage token={session.token} user={session.user} />}
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}

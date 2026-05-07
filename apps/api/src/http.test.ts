@@ -251,6 +251,52 @@ test("leaders can manage service liturgy checklists while members only read", as
   assert.equal(memberList.body?.some((item) => item.title === "Culto Domingo"), true);
 });
 
+test("leaders can manage custom forms and public users can submit responses", async () => {
+  const forbidden = await requestJson<{ error: string }>("/forms", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ title: "Formulario bloqueado" })
+  });
+  assert.equal(forbidden.response.status, 403);
+
+  const form = await requestJson<{ id: string; slug: string; fields: Array<{ id: string; label: string }> }>("/forms", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Pedido de Oracao",
+      description: "Conte seu pedido",
+      slug: "pedido-oracao",
+      responsiblePersonIds: [leaderSession.user.personId],
+      isActive: true,
+      fields: [
+        { id: "", label: "Nome", type: "text", required: true, options: [], order: 1 },
+        { id: "", label: "Pedido", type: "textarea", required: true, options: [], order: 2 }
+      ]
+    })
+  });
+  assert.equal(form.response.status, 201);
+  assert.equal(form.body?.slug, "pedido-oracao");
+
+  const publicForm = await requestJson<{ title: string }>("/public/forms/pedido-oracao");
+  assert.equal(publicForm.response.status, 200);
+  assert.equal(publicForm.body?.title, "Pedido de Oracao");
+
+  const firstFieldId = form.body?.fields[0]?.id || "";
+  const secondFieldId = form.body?.fields[1]?.id || "";
+  const response = await requestJson<{ id: string; formId: string }>("/public/forms/pedido-oracao", {
+    method: "POST",
+    body: JSON.stringify({ answers: { [firstFieldId]: "Maria", [secondFieldId]: "Oracao pela familia" } })
+  });
+  assert.equal(response.response.status, 201);
+  assert.equal(response.body?.formId, form.body?.id);
+
+  const responses = await requestJson<Array<{ formId: string }>>(`/forms/${form.body?.id}/responses`, {
+    headers: authHeaders(leaderSession)
+  });
+  assert.equal(responses.response.status, 200);
+  assert.equal(responses.body?.length, 1);
+});
+
 test("admin can create events while member cannot", async () => {
   const input = {
     title: "Reuniao de planejamento",

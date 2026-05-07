@@ -23,7 +23,7 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "music" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "music" | "liturgy" | "forms" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
 
 export type MessageChannel = "email" | "whatsapp" | "manual";
 
@@ -163,6 +163,8 @@ export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   if (module === "checkin") return role === "admin" || role === "leader";
   if (module === "messages") return role === "admin" || role === "leader";
   if (module === "music") return role === "admin" || role === "leader";
+  if (module === "liturgy") return role === "admin" || role === "leader";
+  if (module === "forms") return role === "admin" || role === "leader";
   if (module === "serving") return role === "admin";
   return role === "admin";
 };
@@ -532,6 +534,42 @@ export interface ServiceChecklist {
 
 export type ServiceChecklistInput = Omit<ServiceChecklist, "id" | "createdAt" | "updatedAt">;
 
+export type CustomFormFieldType = "text" | "textarea" | "email" | "phone" | "number" | "date" | "select" | "checkbox";
+
+export interface CustomFormField {
+  id: string;
+  label: string;
+  type: CustomFormFieldType;
+  required: boolean;
+  options: string[];
+  order: number;
+}
+
+export interface CustomForm {
+  id: string;
+  title: string;
+  description: string;
+  slug: string;
+  responsiblePersonIds: string[];
+  fields: CustomFormField[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomFormInput = Omit<CustomForm, "id" | "createdAt" | "updatedAt">;
+
+export interface CustomFormResponse {
+  id: string;
+  formId: string;
+  answers: Record<string, string>;
+  submittedAt: string;
+}
+
+export interface CustomFormSubmissionInput {
+  answers: Record<string, string>;
+}
+
 export type FinancialTransactionType = "income" | "expense";
 
 export type FinancialPaymentMethod = "cash" | "card" | "transfer" | "check" | "other";
@@ -608,6 +646,8 @@ export const plannedModules: AppModuleSummary[] = [
   { key: "calendar", name: "Calendario da igreja", phase: "Fase 30", status: "active" },
   { key: "serving", name: "Escalas e cultos", phase: "Fase 7", status: "planned" },
   { key: "music", name: "Musicas e repertorio", phase: "Fase 76", status: "active" },
+  { key: "liturgy", name: "Liturgia e checklist", phase: "Fase 77", status: "active" },
+  { key: "forms", name: "Formularios", phase: "Fase 79", status: "active" },
   { key: "finance", name: "Financeiro", phase: "Fase 8", status: "planned" },
   { key: "reports", name: "Relatorios", phase: "Fase 75", status: "active" },
   { key: "users", name: "Usuarios e permissoes", phase: "Fase 22", status: "active" },

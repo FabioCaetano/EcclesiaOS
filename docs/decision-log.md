@@ -158,3 +158,11 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0077-service-liturgy-checklist.md`
 - Criada entidade propria para liturgia/checklist vinculada ao culto/evento, separada do repertorio musical.
+# Decisao 0078
+
+- `docs/decisions/0078-event-service-prep-summary.md`
+- Agenda passou a mostrar um resumo do preparo do culto usando os vinculos existentes por `eventId`.
+# Decisao 0079
+
+- `docs/decisions/0079-custom-forms.md`
+- Formularios customizados foram modelados separando configuração (`CustomForm`) e respostas publicas (`CustomFormResponse`).
