@@ -154,14 +154,27 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
     event.preventDefault();
     if (user.role !== "admin") return;
 
+    if (!eventForm.title.trim()) {
+      setStatus("Informe o titulo do evento.");
+      return;
+    }
+    if (!eventForm.date.trim()) {
+      setStatus("Informe a data do evento.");
+      return;
+    }
+    if (eventForm.recurrence === "cron" && !eventForm.recurrenceRule.trim()) {
+      setStatus("Informe a expressao cron da recorrencia.");
+      return;
+    }
+
     setStatus("Salvando...");
     try {
       const saved = await saveEvent(token, eventForm, selectedEventId || undefined);
       await refreshEvents();
       selectEvent(saved);
       setStatus("Evento salvo.");
-    } catch {
-      setStatus("Nao foi possivel salvar o evento.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nao foi possivel salvar o evento.");
     }
   };
 
@@ -308,7 +321,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
                 {event.parentEventId && <span className="event-tag generated">ocorrencia</span>}
                 {!event.parentEventId && event.recurrence === "cron" && <span className="event-tag master">cron</span>}
               </strong>
-              <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - {event.location || "sem local"}</span>
+              <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - {event.location || "sem ambiente"}</span>
               <span>{event.groupId ? groupName(event.groupId) : "Agenda geral"} - {recurrenceLabels[event.recurrence]} - {event.registrationEnabled ? `${registrationCount(event.id)} inscrito(s)` : "sem inscricoes"}</span>
             </button>
           ))}
@@ -325,7 +338,18 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
           <label>Data<input disabled={user.role !== "admin"} type="date" value={eventForm.date} onChange={(event) => updateField("date", event.target.value)} /></label>
           <label>Inicio<input disabled={user.role !== "admin"} type="time" value={eventForm.startTime} onChange={(event) => updateField("startTime", event.target.value)} /></label>
           <label>Fim<input disabled={user.role !== "admin"} type="time" value={eventForm.endTime} onChange={(event) => updateField("endTime", event.target.value)} /></label>
-          <label>Local<input disabled={user.role !== "admin"} list="event-locations" value={eventForm.location} onChange={(event) => updateField("location", event.target.value)} /></label>
+          <label>
+            Ambiente
+            <select disabled={user.role !== "admin"} value={eventForm.location} onChange={(event) => updateField("location", event.target.value)}>
+              <option value="">Sem ambiente definido</option>
+              {resources.filter((resource) => resource.isActive).map((resource) => (
+                <option key={resource.id} value={resource.name}>{resource.name}{resource.location ? ` - ${resource.location}` : ""}</option>
+              ))}
+              {eventForm.location && !resources.some((resource) => resource.name === eventForm.location) && (
+                <option value={eventForm.location}>{eventForm.location}</option>
+              )}
+            </select>
+          </label>
           <datalist id="event-locations">
             {resources.filter((resource) => resource.isActive).map((resource) => (
               <option key={resource.id} value={resource.name}>{resource.location}</option>
@@ -404,7 +428,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
 
           <div className="form-footer">
             {user.role === "admin" && <button type="submit">{selectedEventId ? "Salvar evento" : "Criar evento"}</button>}
-            {user.role === "admin" && selectedEventId && eventForm.recurrence === "cron" && eventForm.recurrenceRule && !eventForm.parentEventId && (
+            {user.role === "admin" && selectedEventId && eventForm.recurrence !== "none" && !eventForm.parentEventId && (
               <button className="secondary-button" type="button" onClick={handleGenerateOccurrences}>Gerar ocorrencias</button>
             )}
             {user.role === "admin" && selectedEventId && <button className="danger-button" type="button" onClick={handleDelete}>Remover</button>}

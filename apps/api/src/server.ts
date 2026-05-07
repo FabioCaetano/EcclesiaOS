@@ -22,6 +22,7 @@ import { personRepository } from "./data/personRepository.js";
 import { resourceRepository } from "./data/resourceRepository.js";
 import { servingPlanRepository } from "./data/servingPlanRepository.js";
 import { userRepository } from "./data/userRepository.js";
+import { isValidCronExpression } from "./cron.js";
 import { fetchYouTubeFeed } from "./youtube.js";
 import { isEmailConfigured, sendEmail } from "./email.js";
 import { verifyPassword } from "./passwords.js";
@@ -58,6 +59,19 @@ const sendJson = (res: ServerResponse, statusCode: number, body: unknown) => {
 
 const sendError = (res: ServerResponse, statusCode: number, error: AuthErrorResponse["error"], message: string) => {
   sendJson(res, statusCode, { error, message } satisfies AuthErrorResponse);
+};
+
+const prismaErrorCode = (error: unknown): string => (
+  typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code || "") : ""
+);
+
+const sendSaveError = (res: ServerResponse, error: unknown, fallbackMessage: string) => {
+  if (prismaErrorCode(error) === "P2002") {
+    sendError(res, 409, "conflict", "Ja existe outro registro usando este slug publico. Ajuste o campo Slug publico e tente novamente.");
+    return;
+  }
+
+  sendError(res, 400, "invalid_json", fallbackMessage);
 };
 
 const notFound = (req: IncomingMessage, res: ServerResponse) => {
@@ -773,6 +787,24 @@ const sanitizeEventInput = (body: ChurchEventInput): ChurchEventInput => ({
   registrationRequiresEmailConfirmation: Boolean(body.registrationRequiresEmailConfirmation),
   description: String(body.description || "").trim()
 });
+
+const validateEventInput = (body: ChurchEventInput | null): string | null => {
+  if (!body) return "Informe os dados do evento.";
+  if (!String(body?.title || "").trim()) return "Informe o titulo do evento.";
+  if (!String(body?.date || "").trim()) return "Informe a data do evento.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "").trim())) return "Informe a data do evento em um formato valido.";
+  if (body.startTime && !/^\d{2}:\d{2}$/.test(String(body.startTime).trim())) return "Informe o horario de inicio em um formato valido.";
+  if (body.endTime && !/^\d{2}:\d{2}$/.test(String(body.endTime).trim())) return "Informe o horario de fim em um formato valido.";
+  if (body.recurrence === "cron" && !String(body.recurrenceRule || "").trim()) return "Informe a expressao cron da recorrencia.";
+  if (body.recurrence === "cron" && !isValidCronExpression(String(body.recurrenceRule || ""))) return "A expressao cron informada nao e valida.";
+  if ((body.recurrence === "weekly" || body.recurrence === "monthly" || body.recurrence === "cron") && body.recurrenceUntil) {
+    const eventDate = String(body.date || "").trim();
+    const recurrenceUntil = String(body.recurrenceUntil || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(recurrenceUntil)) return "Informe a data final da recorrencia em um formato valido.";
+    if (recurrenceUntil < eventDate) return "A data final da recorrencia deve ser igual ou posterior a data do evento.";
+  }
+  return null;
+};
 
 const sanitizeEventRegistrationInput = (body: EventRegistrationInput): EventRegistrationInput => ({
   name: String(body.name || "").trim(),
@@ -1536,14 +1568,20 @@ const handleCreateEvent = async (req: IncomingMessage, res: ServerResponse) => {
   if (!user) return;
 
   const body = await readJson<ChurchEventInput>(req);
-  if (!body?.title || !body?.date) {
-    sendError(res, 400, "invalid_json", "Informe titulo e data do evento.");
+  const validationMessage = validateEventInput(body);
+  if (validationMessage) {
+    sendError(res, 400, "invalid_json", validationMessage);
     return;
   }
 
-  const event = await eventRepository.create(sanitizeEventInput(body));
-  await recordAudit(user, "create", "event", event.id, `Evento criado: ${event.title}`);
-  sendJson(res, 201, event);
+  try {
+    if (!body) return;
+    const event = await eventRepository.create(sanitizeEventInput(body));
+    await recordAudit(user, "create", "event", event.id, `Evento criado: ${event.title}`);
+    sendJson(res, 201, event);
+  } catch (error) {
+    sendSaveError(res, error, "Nao foi possivel salvar o evento. Revise os campos e tente novamente.");
+  }
 };
 
 const handleUpdateEvent = async (req: IncomingMessage, res: ServerResponse, id: string) => {
@@ -1551,19 +1589,25 @@ const handleUpdateEvent = async (req: IncomingMessage, res: ServerResponse, id: 
   if (!user) return;
 
   const body = await readJson<ChurchEventInput>(req);
-  if (!body?.title || !body?.date) {
-    sendError(res, 400, "invalid_json", "Informe titulo e data do evento.");
+  const validationMessage = validateEventInput(body);
+  if (validationMessage) {
+    sendError(res, 400, "invalid_json", validationMessage);
     return;
   }
 
-  const event = await eventRepository.update(id, sanitizeEventInput(body));
-  if (!event) {
-    sendError(res, 404, "not_found", "Evento nao encontrado.");
-    return;
-  }
+  try {
+    if (!body) return;
+    const event = await eventRepository.update(id, sanitizeEventInput(body));
+    if (!event) {
+      sendError(res, 404, "not_found", "Evento nao encontrado.");
+      return;
+    }
 
-  await recordAudit(user, "update", "event", event.id, `Evento atualizado: ${event.title}`);
-  sendJson(res, 200, event);
+    await recordAudit(user, "update", "event", event.id, `Evento atualizado: ${event.title}`);
+    sendJson(res, 200, event);
+  } catch (error) {
+    sendSaveError(res, error, "Nao foi possivel salvar o evento. Revise os campos e tente novamente.");
+  }
 };
 
 const handleDeleteEvent = async (req: IncomingMessage, res: ServerResponse, id: string) => {

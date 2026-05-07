@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -6,6 +6,15 @@ export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost
 export const sessionStorageKey = "ecclesiaos.session";
 
 const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+const readApiErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+  try {
+    const body = await response.json() as Partial<AuthErrorResponse>;
+    return body.message || fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 export const loadStoredSession = (): AuthSession | null => {
   const stored = window.localStorage.getItem(sessionStorageKey);
@@ -415,7 +424,7 @@ export const saveEvent = async (token: string, input: ChurchEventInput, id?: str
     body: JSON.stringify(input)
   });
 
-  if (!response.ok) throw new Error("event-save-failed");
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar o evento."));
   return response.json() as Promise<ChurchEvent>;
 };
 

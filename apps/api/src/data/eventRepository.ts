@@ -1,6 +1,6 @@
 import type { ChurchEvent, ChurchEventInput, CronGenerationResult, EventRecurrence, EventType } from "@ecclesiaos/shared";
 import { readData, writeData } from "./dataStore.js";
-import { planCronOccurrences } from "../cron.js";
+import { computeTechnicalCap, planCronOccurrences } from "../cron.js";
 import { removePlansForEvent, synchronizePlansForEvent } from "./servingPlanRepository.js";
 import type { DataFile } from "./dataStore.js";
 
@@ -48,6 +48,57 @@ const todayString = (now: Date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
+const parseLocalDateTime = (date: string, time: string): Date | null => {
+  const parsed = new Date(`${date}T${time || "00:00"}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const recurrenceEndDate = (master: ChurchEvent, now: Date): Date => {
+  const technicalCap = computeTechnicalCap(now);
+  if (!master.recurrenceUntil) return technicalCap;
+
+  const explicit = new Date(`${master.recurrenceUntil}T23:59:59`);
+  if (Number.isNaN(explicit.getTime())) return technicalCap;
+  return explicit < technicalCap ? explicit : technicalCap;
+};
+
+const addMonthKeepingDay = (date: Date, months: number): Date => {
+  const next = new Date(date);
+  const originalDay = next.getDate();
+  next.setMonth(next.getMonth() + months);
+  if (next.getDate() !== originalDay) {
+    next.setDate(0);
+  }
+  return next;
+};
+
+const planSimpleOccurrences = (master: ChurchEvent, now: Date): { date: string; startTime: string }[] => {
+  if (master.recurrence !== "weekly" && master.recurrence !== "monthly") return [];
+
+  const start = parseLocalDateTime(master.date, master.startTime);
+  if (!start) return [];
+
+  const end = recurrenceEndDate(master, now);
+  const occurrences: { date: string; startTime: string }[] = [];
+  let cursor = master.recurrence === "weekly" ? new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000) : addMonthKeepingDay(start, 1);
+  let iterations = 0;
+
+  while (cursor <= end && iterations < 500) {
+    occurrences.push({ date: formatLocalDate(cursor), startTime: master.startTime });
+    cursor = master.recurrence === "weekly" ? new Date(cursor.getTime() + 7 * 24 * 60 * 60 * 1000) : addMonthKeepingDay(cursor, 1);
+    iterations += 1;
+  }
+
+  return occurrences;
+};
+
 const buildChildFromMaster = (master: ChurchEvent, occurrence: { date: string; startTime: string }, nowIso: string, index: number): ChurchEvent => ({
   id: `${master.id}_occ_${occurrence.date.replace(/-/g, "")}_${occurrence.startTime.replace(":", "")}_${index}`,
   title: master.title,
@@ -74,7 +125,7 @@ const buildChildFromMaster = (master: ChurchEvent, occurrence: { date: string; s
 });
 
 const expandSingleMaster = (master: ChurchEvent, allEvents: ChurchEvent[], now: Date): { newChildren: ChurchEvent[]; generated: number; skipped: number; total: number } => {
-  const planned = planCronOccurrences(master, now);
+  const planned = master.recurrence === "cron" ? planCronOccurrences(master, now) : planSimpleOccurrences(master, now);
   if (planned.length === 0) return { newChildren: [], generated: 0, skipped: 0, total: 0 };
 
   const existingKeys = new Set(
@@ -195,8 +246,8 @@ export const eventRepository = {
 
   async materializeCronOccurrences(now: Date = new Date()): Promise<CronGenerationResult> {
     const data = await readData();
-    const cronMasters = data.events.filter((event) => event.recurrence === "cron" && event.recurrenceRule && !event.parentEventId);
-    if (cronMasters.length === 0) return { generated: 0, skipped: 0, total: 0 };
+    const recurringMasters = data.events.filter((event) => event.recurrence !== "none" && !event.parentEventId && (event.recurrence !== "cron" || Boolean(event.recurrenceRule)));
+    if (recurringMasters.length === 0) return { generated: 0, skipped: 0, total: 0 };
 
     let allEvents = [...data.events];
     const allNewChildren: ChurchEvent[] = [];
@@ -204,7 +255,7 @@ export const eventRepository = {
     let totalSkipped = 0;
     let totalPlanned = 0;
 
-    for (const master of cronMasters) {
+    for (const master of recurringMasters) {
       const result = expandSingleMaster(master, allEvents, now);
       if (result.newChildren.length > 0) {
         allEvents = [...allEvents, ...result.newChildren];
@@ -227,7 +278,7 @@ export const eventRepository = {
     const data = await readData();
     const master = data.events.find((event) => event.id === masterId);
     if (!master) return null;
-    if (master.recurrence !== "cron" || !master.recurrenceRule) {
+    if (master.recurrence === "none" || (master.recurrence === "cron" && !master.recurrenceRule)) {
       return { generated: 0, skipped: 0, total: 0 };
     }
 

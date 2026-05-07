@@ -4,16 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 65 - Substituto Automatico Para Recusas Em Escala**.
+Fase atual concluida: **Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas**.
 
 Ultimo modulo entregue:
 
-- ao recusar escala, API calcula automaticamente substitutos da mesma equipe;
-- sugestoes respeitam pessoas ja escaladas, recusas e bloqueios de data;
-- candidatos sao ranqueados por menor carga recente nos ultimos 30 dias;
-- email ao lider inclui lista de substitutos quando Resend esta configurado;
-- resposta de `PATCH /serving-plans/:planId/assignments/:assignmentId/status` inclui `substituteSuggestions`;
-- tela Escalas mostra automaticamente sugestoes retornadas apos recusa.
+- Agenda usa `Ambiente` em vez de `Local` e seleciona ambientes ativos cadastrados;
+- validacao de evento retorna mensagens especificas em vez de erro bruto do Prisma;
+- slug publico duplicado retorna conflito compreensivel;
+- recorrencias `weekly`, `monthly` e `cron` podem gerar ocorrencias materializadas;
+- Vercel possui rewrite SPA para rotas publicas como `/visitor`, `/forgot-password`, `/register/*` e `/event-checkin/*`.
 
 Ambiente atual:
 
@@ -29,12 +28,13 @@ Ambiente atual:
 2. [[architecture|Arquitetura Atual]]
 3. [[project-status|Status Do Projeto]]
 4. [[roadmap|Roadmap Faseado]]
-5. [[decision-log|Registro De Decisoes]]
-6. [[development|Desenvolvimento Local]]
-7. [[deploy|Publicacao Gratuita]]
-8. [[project-structure|Estrutura Do Projeto]]
-9. [[next-steps|Proximos Passos]]
-10. [[questions|Backlog De Perguntas]]
+5. [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]
+6. [[decision-log|Registro De Decisoes]]
+7. [[development|Desenvolvimento Local]]
+8. [[deploy|Publicacao Gratuita]]
+9. [[project-structure|Estrutura Do Projeto]]
+10. [[next-steps|Proximos Passos]]
+11. [[questions|Backlog De Perguntas]]
 
 ## Fases
 
@@ -104,6 +104,7 @@ Ambiente atual:
 - [[phases/phase-63-event-registration-confirmation-resend|Fase 63 - Reenvio De Confirmacao De Inscricao Em Eventos]]
 - [[phases/phase-64-event-self-service-checkin|Fase 64 - Check-in Self-Service De Eventos]]
 - [[phases/phase-65-serving-auto-substitutes|Fase 65 - Substituto Automatico Para Recusas Em Escala]]
+- [[phases/phase-66-agenda-recurrence-public-routes|Fase 66 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
 
 ## Decisoes
 
@@ -173,14 +174,15 @@ Ambiente atual:
 - [[decisions/0064-event-registration-confirmation-resend|0064 - Reenvio De Confirmacao De Inscricao Em Eventos]]
 - [[decisions/0065-event-self-service-checkin|0065 - Check-in Self-Service De Eventos]]
 - [[decisions/0066-serving-auto-substitutes|0066 - Substituto Automatico Para Recusas Em Escala]]
+- [[decisions/0067-agenda-recurrence-public-routes|0067 - Estabilizacao De Agenda, Recorrencia E Rotas Publicas]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Auditoria Avancada E Relatorios**: diff de campos, filtros backend e exportacoes.
-2. **Mensagens Em Lote Com Historico**: campanhas rastreaveis com enviados, pulados e falhas.
-3. **Check-in Self-Service Kids**: avaliar fluxo separado para criancas com responsavel logado/seguranca.
-4. **Convite De Substituto Por Link**: enviar convite diretamente ao candidato sugerido.
+1. **Fase 67 - UX De Ambientes E Check-in**: separar criacao de ambiente/reserva, mover etiquetas para Check-in, criar preview de etiqueta e dashboard operacional de Kids/Eventos.
+2. **Fase 68 - Escalas Operacionais E Indisponibilidade**: restringir criacao/edicao a admin/lider, simplificar visao, mostrar pendencias relevantes e mover indisponibilidade para Escalas.
+3. **Fase 69 - Posicoes Em Ministerios**: permitir funcoes configuraveis por ministerio/equipe para escala por posicao.
+4. **Fase 70 - Marca Da Igreja E Refinos De Conta**: upload de logo, uso visual no app e notificacao por email apos alteracao de senha.
 
-Recomendacao atual: Auditoria avancada e relatorios, para aumentar confiabilidade antes de novas automacoes.
+Recomendacao atual: iniciar pela **Fase 67**, pois Ambientes e Check-in foram os proximos pontos de maior confusao operacional no feedback.

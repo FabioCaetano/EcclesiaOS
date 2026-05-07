@@ -1046,3 +1046,119 @@ Possivel escopo:
 - remocao do mestre remove filhos futuros sem inscricoes/check-in.
 
 Decisao: materializar ocorrencias como eventos filhos com `parentEventId`, com geracao lazy + manual; deixar o evento (via `recurrenceUntil`) controlar o fim da recorrencia.
+
+## Fase 63: Reenvio De Confirmacao De Inscricao Em Eventos
+
+Status atual: concluida.
+
+## Fase 64: Check-in Self-Service De Eventos
+
+Status atual: concluida.
+
+## Fase 65: Substituto Automatico Para Recusas Em Escala
+
+Status atual: concluida.
+
+## Fase 66: Estabilizacao De Agenda, Recorrencia E Rotas Publicas
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos corrigir primeiro Agenda, recorrencia e rotas publicas quebradas em producao para liberar novos testes reais?
+
+Possivel escopo:
+
+- trocar "Local" por "Ambiente" na Agenda;
+- selecionar ambiente a partir dos ambientes cadastrados;
+- validar campos obrigatorios no frontend e na API;
+- retornar erro especifico por campo, sem vazar erro bruto do Prisma;
+- corrigir materializacao de recorrencias para gerar as proximas ocorrencias esperadas;
+- revisar fallback/rewrite das rotas publicas no deploy, incluindo `/visitor`, confirmacao de inscricao, check-in publico e esqueci minha senha.
+
+Fora de escopo:
+
+- redesign completo de Check-in;
+- posicoes de ministerios;
+- historico avancado de mensagens.
+
+## Fase 67: UX De Ambientes E Check-in
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos reorganizar Ambientes e Check-in para reduzir confusao operacional?
+
+Possivel escopo:
+
+- separar criacao de ambiente e criacao de reserva;
+- exibir erros no formulario correto;
+- mover configuracao de etiquetas/impressoras da Igreja para Check-in;
+- criar preview de etiqueta com campos configuraveis;
+- permitir campos como idade, sala, responsavel, codigo de seguranca e observacoes;
+- separar administracao de Kids e Eventos dentro do proprio Check-in;
+- dashboard do dia para culto/evento.
+
+## Fase 68: Escalas Operacionais E Indisponibilidade
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos amadurecer Escalas para refletir melhor o fluxo real de lider, membro e admin?
+
+Possivel escopo:
+
+- impedir membro de criar ou editar escala;
+- permitir membro responder escalas e registrar indisponibilidade;
+- mostrar ao lider somente cultos/eventos em que sua equipe foi solicitada;
+- simplificar a visualizacao para pendencias e escala mensal;
+- manter sugestoes de substituto para recusas;
+- preparar o modelo para posicoes de ministerio.
+
+## Fase 69: Posicoes Em Ministerios
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos diferenciar grupos comuns de ministerios/equipes com posicoes de servico?
+
+Possivel escopo:
+
+- adicionar posicoes configuraveis em ministerios/equipes;
+- exemplos: vocal, bateria, guitarra, teclado, camera, transmissao, slides;
+- usar posicoes na montagem da escala;
+- manter grupos comuns sem obrigatoriedade de posicoes.
+
+## Fase 70: Marca Da Igreja E Refinos De Conta
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Vamos adicionar identidade visual da igreja e notificacao de seguranca da conta?
+
+Possivel escopo:
+
+- upload de logo da igreja;
+- usar logo no app e paginas publicas;
+- email quando senha for alterada;
+- revisar onde indisponibilidade aparece entre Minha Conta e Escalas.
+
+## Fase 71: Auditoria, Relatorios E Mensagens Avancadas
+
+Status atual: planejada.
+
+Antes de desenvolver, perguntar:
+
+> Depois de estabilizar os fluxos operacionais, vamos aprofundar auditoria, relatorios e mensagens?
+
+Possivel escopo:
+
+- diff de campos na auditoria;
+- filtros backend e exportacao CSV;
+- campanhas de mensagem com historico;
+- enviados, pulados, falhas e reenvio;
+- relatorios de eventos, visitantes e follow-up.

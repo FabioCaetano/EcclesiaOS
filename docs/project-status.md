@@ -13,6 +13,20 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 - Persistencia local configurada: PostgreSQL via Prisma com `ECCLESIAOS_DATA_PROVIDER=prisma`.
 - Persistencia JSON: mantida para testes automatizados e fallback.
 
+## Feedback Atual
+
+Feedback consolidado em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]].
+
+Prioridades abertas:
+
+- Agenda ja foi estabilizada na Fase 66 com erros especificos, Ambiente em vez de Local e recorrencias materializadas.
+- Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
+- Check-in precisa concentrar etiquetas/impressoras, preview de etiqueta e administracao de Kids/Eventos.
+- Escalas precisa restringir criacao/edicao a admin/lider, simplificar a tela e trazer indisponibilidade para o modulo.
+- Grupos/ministerios precisam suportar posicoes operacionais, como vocal, bateria, guitarra, camera e transmissao.
+- Ambientes precisa separar criacao de ambiente e criacao de reserva, com erro exibido no formulario correto.
+- Igreja precisa permitir upload de logo e remover a area de etiquetas para o modulo Check-in.
+
 ## Modulos Implementados
 
 | Modulo | Status | Observacoes |
@@ -39,7 +53,7 @@ O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API 
 | Usuarios E Permissoes | Implementado | CRUD admin de usuarios e `canAccessModule` compartilhado. |
 | Senha Segura | Concluido | Senhas em hash `scrypt` com upgrade automatico de legado. |
 | Auditoria | Implementado | Logs consultaveis no painel com filtros por acao, entidade, usuario, data e busca. |
-| Agenda E Eventos | Concluido | CRUD de eventos, inscricoes, locais sugeridos por Ambientes e expressao cron textual. |
+| Agenda E Eventos | Concluido | CRUD de eventos, inscricoes, Ambiente selecionado a partir de Ambientes ativos, expressao cron textual e recorrencias materializadas. |
 | Inscricoes De Eventos | Implementado | Link publico por slug, limite de vagas, participantes, status manual, recibo/ingresso, QR Code, check-in administrativo e self-service por `/event-checkin/<slug>`. |
 | Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario e bloqueio de conflito. |
 | Calendario | Concluido | Visao mensal/semanal, detalhe do dia e filtro por ambiente. |
@@ -290,12 +304,12 @@ Fluxos validados:
 - A suite de frontend ainda e smoke test, nao cobertura completa de formularios.
 - Banco relacional local depende do Docker Desktop ativo quando for usado.
 - A matriz completa de permissoes ainda nao existe; apenas Financeiro foi restringido granularmente.
-- Ainda nao existe troca propria ou reset de senha por email.
+- Reset de senha por email existe; Fase 66 adicionou rewrite SPA no Vercel para permitir abrir `/forgot-password` e `/reset-password` diretamente.
 - Registro publico ainda nao tem confirmacao de email nem aprovacao manual antes do primeiro login.
 - Impressao Brother depende do driver instalado e do dialogo do navegador. Tamanhos sao injetados via `@page` na hora da impressao a partir do template selecionado.
 - Leitura de QR Code por camera funciona em qualquer navegador moderno: usa `BarcodeDetector` quando disponivel e cai para `jsqr` quando nao; ainda depende de HTTPS/localhost e permissao de camera.
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
-- Eventos ainda nao geram ocorrencias recorrentes automaticamente.
+- Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -308,4 +322,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: troca/reset de senha (fecha risco operacional) ou mensagens em lote em Pessoas.
+Proxima recomendacao: **Fase 67 - UX De Ambientes E Check-in**.

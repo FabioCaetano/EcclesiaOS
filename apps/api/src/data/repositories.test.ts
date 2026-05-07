@@ -221,6 +221,39 @@ test("eventRepository materializes cron occurrences as children and removes them
   assert.equal(remaining.filter((event) => event.parentEventId === master.id).length, 0);
 });
 
+test("eventRepository materializes weekly occurrences without cron expressions", async () => {
+  const master = await eventRepository.create({
+    title: "Culto semanal",
+    type: "service",
+    date: "2026-05-10",
+    startTime: "10:00",
+    endTime: "11:30",
+    location: "Auditorio",
+    groupId: "",
+    recurrence: "weekly",
+    recurrenceUntil: "2026-05-31",
+    recurrenceRule: "",
+    parentEventId: "",
+    requestedTeamIds: [],
+    registrationEnabled: false,
+    registrationCapacity: 0,
+    registrationPrice: 0,
+    registrationCurrency: "BRL",
+    registrationSlug: "",
+    registrationRequiresEmailConfirmation: false,
+    description: ""
+  });
+
+  const result = await eventRepository.regenerateForMaster(master.id, new Date("2026-05-01T00:00:00.000Z"));
+  assert.deepEqual(
+    (await eventRepository.list())
+      .filter((event) => event.parentEventId === master.id)
+      .map((event) => `${event.date} ${event.startTime}`),
+    ["2026-05-17 10:00", "2026-05-24 10:00", "2026-05-31 10:00"]
+  );
+  assert.equal(result?.generated, 3);
+});
+
 test("labelTemplateRepository enforces single default per layout", async () => {
   const created = await labelTemplateRepository.create({
     name: "Visitante 50x30",
