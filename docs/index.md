@@ -201,3 +201,11 @@ Opcoes recomendadas para a proxima fase:
 5. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
 
 Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
+# Atualizacao - Fase 75
+
+- `docs/phases/phase-75-people-reports.md`: primeira versao da aba Relatorios com indicadores de pessoas, aniversariantes, perfil de membros, ministerios/equipes e exportacao CSV.
+- `docs/decisions/0075-people-reports-client-side.md`: decisao de iniciar os relatorios no frontend usando dados ja existentes de Pessoas e Grupos.
+# Atualizacao - Fase 76
+
+- `docs/phases/phase-76-music-repertoire.md`: modulo inicial de Musicas e Repertorio com biblioteca de musicas e playlists por culto/evento.
+- `docs/decisions/0076-music-repertoire-foundation.md`: decisao de separar biblioteca (`Song`) de repertorios por culto (`WorshipSet`).

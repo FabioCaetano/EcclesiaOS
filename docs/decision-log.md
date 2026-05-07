@@ -146,3 +146,11 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 12. Envio de comprovantes/ingressos.
 13. Auditoria avancada.
 14. Modelo completo de familias/casas.
+# Decisao 0075
+
+- `docs/decisions/0075-people-reports-client-side.md`
+- Relatorios iniciais de pessoas foram implementados no frontend, consumindo `Pessoas` e `Grupos`, para entregar uma primeira visao sem criar novas tabelas ou endpoints.
+# Decisao 0076
+
+- `docs/decisions/0076-music-repertoire-foundation.md`
+- Criado modulo proprio para Musicas, separando biblioteca de cancoes e repertorios por culto/evento.

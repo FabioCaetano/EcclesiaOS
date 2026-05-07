@@ -7,6 +7,7 @@ Criar a primeira aba de relatorios do EcclesiaOS com foco em dados de pessoas, m
 ## Implementado
 
 - Nova aba `Relatorios` no menu lateral.
+- Acesso restrito a administradores por conter dados consolidados de pessoas.
 - Indicadores gerais de pessoas:
   - total de pessoas;
   - total de membros;

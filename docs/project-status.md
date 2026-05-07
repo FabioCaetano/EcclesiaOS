@@ -332,3 +332,43 @@ Fluxos validados:
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
 Proxima recomendacao: publicar a Fase 74 e depois seguir para **Relatorios 1 - Pessoas**.
+# Status Atual - Fase 75
+
+Fase 75 implementada como primeira entrega da area de Relatorios. A aplicacao agora possui uma aba `Relatorios` no grupo Sistema, restrita a administradores, consolidando dados de pessoas e grupos para indicadores iniciais.
+
+## Entregue na fase
+
+- Indicadores gerais de pessoas, membros, visitantes e batizados.
+- Aniversariantes dos proximos 7 dias.
+- Segmentacao de membros por genero e faixa etaria.
+- Resumo de ministerios/equipes.
+- Exportacao CSV de pessoas.
+
+## Validacao pendente
+
+A validacao automatizada ficou pendente nesta sessao por bloqueio de execucao de comandos. Rodar:
+
+```powershell
+npm run build:web
+npm run build:api
+npm test --workspace @ecclesiaos/api
+```
+# Status Atual - Fase 76
+
+Fase 76 concluida. O EcclesiaOS agora possui o modulo `Musicas`, com cadastro de musicas e repertorios vinculaveis a cultos/eventos.
+
+## Entregue na fase
+
+- Biblioteca de musicas.
+- Repertorios por culto/evento.
+- Persistencia local e PostgreSQL/Prisma.
+- Rotas de API protegidas.
+- Tela operacional no frontend.
+- Teste de permissao: lider gerencia, membro visualiza.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run db:generate`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 38 testes.

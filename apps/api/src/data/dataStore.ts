@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -42,7 +42,9 @@ export interface DataFile {
   resources: ChurchResource[];
   roomReservations: RoomReservation[];
   servingPlans: ServingPlan[];
+  songs: Song[];
   users: UserRecord[];
+  worshipSets: WorshipSet[];
 }
 
 export const dataFilePath = process.env.ECCLESIAOS_DATA_FILE || resolve(process.cwd(), "data", "dev-db.json");
@@ -67,10 +69,12 @@ const defaultData = (): DataFile => ({
   resources: defaultResources,
   roomReservations: defaultRoomReservations,
   servingPlans: defaultServingPlans,
+  songs: [],
   users: defaultUsers.map((user) => ({
     ...user,
     password: isPasswordHash(user.password) ? user.password : hashPassword(user.password)
-  }))
+  })),
+  worshipSets: []
 });
 
 const normalizeData = (data: Partial<DataFile>): DataFile => ({
@@ -162,7 +166,29 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
       reminderSentAt: assignment.reminderSentAt || ""
     }))
   })),
-  users: (data.users || defaultUsers).map((user) => ({ ...user, personId: user.personId || "" }))
+  songs: (data.songs || []).map((song) => ({
+    ...song,
+    artist: song.artist || "",
+    defaultKey: song.defaultKey || "",
+    bpm: Number(song.bpm) || 0,
+    theme: song.theme || "",
+    lyrics: song.lyrics || "",
+    chords: song.chords || "",
+    notes: song.notes || ""
+  })),
+  users: (data.users || defaultUsers).map((user) => ({ ...user, personId: user.personId || "" })),
+  worshipSets: (data.worshipSets || []).map((set) => ({
+    ...set,
+    eventId: set.eventId || "",
+    date: set.date || "",
+    notes: set.notes || "",
+    items: (set.items || []).map((item, index) => ({
+      songId: item.songId || "",
+      key: item.key || "",
+      notes: item.notes || "",
+      order: Number(item.order) || index + 1
+    })).filter((item) => item.songId)
+  }))
 });
 
 export const ensureDataFile = async () => {

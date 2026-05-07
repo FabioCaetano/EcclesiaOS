@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -377,6 +377,64 @@ export const deleteGroup = async (token: string, id: string) => {
   });
 
   if (!response.ok) throw new Error("group-delete-failed");
+};
+
+export const loadSongs = async (token: string): Promise<Song[]> => {
+  const response = await fetch(`${apiBaseUrl}/songs`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("songs-load-failed");
+  return response.json() as Promise<Song[]>;
+};
+
+export const saveSong = async (token: string, input: SongInput, id?: string): Promise<Song> => {
+  const response = await fetch(id ? `${apiBaseUrl}/songs/${id}` : `${apiBaseUrl}/songs`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar a musica."));
+  return response.json() as Promise<Song>;
+};
+
+export const deleteSong = async (token: string, id: string) => {
+  const response = await fetch(`${apiBaseUrl}/songs/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("song-delete-failed");
+};
+
+export const loadWorshipSets = async (token: string): Promise<WorshipSet[]> => {
+  const response = await fetch(`${apiBaseUrl}/worship-sets`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("worship-sets-load-failed");
+  return response.json() as Promise<WorshipSet[]>;
+};
+
+export const saveWorshipSet = async (token: string, input: WorshipSetInput, id?: string): Promise<WorshipSet> => {
+  const response = await fetch(id ? `${apiBaseUrl}/worship-sets/${id}` : `${apiBaseUrl}/worship-sets`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error(await readApiErrorMessage(response, "Nao foi possivel salvar o repertorio."));
+  return response.json() as Promise<WorshipSet>;
+};
+
+export const deleteWorshipSet = async (token: string, id: string) => {
+  const response = await fetch(`${apiBaseUrl}/worship-sets/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("worship-set-delete-failed");
 };
 
 export const loadAttendance = async (token: string): Promise<AttendanceRecord[]> => {

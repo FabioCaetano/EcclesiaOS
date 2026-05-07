@@ -1311,3 +1311,33 @@ Possivel escopo:
 - responsaveis por formulario;
 - notificacoes/email para responsaveis;
 - respostas e relatorios/exportacao.
+# Roadmap - Atualizacao Fase 75
+
+## Concluido
+
+- Fase 75 - Relatorios 1: Pessoas.
+
+## Proxima fase sugerida
+
+- Fase 76 - Musicas e Repertorio.
+
+## Depois
+
+- Liturgia e checklist por culto.
+- Formularios customizados.
+- Relatorios avancados com filtros e endpoints dedicados.
+# Roadmap - Atualizacao Fase 76
+
+## Concluido
+
+- Fase 76 - Musicas e Repertorio.
+
+## Proxima fase sugerida
+
+- Fase 77 - Liturgia e Checklist do Culto.
+
+## Depois
+
+- Exibir repertorio dentro da Agenda.
+- Formularios customizados.
+- Relatorios avancados.

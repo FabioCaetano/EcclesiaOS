@@ -155,7 +155,7 @@ test("public visitor registration creates a visitor person without user", async 
 });
 
 test("authenticated list endpoints reject missing token and accept member token", async () => {
-  const protectedPaths = ["/people", "/groups", "/attendance", "/events", "/resources", "/room-reservations", "/serving-plans"];
+  const protectedPaths = ["/people", "/groups", "/attendance", "/events", "/resources", "/room-reservations", "/serving-plans", "/songs", "/worship-sets"];
 
   for (const path of protectedPaths) {
     const anonymous = await requestJson<{ error: string }>(path);
@@ -168,6 +168,54 @@ test("authenticated list endpoints reject missing token and accept member token"
     assert.equal(member.response.status, 200, path);
     assert.equal(Array.isArray(member.body), true, path);
   }
+});
+
+test("leaders can manage songs and worship sets while members only read", async () => {
+  const memberCreate = await requestJson<{ error: string }>("/songs", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({ title: "Musica bloqueada" })
+  });
+  assert.equal(memberCreate.response.status, 403);
+
+  const song = await requestJson<{ id: string; title: string; defaultKey: string }>("/songs", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Grande Amor",
+      artist: "Ministerio Local",
+      defaultKey: "G",
+      bpm: 72,
+      theme: "Adoracao",
+      lyrics: "",
+      chords: "G C Em D",
+      notes: "Entrada suave"
+    })
+  });
+  assert.equal(song.response.status, 201);
+  assert.ok(song.body?.id);
+  assert.equal(song.body?.defaultKey, "G");
+
+  const set = await requestJson<{ id: string; items: Array<{ songId: string; order: number }> }>("/worship-sets", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      eventId: "",
+      title: "Repertorio Domingo",
+      date: "2026-05-10",
+      notes: "Culto da manha",
+      items: [{ songId: song.body?.id, key: "A", notes: "Subir tom", order: 1 }]
+    })
+  });
+  assert.equal(set.response.status, 201);
+  assert.equal(set.body?.items.length, 1);
+  assert.equal(set.body?.items[0]?.order, 1);
+
+  const memberList = await requestJson<Array<{ title: string }>>("/songs", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(memberList.response.status, 200);
+  assert.equal(memberList.body?.some((item) => item.title === "Grande Amor"), true);
 });
 
 test("admin can create events while member cannot", async () => {

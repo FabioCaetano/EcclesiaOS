@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, UserRole } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
 import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -33,6 +33,19 @@ const asAssignments = (value: Prisma.JsonValue): ServingAssignment[] => {
       reminderSentAt: typeof item.reminderSentAt === "string" ? item.reminderSentAt : ""
     };
   });
+};
+
+const asWorshipSetItems = (value: Prisma.JsonValue): WorshipSetItem[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw, index) => {
+    const item = raw as Partial<WorshipSetItem>;
+    return {
+      songId: typeof item.songId === "string" ? item.songId : "",
+      key: typeof item.key === "string" ? item.key : "",
+      notes: typeof item.notes === "string" ? item.notes : "",
+      order: Number(item.order) || index + 1
+    };
+  }).filter((item) => item.songId);
 };
 
 const toGroup = (group: {
@@ -169,6 +182,40 @@ const toFinancialTransaction = (transaction: {
   updatedAt: transaction.updatedAt.toISOString()
 });
 
+const toSong = (song: {
+  id: string;
+  title: string;
+  artist: string;
+  defaultKey: string;
+  bpm: number;
+  theme: string;
+  lyrics: string;
+  chords: string;
+  notes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): Song => ({
+  ...song,
+  createdAt: song.createdAt.toISOString(),
+  updatedAt: song.updatedAt.toISOString()
+});
+
+const toWorshipSet = (set: {
+  id: string;
+  eventId: string;
+  title: string;
+  date: string;
+  notes: string;
+  items: Prisma.JsonValue;
+  createdAt: Date;
+  updatedAt: Date;
+}): WorshipSet => ({
+  ...set,
+  items: asWorshipSetItems(set.items),
+  createdAt: set.createdAt.toISOString(),
+  updatedAt: set.updatedAt.toISOString()
+});
+
 const toRegistrationStatus = (status: string): EventRegistrationStatus => (
   status === "pending_payment" || status === "cancelled" || status === "pending_email_confirmation" ? status : "confirmed"
 );
@@ -264,7 +311,7 @@ const toMessageTemplate = (template: {
 });
 
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -277,6 +324,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.churchResourceRecord.findMany(),
     prisma.roomReservationRecord.findMany(),
     prisma.servingPlanRecord.findMany(),
+    prisma.songRecord.findMany({ orderBy: { title: "asc" } }),
+    prisma.worshipSetRecord.findMany({ orderBy: { date: "asc" } }),
     prisma.financialTransactionRecord.findMany(),
     prisma.auditLogRecord.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.labelTemplateRecord.findMany(),
@@ -346,6 +395,8 @@ export const readPrismaData = async (): Promise<DataFile> => {
       updatedAt: reservation.updatedAt.toISOString()
     })),
     servingPlans: servingPlans.map(toServingPlan),
+    songs: songs.map(toSong),
+    worshipSets: worshipSets.map(toWorshipSet),
     financialTransactions: financialTransactions.map(toFinancialTransaction),
     auditLogs: auditLogs.map((log): AuditLogEntry => ({
       ...log,
@@ -376,6 +427,8 @@ export const writePrismaData = async (data: DataFile) => {
     await tx.eventCheckInRecord.deleteMany();
     await tx.eventRecord.deleteMany();
     await tx.servingPlanRecord.deleteMany();
+    await tx.worshipSetRecord.deleteMany();
+    await tx.songRecord.deleteMany();
     await tx.attendanceRecord.deleteMany();
     await tx.groupRecord.deleteMany();
     await tx.personRecord.deleteMany();
@@ -488,6 +541,27 @@ export const writePrismaData = async (data: DataFile) => {
           assignments: plan.assignments as unknown as Prisma.InputJsonValue,
           createdAt: new Date(plan.createdAt),
           updatedAt: new Date(plan.updatedAt)
+        }
+      });
+    }
+
+    for (const song of data.songs) {
+      await tx.songRecord.create({
+        data: {
+          ...song,
+          createdAt: new Date(song.createdAt),
+          updatedAt: new Date(song.updatedAt)
+        }
+      });
+    }
+
+    for (const set of data.worshipSets) {
+      await tx.worshipSetRecord.create({
+        data: {
+          ...set,
+          items: set.items as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(set.createdAt),
+          updatedAt: new Date(set.updatedAt)
         }
       });
     }

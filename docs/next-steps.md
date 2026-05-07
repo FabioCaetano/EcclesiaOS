@@ -110,3 +110,26 @@ Valor: cria captação estruturada de informacoes sem depender de ferramentas ex
 Primeiro publicar a Fase 74. Depois seguir para **Relatorios 1 - Pessoas**.
 
 Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em Pessoas.
+# Proximos Passos Apos Fase 75
+
+1. Validar a Fase 75 localmente com `npm run build:web`, `npm run build:api` e `npm test --workspace @ecclesiaos/api`.
+2. Iniciar Fase 76 - Musicas e Repertorio:
+   - cadastro de musicas;
+   - tons disponiveis;
+   - playlists por culto/evento;
+   - visualizacao do repertorio dentro do culto.
+3. Depois seguir para Liturgia/Checklist do culto.
+4. Em seguida iniciar Formularios customizados.
+# Proximos Passos Apos Fase 76
+
+1. Subir a migracao `20260507160000_music_repertoire` no ambiente publicado.
+2. Iniciar Fase 77 - Liturgia e Checklist do Culto:
+   - checklist por culto/evento;
+   - itens ordenados da liturgia;
+   - responsavel por item;
+   - marcacao de concluido durante o culto.
+3. Depois conectar Agenda com:
+   - repertorio do culto;
+   - checklist/liturgia;
+   - equipes solicitadas.
+4. Em seguida iniciar Formularios customizados.

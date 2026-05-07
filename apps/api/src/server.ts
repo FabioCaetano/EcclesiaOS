@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -15,6 +15,7 @@ import { checkInRepository } from "./data/checkInRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { messageTemplateRepository } from "./data/messageTemplateRepository.js";
+import { musicRepository } from "./data/musicRepository.js";
 import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
 import { blockOutRepository, isPersonBlockedOnDate } from "./data/blockOutRepository.js";
 import { passwordResetTokenRepository } from "./data/passwordResetTokenRepository.js";
@@ -775,6 +776,138 @@ const handleDeleteGroup = async (req: IncomingMessage, res: ServerResponse, id: 
     return;
   }
 
+  sendJson(res, 200, { ok: true });
+};
+
+const requireMusicManager = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return null;
+  if (user.role !== "admin" && user.role !== "leader") {
+    sendError(res, 403, "forbidden", "Apenas administradores e lideres podem gerenciar musicas.");
+    return null;
+  }
+  return user;
+};
+
+const sanitizeSongInput = (body: SongInput): SongInput => ({
+  title: String(body.title || "").trim(),
+  artist: String(body.artist || "").trim(),
+  defaultKey: String(body.defaultKey || "").trim(),
+  bpm: Math.max(0, Math.round(Number(body.bpm) || 0)),
+  theme: String(body.theme || "").trim(),
+  lyrics: String(body.lyrics || "").trim(),
+  chords: String(body.chords || "").trim(),
+  notes: String(body.notes || "").trim()
+});
+
+const sanitizeWorshipSetInput = (body: WorshipSetInput): WorshipSetInput => ({
+  eventId: String(body.eventId || "").trim(),
+  title: String(body.title || "").trim(),
+  date: String(body.date || "").trim(),
+  notes: String(body.notes || "").trim(),
+  items: (Array.isArray(body.items) ? body.items : []).map((item, index) => ({
+    songId: String(item.songId || "").trim(),
+    key: String(item.key || "").trim(),
+    notes: String(item.notes || "").trim(),
+    order: Math.max(1, Number(item.order) || index + 1)
+  })).filter((item) => item.songId)
+});
+
+const handleListSongs = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  sendJson(res, 200, await musicRepository.listSongs());
+};
+
+const handleCreateSong = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<SongInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo da musica.");
+    return;
+  }
+
+  sendJson(res, 201, await musicRepository.createSong(sanitizeSongInput(body)));
+};
+
+const handleUpdateSong = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<SongInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo da musica.");
+    return;
+  }
+
+  const song = await musicRepository.updateSong(id, sanitizeSongInput(body));
+  if (!song) {
+    sendError(res, 404, "not_found", "Musica nao encontrada.");
+    return;
+  }
+  sendJson(res, 200, song);
+};
+
+const handleDeleteSong = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const removed = await musicRepository.removeSong(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Musica nao encontrada.");
+    return;
+  }
+  sendJson(res, 200, { ok: true });
+};
+
+const handleListWorshipSets = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  sendJson(res, 200, await musicRepository.listSets());
+};
+
+const handleCreateWorshipSet = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<WorshipSetInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo do repertorio.");
+    return;
+  }
+
+  sendJson(res, 201, await musicRepository.createSet(sanitizeWorshipSetInput(body)));
+};
+
+const handleUpdateWorshipSet = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const body = await readJson<WorshipSetInput>(req);
+  if (!body?.title) {
+    sendError(res, 400, "invalid_json", "Informe o titulo do repertorio.");
+    return;
+  }
+
+  const set = await musicRepository.updateSet(id, sanitizeWorshipSetInput(body));
+  if (!set) {
+    sendError(res, 404, "not_found", "Repertorio nao encontrado.");
+    return;
+  }
+  sendJson(res, 200, set);
+};
+
+const handleDeleteWorshipSet = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireMusicManager(req, res);
+  if (!user) return;
+
+  const removed = await musicRepository.removeSet(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Repertorio nao encontrado.");
+    return;
+  }
   sendJson(res, 200, { ok: true });
 };
 
@@ -2401,6 +2534,48 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (groupMatch && req.method === "DELETE") {
     void handleDeleteGroup(req, res, groupMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/songs") {
+    void handleListSongs(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/songs") {
+    void handleCreateSong(req, res);
+    return;
+  }
+
+  const songMatch = url.pathname.match(/^\/songs\/([^/]+)$/);
+  if (songMatch && req.method === "PUT") {
+    void handleUpdateSong(req, res, songMatch[1]);
+    return;
+  }
+
+  if (songMatch && req.method === "DELETE") {
+    void handleDeleteSong(req, res, songMatch[1]);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/worship-sets") {
+    void handleListWorshipSets(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/worship-sets") {
+    void handleCreateWorshipSet(req, res);
+    return;
+  }
+
+  const worshipSetMatch = url.pathname.match(/^\/worship-sets\/([^/]+)$/);
+  if (worshipSetMatch && req.method === "PUT") {
+    void handleUpdateWorshipSet(req, res, worshipSetMatch[1]);
+    return;
+  }
+
+  if (worshipSetMatch && req.method === "DELETE") {
+    void handleDeleteWorshipSet(req, res, worshipSetMatch[1]);
     return;
   }
 

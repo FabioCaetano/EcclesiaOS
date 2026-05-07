@@ -16,6 +16,7 @@ import { HomePage } from "./HomePage";
 import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { MessagesPage } from "./MessagesPage";
+import { MusicPage } from "./MusicPage";
 import { PeoplePage } from "./PeoplePage";
 import { EventRegistrationConfirmPage } from "./EventRegistrationConfirmPage";
 import { PublicEventCheckInPage } from "./PublicEventCheckInPage";
@@ -106,6 +107,7 @@ const App = () => {
       {currentView === "resources" && <ResourcesPage token={session.token} user={session.user} />}
       {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} />}
       {currentView === "serving" && <ServingPage token={session.token} user={session.user} />}
+      {currentView === "music" && <MusicPage token={session.token} user={session.user} />}
       {currentView === "finance" && <FinancePage token={session.token} user={session.user} />}
       {currentView === "reports" && <ReportsPage token={session.token} user={session.user} />}
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}

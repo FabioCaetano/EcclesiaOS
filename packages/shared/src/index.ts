@@ -23,7 +23,7 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "music" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
 
 export type MessageChannel = "email" | "whatsapp" | "manual";
 
@@ -155,13 +155,14 @@ export interface VisitorRegistrationResponse {
 
 export type PermissionAction = "view" | "manage";
 
-const adminOnlyModules: AppModuleKey[] = ["finance", "users", "audit"];
+const adminOnlyModules: AppModuleKey[] = ["finance", "reports", "users", "audit"];
 
 export const canAccessModule = (role: UserRole, module: AppModuleKey) => !adminOnlyModules.includes(module) || role === "admin";
 
 export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   if (module === "checkin") return role === "admin" || role === "leader";
   if (module === "messages") return role === "admin" || role === "leader";
+  if (module === "music") return role === "admin" || role === "leader";
   if (module === "serving") return role === "admin";
   return role === "admin";
 };
@@ -472,6 +473,42 @@ export interface ServingNotification {
   date: string;
 }
 
+export interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  defaultKey: string;
+  bpm: number;
+  theme: string;
+  lyrics: string;
+  chords: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SongInput = Omit<Song, "id" | "createdAt" | "updatedAt">;
+
+export interface WorshipSetItem {
+  songId: string;
+  key: string;
+  notes: string;
+  order: number;
+}
+
+export interface WorshipSet {
+  id: string;
+  eventId: string;
+  title: string;
+  date: string;
+  notes: string;
+  items: WorshipSetItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WorshipSetInput = Omit<WorshipSet, "id" | "createdAt" | "updatedAt">;
+
 export type FinancialTransactionType = "income" | "expense";
 
 export type FinancialPaymentMethod = "cash" | "card" | "transfer" | "check" | "other";
@@ -547,6 +584,7 @@ export const plannedModules: AppModuleSummary[] = [
   { key: "resources", name: "Ambientes", phase: "Fase 29", status: "active" },
   { key: "calendar", name: "Calendario da igreja", phase: "Fase 30", status: "active" },
   { key: "serving", name: "Escalas e cultos", phase: "Fase 7", status: "planned" },
+  { key: "music", name: "Musicas e repertorio", phase: "Fase 76", status: "active" },
   { key: "finance", name: "Financeiro", phase: "Fase 8", status: "planned" },
   { key: "reports", name: "Relatorios", phase: "Fase 75", status: "active" },
   { key: "users", name: "Usuarios e permissoes", phase: "Fase 22", status: "active" },

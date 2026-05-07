@@ -183,6 +183,36 @@ model ServingPlanRecord {
   @@index([groupId])
 }
 
+model SongRecord {
+  id         String   @id
+  title      String
+  artist     String   @default("")
+  defaultKey String   @default("")
+  bpm        Int      @default(0)
+  theme      String   @default("")
+  lyrics     String   @default("")
+  chords     String   @default("")
+  notes      String   @default("")
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  @@index([title])
+}
+
+model WorshipSetRecord {
+  id        String   @id
+  eventId   String   @default("")
+  title     String
+  date      String   @default("")
+  notes     String   @default("")
+  items     Json     @default("[]")
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([eventId])
+  @@index([date])
+}
+
 model FinancialTransactionRecord {
   id            String   @id
   date          String
