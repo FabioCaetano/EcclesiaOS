@@ -126,6 +126,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 99. Posicoes por pessoa e substitutos por posicao: `GroupProfile.memberServicePositions` define quais posicoes cada pessoa pode servir; Escalas filtra candidatos por posicao e substitutos automaticos respeitam a posicao recusada quando ela pertence ao ministerio/equipe.
 
+100. Contexto operacional no Check-in: a aba Check-in passa a ter um evento/culto selecionado no topo; contadores e listas de Eventos, Kids, Administracao kids e Etiquetas usam esse contexto para reduzir confusao operacional sem criar novo menu lateral.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

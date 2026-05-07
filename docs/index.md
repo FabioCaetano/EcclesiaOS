@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos**.
+Fase atual concluida: **Fase 73 - Check-in UX 2**.
 
 Ultimo modulo entregue:
 
-- Ministerios/equipes podem definir posicoes por pessoa;
-- Escalas filtra pessoas pela posicao selecionada;
-- Escalas alerta quando alguem foi escalado fora das posicoes habilitadas;
-- substitutos automaticos respeitam a posicao recusada;
-- Prisma ganhou migration para persistir `memberServicePositions`.
+- Check-in ganhou painel operacional por evento/culto selecionado;
+- contadores refletem o evento selecionado;
+- Evento, Kids, Administracao kids e Etiquetas usam o mesmo contexto;
+- listas de criancas e pessoas ficam filtradas pelo contexto;
+- fluxo ficou mais claro sem criar novo menu lateral.
 
 Ambiente atual:
 
@@ -109,6 +109,7 @@ Ambiente atual:
 - [[phases/phase-68-serving-operations-availability|Fase 68 - Escalas Operacionais E Indisponibilidade]]
 - [[phases/phase-69-ministry-service-positions|Fase 69 - Posicoes Em Ministerios]]
 - [[phases/phase-72-member-service-positions-substitutes|Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos]]
+- [[phases/phase-73-checkin-ux-2|Fase 73 - Check-in UX 2]]
 
 ## Decisoes
 
@@ -184,14 +185,15 @@ Ambiente atual:
 - [[decisions/0070-serving-operations-availability|0070 - Escalas Por Perfil E Indisponibilidade No Modulo]]
 - [[decisions/0071-ministry-service-positions|0071 - Posicoes Configuraveis Em Ministerios]]
 - [[decisions/0072-member-service-positions-substitutes|0072 - Posicoes Por Pessoa E Substitutos Por Posicao]]
+- [[decisions/0073-checkin-operational-context|0073 - Contexto Operacional No Check-in]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 72**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma.
-2. **Check-in UX 2**: dashboard operacional para Kids/Eventos e administracao do dia mais clara.
+1. **Publicar Fase 73**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma pendentes.
+2. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
 3. **Financeiro 2**: relatorios, exportacoes e visao por periodo/fundo/categoria.
 4. **Fase 70 - Marca Da Igreja E Refinos De Conta**: mantida pulada por decisao temporaria.
 
-Recomendacao atual: publicar a Fase 72 e seguir para **Check-in UX 2**.
+Recomendacao atual: publicar a Fase 73 e seguir para **Check-in Salas Infantis** ou **Financeiro 2**.

@@ -139,11 +139,24 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOperationEventId, setSelectedOperationEventId] = useState("");
   const [status, setStatus] = useState("");
 
   const canManage = canManageModule(user.role, "checkin");
   const serviceEvents = useMemo(() => events.filter((event) => event.type === "service"), [events]);
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingEvents = useMemo(
+    () => events.filter((event) => event.date >= today).sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)),
+    [events, today]
+  );
+  const operationEventOptions = upcomingEvents.length > 0 ? upcomingEvents : events;
+  const selectedOperationEvent = events.find((event) => event.id === selectedOperationEventId) || operationEventOptions[0] || null;
+  const operationEventId = selectedOperationEvent?.id || "";
+  const eventCheckInsForOperation = operationEventId ? eventCheckIns.filter((item) => item.eventId === operationEventId) : eventCheckIns;
+  const childCheckInsForOperation = operationEventId ? childCheckIns.filter((item) => item.eventId === operationEventId) : childCheckIns;
   const openChildren = childCheckIns.filter((item) => !item.checkedOutAt);
+  const openChildrenForOperation = childCheckInsForOperation.filter((item) => !item.checkedOutAt);
+  const checkedOutChildrenForOperation = childCheckInsForOperation.filter((item) => item.checkedOutAt);
 
   const refresh = async () => {
     const [nextEvents, nextPeople, nextAttendance, nextEventCheckIns, nextChildCheckIns] = await Promise.all([
@@ -176,6 +189,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         // mantem fallback fixo
       });
   }, [token]);
+
+  useEffect(() => {
+    if (!selectedOperationEventId && operationEventOptions[0]) {
+      setSelectedOperationEventId(operationEventOptions[0].id);
+    }
+  }, [operationEventOptions, selectedOperationEventId]);
 
   useEffect(() => {
     const clearPrintMode = () => setPrintMode(null);
@@ -232,6 +251,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       guardianName: firstGuardian ? `${firstGuardian.firstName} ${firstGuardian.lastName}`.trim() : current.guardianName,
       guardianPhone: firstGuardian?.phone || current.guardianPhone
     }));
+  };
+
+  const applyOperationEventToForms = () => {
+    if (!operationEventId) return;
+    setEventForm((current) => ({ ...current, eventId: operationEventId }));
+    setChildForm((current) => ({ ...current, eventId: operationEventId }));
   };
 
   const updateGuardianPerson = (personId: string) => {
@@ -365,10 +390,29 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       />
 
       <Card className="checkin-panel">
+      <div className="scanner-panel">
+        <div>
+          <p className="eyebrow">Painel do dia</p>
+          <h3>{selectedOperationEvent ? selectedOperationEvent.title : "Selecione um evento"}</h3>
+          {selectedOperationEvent && <p className="muted">{selectedOperationEvent.date} {selectedOperationEvent.startTime && `- ${selectedOperationEvent.startTime}`}</p>}
+        </div>
+        <div className="scanner-actions">
+          <select value={operationEventId} onChange={(event) => setSelectedOperationEventId(event.target.value)}>
+            <option value="">Todos os eventos</option>
+            {operationEventOptions.map((event) => (
+              <option key={event.id} value={event.id}>{event.date} - {event.title}</option>
+            ))}
+          </select>
+          <button className="secondary-button" type="button" onClick={applyOperationEventToForms} disabled={!operationEventId}>
+            Usar neste check-in
+          </button>
+        </div>
+      </div>
+
       <div className="report-grid">
-        <article><span>Check-ins evento</span><strong>{eventCheckIns.length}</strong></article>
-        <article><span>Criancas no culto</span><strong>{openChildren.length}</strong></article>
-        <article><span>Eventos culto</span><strong>{serviceEvents.length}</strong></article>
+        <article><span>Check-ins evento</span><strong>{eventCheckInsForOperation.length}</strong></article>
+        <article><span>Criancas ativas</span><strong>{openChildrenForOperation.length}</strong></article>
+        <article><span>Retiradas kids</span><strong>{checkedOutChildrenForOperation.length}</strong></article>
         <article><span>Presenca consolidada</span><strong>{consolidatedPeopleCount}</strong></article>
       </div>
 
@@ -430,7 +474,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
             <EmptyState icon={ClipboardCheck} title="Sem check-ins" description="Nenhuma pessoa registrada neste evento ainda." />
           ) : (
             <div className="checkin-grid">
-              {eventCheckIns
+              {eventCheckInsForOperation
                 .filter((item) => matchesQuery(personName(item.personId), searchQuery))
                 .map((item) => (
                   <article className="checkin-card" key={item.id}>
@@ -491,11 +535,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         </form>
         <div>
           <h3>Criancas ativas</h3>
-          {openChildren.length === 0 ? (
+          {openChildrenForOperation.length === 0 ? (
             <EmptyState icon={ClipboardCheck} title="Sem criancas ativas" description="Nenhuma crianca aguardando retirada agora." />
           ) : (
             <div className="checkin-grid">
-              {openChildren.map((item) => (
+              {openChildrenForOperation.map((item) => (
                 <article className="checkin-card" key={item.id}>
                   <Avatar name={item.childName} size="md" tone="info" />
                   <div className="checkin-card-text">
@@ -546,7 +590,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               <EmptyState icon={ClipboardCheck} title="Sem check-ins infantis" description="Registre criancas na aba Kids para que elas apareçam aqui." />
             ) : (
               <div className="checkin-grid">
-                {childCheckIns
+                {childCheckInsForOperation
                   .filter((item) => matchesQuery(`${item.childName} ${item.guardianName}`, searchQuery))
                   .map((item) => (
                     <article className="checkin-card" key={item.id}>
@@ -598,11 +642,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
 
           <aside className="checkin-side" aria-label="No momento">
             <h3>No momento</h3>
-            {openChildren.length === 0 ? (
+            {openChildrenForOperation.length === 0 ? (
               <p className="muted">Nenhuma crianca presente.</p>
             ) : (
               <div className="checkin-side-list">
-                {openChildren.slice(0, 12).map((item) => (
+                {openChildrenForOperation.slice(0, 12).map((item) => (
                   <div className="checkin-side-item" key={item.id}>
                     <Avatar name={item.childName} size="sm" tone="info" />
                     <div>
@@ -632,7 +676,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               <span>{selectedBatchLabels.length} selecionada(s)</span>
             </div>
             <div className="checkin-grid">
-              {childCheckIns.map((item) => (
+              {childCheckInsForOperation.map((item) => (
                 <article className="checkin-card" key={item.id}>
                   <Avatar name={item.childName} size="md" tone={item.checkedOutAt ? "muted" : "info"} />
                   <div className="checkin-card-text">

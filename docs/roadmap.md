@@ -1200,3 +1200,25 @@ Entregue:
 - Escalas filtra pessoas por posicao;
 - substitutos automaticos respeitam a posicao da recusa;
 - migration Prisma para persistir posicoes por pessoa.
+
+## Fase 73: Check-in UX 2
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos melhorar Check-in com um contexto operacional claro por evento/culto?
+
+Possivel escopo:
+
+- painel do dia por evento/culto;
+- contadores filtrados pelo contexto;
+- listas de evento, Kids, administracao e etiquetas usando o mesmo contexto;
+- manter tudo dentro do modulo Check-in sem novo menu lateral.
+
+Entregue:
+
+- painel operacional por evento/culto selecionado;
+- contadores e listas filtrados pelo contexto;
+- botao para aplicar evento selecionado aos formularios;
+- administracao kids e etiquetas seguindo o mesmo contexto.

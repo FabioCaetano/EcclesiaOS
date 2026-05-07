@@ -22,7 +22,7 @@ Prioridades abertas:
 - Agenda ja foi estabilizada na Fase 66 com erros especificos, Ambiente em vez de Local e recorrencias materializadas.
 - Estabilizacao aplicada: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API, e novas ocorrencias usam escrita incremental no Prisma.
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
-- Check-in ganhou aba Etiquetas na Fase 67, mas ainda pode evoluir para dashboard operacional mais completo de Kids/Eventos.
+- Check-in ganhou contexto operacional por evento/culto na Fase 73; ainda pode evoluir para salas infantis por idade e dashboard por sala.
 - Escalas foi reorganizada na Fase 68: membro ve proprias escalas, lider ve equipes lideradas, matriz fica para admin/lider e indisponibilidade fica no modulo.
 - Grupos/ministerios suportam posicoes operacionais e posicoes por pessoa desde a Fase 72.
 - Ambientes teve mensagens e formularios separados na Fase 67; ainda pode receber polimento visual adicional.
@@ -59,7 +59,7 @@ Prioridades abertas:
 | Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario, bloqueio de conflito e mensagens separadas por formulario. |
 | Calendario | Concluido | Visao mensal/semanal, detalhe do dia e filtro por ambiente. |
 | Presenca Por Evento | Concluido | `eventId` em presenca, resumo por evento e consolidacao automatica de check-ins. |
-| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, administracao kids interna, aba Etiquetas, preview configuravel, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
+| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, contexto operacional por evento/culto, administracao kids interna, aba Etiquetas, preview configuravel, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 | Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
@@ -317,6 +317,7 @@ Fluxos validados:
 - A Fase 69 passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - A Fase 72 adicionou `memberServicePositions` em ministerios/equipes e requer migration Prisma `20260507140000_group_member_service_positions`.
 - A Fase 72 passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
+- A Fase 73 adicionou contexto operacional por evento/culto no Check-in e passou em `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - Inscricoes pagas dependem de confirmacao manual; nao ha gateway de pagamento.
 - Ingressos ainda nao sao enviados por email automaticamente.
 - Calendario ainda nao possui edicao rapida, drag and drop ou endpoint agregado.
@@ -329,4 +330,4 @@ Fluxos validados:
 
 Ordem definida concluida: Banco Real preparado, Escalas aprofundado, Financeiro aprofundado e Testes Do Frontend criados.
 
-Proxima recomendacao: publicar a Fase 72 e depois seguir para **Check-in UX 2**.
+Proxima recomendacao: publicar a Fase 73 e depois seguir para **Check-in Salas Infantis** ou **Financeiro 2**.
