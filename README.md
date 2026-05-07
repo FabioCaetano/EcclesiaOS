@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 57 - Notificacoes De Escala Por Email.
+Fase atual concluida: Fase 58 - Matrix View De Equipes Em Escalas.
 
 Estrutura:
 

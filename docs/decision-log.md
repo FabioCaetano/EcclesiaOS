@@ -104,6 +104,8 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 88. Notificacoes de escala por email: `PUT /serving-plans/:id` envia email para cada `personId` recem-atribuido; `PATCH /serving-plans/:planId/assignments/:assignmentId/status` envia email ao lider do grupo quando alguem confirma ou recusa; envios silenciosos quando provedor nao configurado, best-effort com try/catch para nao quebrar o salvamento; sem tokens de confirmacao via link, sem lembretes proximos da data, sem email quando admin remove pessoa.
 
+89. ServingPage ganha tab Lista/Matriz; aba Matriz mostra grid panoramico (membros da equipe x planos no periodo) com filtro de equipe `ministry`/`team` e janela 4/8/12 semanas; reaproveita `/serving-plans` existente, sem mudar backend; primeira coluna sticky a esquerda, header sticky no topo, scroll horizontal.
+
 ## Decisoes Pendentes
 
 1. Hospedagem.

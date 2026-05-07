@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ClipboardList, Plus, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, ClipboardList, Grid3x3, List, Plus, UserPlus, X } from "lucide-react";
 import type { CurrentUser, GroupProfile, PersonBlockOut, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion } from "@ecclesiaos/shared";
 import { deleteServingPlan, loadBlockOuts, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, loadSubstituteSuggestions, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
@@ -42,6 +42,9 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const [planForm, setPlanForm] = useState<ServingPlanInput>(emptyServingPlanInput);
   const [servingStatus, setServingStatus] = useState("");
   const [substitutesByAssignment, setSubstitutesByAssignment] = useState<Record<string, SubstituteSuggestion[]>>({});
+  const [viewMode, setViewMode] = useState<"list" | "matrix">("list");
+  const [matrixGroupId, setMatrixGroupId] = useState<string>("");
+  const [matrixWeeks, setMatrixWeeks] = useState<number>(8);
 
   const refreshPlans = async () => setPlans(await loadServingPlans(token));
   const refreshNotifications = async () => setNotifications(await loadServingNotifications(token));
@@ -172,6 +175,34 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
     return plans.filter((plan) => isLeaderOfGroup(plan.groupId));
   }, [plans, user.role, myLeadingGroupIds]);
 
+  const teamGroups = useMemo(
+    () => groups.filter((group) => group.type === "ministry" || group.type === "team"),
+    [groups]
+  );
+
+  const matrixGroup = teamGroups.find((group) => group.id === matrixGroupId) || null;
+  const matrixPlans = useMemo(() => {
+    if (!matrixGroup) return [];
+    const today = new Date().toISOString().slice(0, 10);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + matrixWeeks * 7);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return plans
+      .filter((plan) => plan.groupId === matrixGroup.id && plan.date >= today && plan.date <= cutoffStr)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [plans, matrixGroup, matrixWeeks]);
+
+  const matrixMembers = useMemo(() => {
+    if (!matrixGroup) return [];
+    return matrixGroup.memberPersonIds
+      .map((id) => people.find((person) => person.id === id))
+      .filter((person): person is PersonProfile => Boolean(person))
+      .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
+  }, [matrixGroup, people]);
+
+  const findAssignmentInPlan = (plan: ServingPlan, personId: string): ServingAssignment | null =>
+    plan.assignments.find((assignment) => assignment.personId === personId) || null;
+
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
   const canManagePlan = (plan: ServingPlan | null) => {
     if (user.role === "admin") return true;
@@ -222,6 +253,110 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
         )}
       />
 
+      <div className="tab-bar" role="tablist" aria-label="Visao das escalas">
+        <button className={viewMode === "list" ? "active" : ""} type="button" onClick={() => setViewMode("list")}>
+          <List size={14} /> Lista
+        </button>
+        <button className={viewMode === "matrix" ? "active" : ""} type="button" onClick={() => setViewMode("matrix")}>
+          <Grid3x3 size={14} /> Matriz
+        </button>
+      </div>
+
+      {viewMode === "matrix" && (
+        <Card className="serving-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow"><Grid3x3 size={12} />Visao panoramica</p>
+              <h2>{matrixGroup ? matrixGroup.name : "Selecione uma equipe"}</h2>
+            </div>
+          </div>
+
+          <div className="filter-bar">
+            <label>
+              Equipe
+              <select value={matrixGroupId} onChange={(event) => setMatrixGroupId(event.target.value)}>
+                <option value="">Selecione</option>
+                {teamGroups.map((group) => (
+                  <option key={group.id} value={group.id}>{group.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Janela
+              <select value={matrixWeeks} onChange={(event) => setMatrixWeeks(Number(event.target.value))}>
+                <option value={4}>4 semanas</option>
+                <option value={8}>8 semanas</option>
+                <option value={12}>12 semanas</option>
+              </select>
+            </label>
+          </div>
+
+          {!matrixGroup ? (
+            <EmptyState
+              icon={Grid3x3}
+              title="Escolha uma equipe"
+              description={teamGroups.length === 0 ? "Cadastre grupos do tipo ministerio ou equipe primeiro." : "Use o filtro acima para selecionar uma equipe."}
+            />
+          ) : matrixPlans.length === 0 ? (
+            <EmptyState
+              icon={Grid3x3}
+              title="Sem escalas no periodo"
+              description="Nao ha planos para essa equipe na janela selecionada."
+            />
+          ) : matrixMembers.length === 0 ? (
+            <EmptyState
+              icon={Grid3x3}
+              title="Equipe sem membros"
+              description="Adicione pessoas a equipe na pagina de Grupos."
+            />
+          ) : (
+            <div className="serving-matrix-scroll">
+              <table className="serving-matrix">
+                <thead>
+                  <tr>
+                    <th className="serving-matrix-name">Pessoa</th>
+                    {matrixPlans.map((plan) => (
+                      <th key={plan.id}>
+                        <div>{plan.date}</div>
+                        <small>{plan.title}</small>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixMembers.map((person) => (
+                    <tr key={person.id}>
+                      <th className="serving-matrix-name">
+                        <Avatar name={`${person.firstName} ${person.lastName}`} size="sm" tone="brand" />
+                        <span>{person.firstName} {person.lastName}</span>
+                      </th>
+                      {matrixPlans.map((plan) => {
+                        const assignment = findAssignmentInPlan(plan, person.id);
+                        return (
+                          <td key={plan.id}>
+                            {assignment ? (
+                              <div className="serving-matrix-cell">
+                                <StatusPill tone={statusToneFor(assignment.status)}>
+                                  {assignmentStatusLabels[assignment.status]}
+                                </StatusPill>
+                                {assignment.role && <small>{assignment.role}</small>}
+                              </div>
+                            ) : (
+                              <span className="muted serving-matrix-empty">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {viewMode === "list" && (
       <Card className="serving-panel">
       <div className="report-grid">
         <article>
@@ -409,6 +544,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
         </form>
       </div>
       </Card>
+      )}
     </>
   );
 };

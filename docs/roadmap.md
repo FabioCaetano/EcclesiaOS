@@ -878,6 +878,16 @@ Antes de desenvolver, perguntar:
 
 Decisao: emails best-effort no PUT do plano (novas atribuicoes) e no PATCH de status (resposta); silencioso quando provedor ausente; sem tokens de confirmacao via link.
 
+## Fase 58: Matrix View De Equipes Em Escalas
+
+Status atual: concluida.
+
+Antes de desenvolver, perguntar:
+
+> Vamos adicionar uma visao panoramica em grade da equipe nas proximas semanas?
+
+Decisao: tab bar Lista/Matriz no ServingPage; janela 4/8/12 semanas; sem edicao inline; reaproveita endpoints existentes.
+
 Antes de desenvolver, perguntar:
 
 > Vamos liberar o "esqueci minha senha" agora que temos provedor de email?
