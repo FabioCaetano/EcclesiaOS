@@ -1071,6 +1071,31 @@ const handleGetPublicCustomForm = async (_req: IncomingMessage, res: ServerRespo
   sendJson(res, 200, form);
 };
 
+const notifyFormResponsibles = async (slug: string) => {
+  if (!isEmailConfigured()) return;
+
+  try {
+    const form = await customFormRepository.findPublicForm(slug);
+    if (!form || form.responsiblePersonIds.length === 0) return;
+
+    const people = await personRepository.list();
+    const recipients = form.responsiblePersonIds
+      .map((personId) => people.find((person) => person.id === personId))
+      .filter((person): person is NonNullable<typeof person> => Boolean(person?.email));
+    if (recipients.length === 0) return;
+
+    const link = `${webBaseUrl}/`;
+    const subject = `Nova resposta no formulario ${form.title}`;
+    const text = `Uma nova resposta foi enviada no formulario "${form.title}".\n\nAcesse ${link} para consultar as respostas.`;
+    const html = `<p>Uma nova resposta foi enviada no formulario <strong>${form.title}</strong>.</p>
+<p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>`;
+
+    await Promise.all(recipients.map((person) => sendEmail({ to: person.email, subject, text, html })));
+  } catch {
+    // best effort
+  }
+};
+
 const handleSubmitPublicCustomForm = async (req: IncomingMessage, res: ServerResponse, slug: string) => {
   const body = await readJson<CustomFormSubmissionInput>(req);
   try {
@@ -1079,6 +1104,7 @@ const handleSubmitPublicCustomForm = async (req: IncomingMessage, res: ServerRes
       sendError(res, 404, "not_found", "Formulario nao encontrado.");
       return;
     }
+    await notifyFormResponsibles(slug);
     sendJson(res, 201, response);
   } catch {
     sendError(res, 400, "invalid_json", "Revise os campos obrigatorios do formulario.");

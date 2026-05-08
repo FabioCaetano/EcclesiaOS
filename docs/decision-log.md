@@ -166,3 +166,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0079-custom-forms.md`
 - Formularios customizados foram modelados separando configuração (`CustomForm`) e respostas publicas (`CustomFormResponse`).
+# Decisao 0080
+
+- `docs/decisions/0080-form-notifications-export.md`
+- Formularios passam a usar email best-effort para responsaveis e exportacao CSV no frontend.

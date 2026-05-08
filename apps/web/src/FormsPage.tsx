@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
 import type { CurrentUser, CustomForm, CustomFormField, CustomFormInput, CustomFormResponse, PersonProfile } from "@ecclesiaos/shared";
 import { deleteCustomForm, loadCustomFormResponses, loadCustomForms, loadPeople, saveCustomForm } from "./api";
@@ -38,6 +38,24 @@ const emptyField = (order: number): CustomFormField => ({
   options: [],
   order
 });
+
+const csvCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+const exportResponsesCsv = (form: CustomForm, responses: CustomFormResponse[]) => {
+  const headers = ["Enviado em", ...form.fields.map((field) => field.label)];
+  const rows = responses.map((response) => [
+    new Date(response.submittedAt).toLocaleString(),
+    ...form.fields.map((field) => response.answers[field.id] || "")
+  ]);
+  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ecclesiaos-formulario-${form.slug}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
 
 export const FormsPage: React.FC<Props> = ({ token, user }) => {
   const [forms, setForms] = useState<CustomForm[]>([]);
@@ -226,7 +244,12 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
 
       {selectedForm && (
         <Card>
-          <h3>Respostas de {selectedForm.title}</h3>
+          <div className="section-title-row">
+            <h3>Respostas de {selectedForm.title}</h3>
+            <button className="secondary-button" type="button" onClick={() => exportResponsesCsv(selectedForm, selectedResponses)} disabled={selectedResponses.length === 0}>
+              <Download size={16} /> Exportar CSV
+            </button>
+          </div>
           {selectedResponses.length === 0 ? <p className="muted">Nenhuma resposta recebida.</p> : selectedResponses.map((response) => (
             <article className="registration-row" key={response.id}>
               <button type="button">

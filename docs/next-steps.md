@@ -162,3 +162,9 @@ Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em
    - relatorios.
 3. Melhorar UX de criação dos campos.
 4. Retomar visão unica operacional do culto.
+# Proximos Passos Apos Fase 80
+
+1. Criar filtros e busca nas respostas dos formularios.
+2. Adicionar relatorios de formularios.
+3. Registrar status de entrega de notificacoes.
+4. Retomar visão unica operacional do culto.

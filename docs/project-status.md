@@ -426,3 +426,12 @@ Fase 79 concluida. O EcclesiaOS agora possui uma area de Formularios customizado
 - `npm run build:web`: passou.
 - `npm run build:api`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 80
+
+Fase 80 concluida. Formularios customizados agora enviam notificacao por email aos responsaveis quando uma resposta publica chega e permitem exportar respostas em CSV.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.

@@ -221,3 +221,7 @@ Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
 
 - `docs/phases/phase-79-custom-forms.md`: modulo de formularios customizados com campos, responsaveis, link publico e respostas.
 - `docs/decisions/0079-custom-forms.md`: decisao de separar configuração do formulario e respostas publicas.
+# Atualizacao - Fase 80
+
+- `docs/phases/phase-80-form-notifications-export.md`: Formularios agora notificam responsaveis por email e exportam respostas em CSV.
+- `docs/decisions/0080-form-notifications-export.md`: decisao de usar email best-effort e CSV no frontend.
