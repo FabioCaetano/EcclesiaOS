@@ -1449,3 +1449,21 @@ Possivel escopo:
 
 - Construtor de Formularios 2.
 - Atalhos entre Culto, Liturgia, Escalas e Musicas.
+# Roadmap - Atualizacao Fase 85
+
+## Concluido
+
+- Fase 85 - Execucao do Culto 2.
+
+## Proxima fase sugerida
+
+- Check-in Salas Infantis.
+
+## Alternativa
+
+- Atalhos entre Culto, Liturgia, Escalas e Musicas.
+
+## Depois
+
+- Construtor de Formularios 2.
+- Permissoes operacionais mais granulares.

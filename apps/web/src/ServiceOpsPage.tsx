@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, ClipboardList, Clock, ListChecks, Music, PlayCircle, UsersRound } from "lucide-react";
+import { Activity, CheckCircle2, ClipboardList, Clock, Expand, ListChecks, Music, PlayCircle, UsersRound } from "lucide-react";
 import type { ChurchEvent, CurrentUser, EventRegistration, GroupProfile, PersonProfile, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
-import { loadEventRegistrations, loadEvents, loadGroups, loadPeople, loadServiceChecklists, loadServingPlans, loadSongs, loadWorshipSets } from "./api";
+import { loadEventRegistrations, loadEvents, loadGroups, loadPeople, loadServiceChecklists, loadServingPlans, loadSongs, loadWorshipSets, saveServiceChecklist } from "./api";
 import { eventTypeLabels } from "./constants";
 import { Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
@@ -37,6 +37,7 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [viewMode, setViewMode] = useState<"overview" | "execution">("overview");
+  const [focusMode, setFocusMode] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -77,7 +78,7 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
   const selectedRegistrations = selectedEvent ? registrations.filter((registration) => registration.eventId === selectedEvent.id && registration.status !== "cancelled") : [];
   const requestedTeams = selectedEvent ? selectedEvent.requestedTeamIds.map((id) => groupsById.get(id)).filter((group): group is GroupProfile => Boolean(group)) : [];
   const assignments = selectedPlans.flatMap((plan) => plan.assignments.map((assignment) => ({ ...assignment, planTitle: plan.title, groupId: plan.groupId })));
-  const checklistItems = selectedChecklists.flatMap((checklist) => checklist.items.map((item) => ({ ...item, checklistTitle: checklist.title }))).sort((a, b) => a.order - b.order);
+  const checklistItems = selectedChecklists.flatMap((checklist) => checklist.items.map((item) => ({ ...item, checklistId: checklist.id, checklistTitle: checklist.title }))).sort((a, b) => a.order - b.order);
   const setItems = selectedSets.flatMap((set) => set.items.map((item) => ({ ...item, setTitle: set.title })));
   const confirmedAssignments = assignments.filter((assignment) => assignment.status === "confirmed").length;
   const pendingAssignments = assignments.filter((assignment) => assignment.status === "pending").length;
@@ -92,6 +93,35 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
     ...item,
     song: songsById.get(item.songId)
   }));
+  const declinedAssignments = assignments.filter((assignment) => assignment.status === "declined");
+
+  const updateChecklistItem = async (checklistId: string, itemId: string, completed: boolean) => {
+    const checklist = checklists.find((item) => item.id === checklistId);
+    if (!checklist) return;
+    setStatus("Atualizando liturgia...");
+    try {
+      const saved = await saveServiceChecklist(token, {
+        eventId: checklist.eventId,
+        title: checklist.title,
+        date: checklist.date,
+        notes: checklist.notes,
+        items: checklist.items.map((item) => item.id === itemId ? { ...item, completed } : item)
+      }, checklist.id);
+      setChecklists((current) => current.map((item) => item.id === saved.id ? saved : item));
+      setStatus(completed ? "Item concluido." : "Item reaberto.");
+    } catch {
+      setStatus("Nao foi possivel atualizar a liturgia.");
+    }
+  };
+
+  const enableFocusMode = () => {
+    setFocusMode((current) => !current);
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => undefined);
+    } else {
+      document.exitFullscreen?.().catch(() => undefined);
+    }
+  };
 
   return (
     <>
@@ -130,25 +160,41 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
           <EmptyState icon={ClipboardList} title="Nenhum culto selecionado" description="Selecione um evento para ver a operacao." />
         ) : viewMode === "execution" ? (
           <>
-            <section className="service-execution-hero">
+            <section className={focusMode ? "service-execution-hero focus-mode" : "service-execution-hero"}>
               <div>
                 <p className="eyebrow">{eventTypeLabels[selectedEvent.type]} em execucao</p>
                 <h2>{selectedEvent.title}</h2>
                 <p>{selectedEvent.date} {selectedEvent.startTime || ""} {selectedEvent.location ? `- ${selectedEvent.location}` : ""}</p>
               </div>
-              <div className="service-execution-clock">
-                <Clock size={18} />
-                <strong>{selectedEvent.startTime || "--:--"}</strong>
-                <span>Inicio previsto</span>
+              <div className="service-execution-actions">
+                <button className="secondary-button" type="button" onClick={enableFocusMode}>
+                  <Expand size={16} /> {focusMode ? "Sair do foco" : "Modo foco"}
+                </button>
+                <div className="service-execution-clock">
+                  <Clock size={18} />
+                  <strong>{selectedEvent.startTime || "--:--"}</strong>
+                  <span>Inicio previsto</span>
+                </div>
               </div>
             </section>
 
-            <div className="service-execution-grid">
+            {declinedAssignments.length > 0 && (
+              <div className="form-status danger-status">
+                {declinedAssignments.length} recusa(s) de escala precisam de substituicao antes ou durante o culto.
+              </div>
+            )}
+
+            <div className={focusMode ? "service-execution-grid focus-mode" : "service-execution-grid"}>
               <section className="service-execution-main">
                 <div className="service-execution-current">
                   <p className="eyebrow">Agora</p>
                   <h2>{currentChecklistItem?.title || "Nenhum item de liturgia"}</h2>
                   <p>{currentChecklistItem?.scheduledTime ? `${currentChecklistItem.scheduledTime} - ` : ""}{currentChecklistItem?.notes || currentChecklistItem?.checklistTitle || "Vincule uma liturgia para acompanhar o culto em execucao."}</p>
+                  {currentChecklistItem && !currentChecklistItem.completed && (
+                    <button className="primary-action" type="button" onClick={() => updateChecklistItem(currentChecklistItem.checklistId, currentChecklistItem.id, true)}>
+                      <CheckCircle2 size={18} /> Marcar como concluido
+                    </button>
+                  )}
                   {nextChecklistItem && (
                     <div className="service-execution-next">
                       <span>Proximo</span>
@@ -162,7 +208,12 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
                   {checklistItems.length === 0 ? <p className="muted">Nenhuma liturgia vinculada.</p> : checklistItems.map((item) => (
                     <p className={item.id === currentChecklistItem?.id ? "report-row active-row" : "report-row"} key={item.id}>
                       <span>{item.scheduledTime ? `${item.scheduledTime} - ` : ""}{item.title}</span>
-                      <StatusPill tone={item.completed ? "success" : item.id === currentChecklistItem?.id ? "warning" : "muted"}>{item.completed ? "Concluido" : item.id === currentChecklistItem?.id ? "Atual" : "Pendente"}</StatusPill>
+                      <span className="button-row">
+                        <StatusPill tone={item.completed ? "success" : item.id === currentChecklistItem?.id ? "warning" : "muted"}>{item.completed ? "Concluido" : item.id === currentChecklistItem?.id ? "Atual" : "Pendente"}</StatusPill>
+                        <button className="icon-button" type="button" onClick={() => updateChecklistItem(item.checklistId, item.id, !item.completed)} title={item.completed ? "Reabrir item" : "Concluir item"}>
+                          <CheckCircle2 size={16} />
+                        </button>
+                      </span>
                     </p>
                   ))}
                 </Card>

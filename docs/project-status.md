@@ -71,7 +71,7 @@ Prioridades abertas:
 | Musicas | Concluido | Biblioteca de musicas e repertorios vinculados a cultos/eventos. |
 | Liturgia | Concluido | Checklists/liturgias por culto/evento, com itens ordenados e status de concluido. |
 | Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV, filtros e relatorios agregados. |
-| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes, com modo Execucao para uso durante o culto. |
+| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes, com modo Execucao, modo foco e acoes diretas na liturgia. |
 
 ## Usuarios De Desenvolvimento
 
@@ -496,6 +496,23 @@ Fase 84 concluida. A aba **Culto** agora possui uma visao interna **Execucao**, 
 - Painel compacto de liturgia, escala, pendencias e check-in.
 - Repertorio em lista compacta.
 - Pendencias de escala para coordenacao.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 85
+
+Fase 85 concluida. O modo **Execucao** da aba Culto agora permite atualizar a liturgia diretamente durante o culto.
+
+## Entregue na fase
+
+- Concluir item atual da liturgia.
+- Concluir ou reabrir qualquer item da linha do culto.
+- Modo foco com fullscreen do navegador quando permitido.
+- Alerta para recusas de escala pendentes.
+- Reuso do endpoint existente de Liturgia, sem nova API.
 
 ## Validacao
 

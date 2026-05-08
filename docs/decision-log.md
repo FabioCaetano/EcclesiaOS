@@ -132,6 +132,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 102. Visao unica operacional do culto: novo modulo `serviceOps`, exibido como **Culto**, agrega Agenda, Escalas, Musicas, Liturgia e Inscricoes por `eventId`; a tela e uma superficie operacional, nao uma nova fonte de dados.
 103. Relatorios agregados de formularios: a primeira camada de indicadores usa dados ja carregados no frontend (`CustomForm` e `CustomFormResponse`), sem novo endpoint ou migration; futuramente pode migrar para endpoint dedicado se o volume crescer.
 104. Modo Execucao do Culto: o modulo Culto passa a ter duas visoes internas, **Operacao** para conferencia completa e **Execucao** para acompanhamento focado durante o culto; dados continuam vindo dos modulos de origem.
+105. Acoes diretas na Execucao do Culto: concluir/reabrir itens de liturgia na aba Culto reutiliza o endpoint existente de `ServiceChecklist`; Liturgia segue como fonte de edicao completa.
 
 ## Decisoes Pendentes
 
@@ -189,3 +190,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0084-service-execution-mode.md`
 - Criado modo Execucao dentro da aba Culto, preservando Operacao como visao completa.
+# Decisao 0085
+
+- `docs/decisions/0085-service-execution-actions.md`
+- Modo Execucao passou a concluir/reabrir itens de liturgia usando o endpoint existente de checklists.
