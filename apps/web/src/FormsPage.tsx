@@ -57,6 +57,35 @@ const exportResponsesCsv = (form: CustomForm, responses: CustomFormResponse[]) =
   URL.revokeObjectURL(url);
 };
 
+const exportFormSummaryCsv = (form: CustomForm, responses: CustomFormResponse[]) => {
+  const rows = form.fields.map((field) => {
+    const answers = responses.map((response) => response.answers[field.id] || "").filter(Boolean);
+    const uniqueAnswers = new Set(answers);
+    const topAnswer = [...answers.reduce((acc, answer) => acc.set(answer, (acc.get(answer) || 0) + 1), new Map<string, number>()).entries()]
+      .sort((a, b) => b[1] - a[1])[0];
+    return [
+      field.label,
+      fieldTypeLabels[field.type],
+      String(answers.length),
+      `${Math.round((answers.length / Math.max(responses.length, 1)) * 100)}%`,
+      String(uniqueAnswers.size),
+      topAnswer ? `${topAnswer[0]} (${topAnswer[1]})` : ""
+    ];
+  });
+  const csv = [["Campo", "Tipo", "Respostas preenchidas", "Taxa de preenchimento", "Respostas unicas", "Resposta mais comum"], ...rows]
+    .map((row) => row.map(csvCell).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ecclesiaos-relatorio-formulario-${form.slug}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+const formatPercent = (value: number, total: number) => `${Math.round((value / Math.max(total, 1)) * 100)}%`;
+
 export const FormsPage: React.FC<Props> = ({ token, user }) => {
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [responses, setResponses] = useState<CustomFormResponse[]>([]);
@@ -92,6 +121,29 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
     return matchesStart && matchesEnd && matchesSearch;
   });
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, `${person.firstName} ${person.lastName}`.trim()])), [people]);
+  const responsesByForm = useMemo(() => forms.map((form) => ({
+    form,
+    responses: responses.filter((response) => response.formId === form.id)
+  })).sort((a, b) => b.responses.length - a.responses.length), [forms, responses]);
+  const today = new Date();
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 7);
+  const recentResponses = responses.filter((response) => new Date(response.submittedAt) >= sevenDaysAgo);
+  const latestResponse = [...responses].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+  const latestResponseForm = latestResponse ? forms.find((form) => form.id === latestResponse.formId) : null;
+  const selectedFieldReports = selectedForm ? selectedForm.fields.map((field) => {
+    const answers = filteredResponses.map((response) => response.answers[field.id] || "").filter(Boolean);
+    const counts = [...answers.reduce((acc, answer) => acc.set(answer, (acc.get(answer) || 0) + 1), new Map<string, number>()).entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    return {
+      field,
+      answered: answers.length,
+      skipped: filteredResponses.length - answers.length,
+      unique: new Set(answers).size,
+      counts
+    };
+  }) : [];
 
   const publicLink = selectedForm ? `${window.location.origin}/forms/${selectedForm.slug}` : "";
 
@@ -185,7 +237,25 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
         <article><span>Formularios</span><strong>{forms.length}</strong></article>
         <article><span>Ativos</span><strong>{forms.filter((form) => form.isActive).length}</strong></article>
         <article><span>Respostas</span><strong>{responses.length}</strong></article>
-        <article><span>Selecionado</span><strong>{selectedResponses.length}</strong></article>
+        <article><span>Ultimos 7 dias</span><strong>{recentResponses.length}</strong></article>
+      </div>
+
+      <div className="report-columns">
+        <Card>
+          <h3>Formularios por volume</h3>
+          {responsesByForm.length === 0 ? <p className="muted">Nenhum formulario para analisar.</p> : responsesByForm.slice(0, 5).map(({ form, responses: formResponses }) => (
+            <p className="report-row" key={form.id}>
+              <span>{form.title}</span>
+              <strong>{formResponses.length} resposta(s)</strong>
+            </p>
+          ))}
+        </Card>
+        <Card>
+          <h3>Atividade recente</h3>
+          <p className="report-row"><span>Ultima resposta</span><strong>{latestResponse ? new Date(latestResponse.submittedAt).toLocaleString() : "Nenhuma"}</strong></p>
+          <p className="report-row"><span>Formulario</span><strong>{latestResponseForm?.title || "Nenhum"}</strong></p>
+          <p className="report-row"><span>Taxa ativa</span><strong>{formatPercent(forms.filter((form) => form.isActive).length, forms.length)}</strong></p>
+        </Card>
       </div>
 
       <div className="people-layout">
@@ -263,9 +333,14 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
         <Card>
           <div className="section-title-row">
             <h3>Respostas de {selectedForm.title}</h3>
-            <button className="secondary-button" type="button" onClick={() => exportResponsesCsv(selectedForm, filteredResponses)} disabled={filteredResponses.length === 0}>
-              <Download size={16} /> Exportar CSV
-            </button>
+            <div className="button-row">
+              <button className="secondary-button" type="button" onClick={() => exportFormSummaryCsv(selectedForm, filteredResponses)} disabled={filteredResponses.length === 0}>
+                <Download size={16} /> Relatorio CSV
+              </button>
+              <button className="secondary-button" type="button" onClick={() => exportResponsesCsv(selectedForm, filteredResponses)} disabled={filteredResponses.length === 0}>
+                <Download size={16} /> Respostas CSV
+              </button>
+            </div>
           </div>
           <div className="filter-bar">
             <label>Buscar<input value={responseSearch} onChange={(event) => setResponseSearch(event.target.value)} placeholder="Texto da resposta" /></label>
@@ -274,6 +349,33 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
             <button className="secondary-button" type="button" onClick={clearResponseFilters}>Limpar</button>
           </div>
           <p className="muted">{filteredResponses.length} de {selectedResponses.length} resposta(s) exibida(s).</p>
+          <div className="report-grid">
+            <article><span>Filtradas</span><strong>{filteredResponses.length}</strong></article>
+            <article><span>Total</span><strong>{selectedResponses.length}</strong></article>
+            <article><span>Campos</span><strong>{selectedForm.fields.length}</strong></article>
+            <article><span>Preenchimento medio</span><strong>{formatPercent(selectedFieldReports.reduce((sum, report) => sum + report.answered, 0), selectedFieldReports.length * filteredResponses.length)}</strong></article>
+          </div>
+          {selectedFieldReports.length > 0 && (
+            <div className="report-columns">
+              {selectedFieldReports.map((report) => (
+                <section className="receipt-preview" key={report.field.id}>
+                  <p className="eyebrow">{fieldTypeLabels[report.field.type]}</p>
+                  <h3>{report.field.label}</h3>
+                  <p><span>Preenchidas</span><strong>{report.answered} ({formatPercent(report.answered, filteredResponses.length)})</strong></p>
+                  <p><span>Vazias</span><strong>{report.skipped}</strong></p>
+                  <p><span>Respostas unicas</span><strong>{report.unique}</strong></p>
+                  {report.counts.length > 0 && (
+                    <div>
+                      <p className="muted">Mais comuns</p>
+                      {report.counts.map(([answer, count]) => (
+                        <p className="report-row" key={answer}><span>{answer}</span><strong>{count}</strong></p>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
           {filteredResponses.length === 0 ? <p className="muted">Nenhuma resposta encontrada.</p> : filteredResponses.map((response) => (
             <article className="registration-row" key={response.id}>
               <button type="button">

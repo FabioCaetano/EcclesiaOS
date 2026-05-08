@@ -70,7 +70,7 @@ Prioridades abertas:
 | Confirmacao De Email Em Inscricoes | Concluido | Flag opcional por evento `registrationRequiresEmailConfirmation`; status `pending_email_confirmation`; token sha256 + 24h; endpoint publico `POST /public/event-registrations/confirm`; capacidade ignora pendentes expirados; admin pode reenviar/renovar confirmacao por `POST /event-registrations/:id/resend-confirmation`. |
 | Musicas | Concluido | Biblioteca de musicas e repertorios vinculados a cultos/eventos. |
 | Liturgia | Concluido | Checklists/liturgias por culto/evento, com itens ordenados e status de concluido. |
-| Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV e filtros. |
+| Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV, filtros e relatorios agregados. |
 | Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes. |
 
 ## Usuarios De Desenvolvimento
@@ -459,6 +459,24 @@ Fase 82 concluida. O EcclesiaOS agora possui a aba **Culto**, uma visao unica op
 - KPIs operacionais do culto/evento selecionado.
 - Cards de equipes/escala, repertorio, liturgia e inscricoes.
 - Status de escala e inscricoes traduzidos para o usuario.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 83
+
+Fase 83 concluida. Formularios agora possuem relatorios agregados dentro da propria aba, usando os dados ja existentes de formularios e respostas.
+
+## Entregue na fase
+
+- Ranking de formularios por volume de respostas.
+- Card de atividade recente.
+- Indicador de respostas dos ultimos 7 dias.
+- Relatorio do formulario selecionado por campo.
+- Respostas preenchidas, vazias, unicas e mais comuns por campo.
+- CSV de relatorio agregado alem do CSV de respostas.
 
 ## Validacao
 

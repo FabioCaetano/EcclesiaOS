@@ -1413,3 +1413,21 @@ Possivel escopo:
 
 - Check-in com salas infantis por idade.
 - Atalhos de edicao entre Culto, Agenda, Escalas, Musicas e Liturgia.
+# Roadmap - Atualizacao Fase 83
+
+## Concluido
+
+- Fase 83 - Relatorios agregados de formularios.
+
+## Proxima fase sugerida
+
+- Modo execucao do culto.
+
+## Alternativa
+
+- Construtor de formularios 2, com reordenacao visual de campos e graficos.
+
+## Depois
+
+- Check-in com salas infantis por idade.
+- Status de notificacoes dos formularios.

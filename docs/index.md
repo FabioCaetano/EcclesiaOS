@@ -4,14 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 82 - Visao Unica Operacional Do Culto**.
+Fase atual concluida: **Fase 83 - Relatorios Agregados De Formularios**.
 
 Ultimo modulo entregue:
 
-- nova aba **Culto** no menu Operacao;
-- visao unica por culto/evento consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes;
-- indicadores de equipes, escalados, musicas, liturgia, confirmacoes, pendencias, inscritos e repertorios;
-- sem nova migration, pois a fase usa os vinculos existentes por `eventId`;
+- Formularios ganhou relatorios agregados;
+- a tela mostra volume por formulario, atividade recente e respostas dos ultimos 7 dias;
+- o formulario selecionado mostra preenchimento medio, respostas por campo e respostas mais comuns;
+- exportacao CSV de relatorio agregado foi adicionada;
+- sem nova migration, pois a fase usa `CustomForm` e `CustomFormResponse` existentes;
 - builds e testes passaram apos a mudanca.
 
 Ambiente atual:
@@ -120,6 +121,7 @@ Ambiente atual:
 - [[phases/phase-80-form-notifications-export|Fase 80 - Formularios: Notificacoes E Exportacao]]
 - [[phases/phase-81-form-response-filters|Fase 81 - Formularios: Filtros De Respostas]]
 - [[phases/phase-82-service-ops-view|Fase 82 - Visao Unica Operacional Do Culto]]
+- [[phases/phase-83-form-aggregate-reports|Fase 83 - Relatorios Agregados De Formularios]]
 
 ## Decisoes
 
@@ -205,18 +207,19 @@ Ambiente atual:
 - [[decisions/0080-form-notifications-export|0080 - Formularios: Notificacoes E Exportacao]]
 - [[decisions/0081-form-response-filters|0081 - Formularios: Filtros De Respostas]]
 - [[decisions/0082-service-ops-view|0082 - Visao Unica Operacional Do Culto]]
+- [[decisions/0083-form-aggregate-reports|0083 - Relatorios Agregados De Formularios]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 82**: subir para GitHub e redeployar Render/Vercel.
-2. **Relatorios De Formularios**: totais, respostas por periodo/campo e exportacoes mais refinadas.
-3. **Modo Execucao Do Culto**: tela limpa para acompanhar liturgia, musicas, escala e check-in durante o culto.
+1. **Publicar Fase 83**: subir para GitHub e redeployar Render/Vercel.
+2. **Modo Execucao Do Culto**: tela limpa para acompanhar liturgia, musicas, escala e check-in durante o culto.
+3. **Construtor De Formularios 2**: reordenacao visual de campos e melhor UX de edicao.
 4. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
 5. **Atalhos Entre Modulos**: abrir edicao de Agenda, Escalas, Musicas e Liturgia direto da aba Culto.
 
-Recomendacao atual: publicar a Fase 82 e seguir para **Relatorios De Formularios** ou **Modo Execucao Do Culto**.
+Recomendacao atual: publicar a Fase 83 e seguir para **Modo Execucao Do Culto**.
 # Atualizacao - Fase 75
 
 - `docs/phases/phase-75-people-reports.md`: primeira versao da aba Relatorios com indicadores de pessoas, aniversariantes, perfil de membros, ministerios/equipes e exportacao CSV.
@@ -249,3 +252,7 @@ Recomendacao atual: publicar a Fase 82 e seguir para **Relatorios De Formularios
 
 - `docs/phases/phase-82-service-ops-view.md`: nova aba Culto como visao unica operacional do culto/evento.
 - `docs/decisions/0082-service-ops-view.md`: decisao de agregar dados existentes por `eventId`, sem criar nova fonte de dados.
+# Atualizacao - Fase 83
+
+- `docs/phases/phase-83-form-aggregate-reports.md`: relatorios agregados de formularios com volume, atividade recente, preenchimento por campo e CSV de resumo.
+- `docs/decisions/0083-form-aggregate-reports.md`: decisao de calcular agregados no frontend usando os dados existentes.
