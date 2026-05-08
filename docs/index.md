@@ -4,15 +4,14 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 83 - Relatorios Agregados De Formularios**.
+Fase atual concluida: **Fase 84 - Modo Execucao Do Culto**.
 
 Ultimo modulo entregue:
 
-- Formularios ganhou relatorios agregados;
-- a tela mostra volume por formulario, atividade recente e respostas dos ultimos 7 dias;
-- o formulario selecionado mostra preenchimento medio, respostas por campo e respostas mais comuns;
-- exportacao CSV de relatorio agregado foi adicionada;
-- sem nova migration, pois a fase usa `CustomForm` e `CustomFormResponse` existentes;
+- aba Culto ganhou a visao interna **Execucao**;
+- a tela destaca item atual e proximo item da liturgia;
+- repertorio, pendencias de escala e indicadores de check-in ficam em painel compacto;
+- sem nova migration, pois a fase usa dados existentes por `eventId`;
 - builds e testes passaram apos a mudanca.
 
 Ambiente atual:
@@ -122,6 +121,7 @@ Ambiente atual:
 - [[phases/phase-81-form-response-filters|Fase 81 - Formularios: Filtros De Respostas]]
 - [[phases/phase-82-service-ops-view|Fase 82 - Visao Unica Operacional Do Culto]]
 - [[phases/phase-83-form-aggregate-reports|Fase 83 - Relatorios Agregados De Formularios]]
+- [[phases/phase-84-service-execution-mode|Fase 84 - Modo Execucao Do Culto]]
 
 ## Decisoes
 
@@ -208,18 +208,19 @@ Ambiente atual:
 - [[decisions/0081-form-response-filters|0081 - Formularios: Filtros De Respostas]]
 - [[decisions/0082-service-ops-view|0082 - Visao Unica Operacional Do Culto]]
 - [[decisions/0083-form-aggregate-reports|0083 - Relatorios Agregados De Formularios]]
+- [[decisions/0084-service-execution-mode|0084 - Modo Execucao Do Culto]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 83**: subir para GitHub e redeployar Render/Vercel.
-2. **Modo Execucao Do Culto**: tela limpa para acompanhar liturgia, musicas, escala e check-in durante o culto.
+1. **Publicar Fase 84**: subir para GitHub e redeployar Render/Vercel.
+2. **Execucao Do Culto 2**: concluir liturgia direto da tela, tela cheia e atalhos de edicao.
 3. **Construtor De Formularios 2**: reordenacao visual de campos e melhor UX de edicao.
 4. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
 5. **Atalhos Entre Modulos**: abrir edicao de Agenda, Escalas, Musicas e Liturgia direto da aba Culto.
 
-Recomendacao atual: publicar a Fase 83 e seguir para **Modo Execucao Do Culto**.
+Recomendacao atual: publicar a Fase 84 e seguir para **Execucao Do Culto 2** ou **Check-in Salas Infantis**.
 # Atualizacao - Fase 75
 
 - `docs/phases/phase-75-people-reports.md`: primeira versao da aba Relatorios com indicadores de pessoas, aniversariantes, perfil de membros, ministerios/equipes e exportacao CSV.
@@ -256,3 +257,7 @@ Recomendacao atual: publicar a Fase 83 e seguir para **Modo Execucao Do Culto**.
 
 - `docs/phases/phase-83-form-aggregate-reports.md`: relatorios agregados de formularios com volume, atividade recente, preenchimento por campo e CSV de resumo.
 - `docs/decisions/0083-form-aggregate-reports.md`: decisao de calcular agregados no frontend usando os dados existentes.
+# Atualizacao - Fase 84
+
+- `docs/phases/phase-84-service-execution-mode.md`: modo Execucao dentro da aba Culto para acompanhar liturgia, repertorio, escala e check-in durante o culto.
+- `docs/decisions/0084-service-execution-mode.md`: decisao de preservar Operacao como visao completa e criar Execucao como tela focada.

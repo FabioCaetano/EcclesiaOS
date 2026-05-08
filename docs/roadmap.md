@@ -1431,3 +1431,21 @@ Possivel escopo:
 
 - Check-in com salas infantis por idade.
 - Status de notificacoes dos formularios.
+# Roadmap - Atualizacao Fase 84
+
+## Concluido
+
+- Fase 84 - Modo execucao do culto.
+
+## Proxima fase sugerida
+
+- Execucao do Culto 2: acoes diretas, tela cheia e atalhos.
+
+## Alternativa
+
+- Check-in Salas Infantis.
+
+## Depois
+
+- Construtor de Formularios 2.
+- Atalhos entre Culto, Liturgia, Escalas e Musicas.

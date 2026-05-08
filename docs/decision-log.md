@@ -131,6 +131,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 101. Campos ampliados em Pessoas: `PersonProfile` passa a ter `membershipDate`, `address`, `baptized` e `gender`; ministerios que serve continuam derivados de Grupos/Ministerios para evitar duplicacao de dados; genero e nascimento servem como base para relatorios de membros por mulheres/homens, adolescentes e kids.
 102. Visao unica operacional do culto: novo modulo `serviceOps`, exibido como **Culto**, agrega Agenda, Escalas, Musicas, Liturgia e Inscricoes por `eventId`; a tela e uma superficie operacional, nao uma nova fonte de dados.
 103. Relatorios agregados de formularios: a primeira camada de indicadores usa dados ja carregados no frontend (`CustomForm` e `CustomFormResponse`), sem novo endpoint ou migration; futuramente pode migrar para endpoint dedicado se o volume crescer.
+104. Modo Execucao do Culto: o modulo Culto passa a ter duas visoes internas, **Operacao** para conferencia completa e **Execucao** para acompanhamento focado durante o culto; dados continuam vindo dos modulos de origem.
 
 ## Decisoes Pendentes
 
@@ -184,3 +185,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0083-form-aggregate-reports.md`
 - Relatorios agregados de formularios foram calculados no frontend usando os dados existentes de formularios e respostas.
+# Decisao 0084
+
+- `docs/decisions/0084-service-execution-mode.md`
+- Criado modo Execucao dentro da aba Culto, preservando Operacao como visao completa.

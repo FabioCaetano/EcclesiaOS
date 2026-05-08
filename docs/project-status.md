@@ -71,7 +71,7 @@ Prioridades abertas:
 | Musicas | Concluido | Biblioteca de musicas e repertorios vinculados a cultos/eventos. |
 | Liturgia | Concluido | Checklists/liturgias por culto/evento, com itens ordenados e status de concluido. |
 | Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV, filtros e relatorios agregados. |
-| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes. |
+| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes, com modo Execucao para uso durante o culto. |
 
 ## Usuarios De Desenvolvimento
 
@@ -477,6 +477,25 @@ Fase 83 concluida. Formularios agora possuem relatorios agregados dentro da prop
 - Relatorio do formulario selecionado por campo.
 - Respostas preenchidas, vazias, unicas e mais comuns por campo.
 - CSV de relatorio agregado alem do CSV de respostas.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 84
+
+Fase 84 concluida. A aba **Culto** agora possui uma visao interna **Execucao**, focada no acompanhamento do culto em andamento.
+
+## Entregue na fase
+
+- Alternancia entre **Operacao** e **Execucao**.
+- Destaque do item atual da liturgia.
+- Proximo item pendente da liturgia.
+- Linha do culto com status visual.
+- Painel compacto de liturgia, escala, pendencias e check-in.
+- Repertorio em lista compacta.
+- Pendencias de escala para coordenacao.
 
 ## Validacao
 

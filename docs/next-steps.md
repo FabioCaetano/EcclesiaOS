@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 83 - Relatorios Agregados De Formularios**.
+O EcclesiaOS concluiu ate a **Fase 84 - Modo Execucao Do Culto**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -23,7 +23,7 @@ A base atual ja cobre:
 - ambientes, reservas e calendario mensal/semanal;
 - check-in de evento, Kids, administracao kids, painel operacional por culto/evento, QR universal e etiquetas Brother;
 - escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe por posicao, pessoas habilitadas por posicao, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos por posicao;
-- musicas/repertorios por culto, liturgia/checklist por culto e visao unica operacional do culto;
+- musicas/repertorios por culto, liturgia/checklist por culto, visao unica operacional do culto e modo Execucao;
 - formularios customizados com responsaveis, notificacoes por email, respostas, exportacao CSV, filtros e relatorios agregados;
 - financeiro com filtros/resumos/recibos;
 - auditoria administrativa;
@@ -52,9 +52,9 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar a Fase 83 no GitHub e redeployar Render/Vercel.
+1. Publicar a Fase 84 no GitHub e redeployar Render/Vercel.
 2. Aplicar migrations Prisma pendentes das fases 75 a 79 nos ambientes que ainda nao receberam deploy.
-3. Seguir para Modo Execucao do Culto ou Construtor de Formularios 2.
+3. Seguir para Execucao do Culto 2, Construtor de Formularios 2 ou Check-in Salas Infantis.
 4. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
 5. A aba Culto pode ganhar atalhos diretos para editar Agenda, Escalas, Musicas e Liturgia.
 
@@ -109,9 +109,9 @@ Valor: cria captação estruturada de informacoes sem depender de ferramentas ex
 
 ## Recomendacao Atual
 
-Primeiro publicar a Fase 83. Depois seguir para **Modo Execucao Do Culto**.
+Primeiro publicar a Fase 84. Depois seguir para **Execucao Do Culto 2** ou **Check-in Salas Infantis**.
 
-Motivo: formularios ja ganharam indicadores; o maior ganho operacional agora e transformar a aba Culto em uma tela de acompanhamento durante o servico.
+Motivo: a tela de execucao ja existe; o maior ganho agora e permitir acoes diretas nela ou aprofundar o Kids com salas por idade.
 # Proximos Passos Apos Fase 75
 
 1. Validar a Fase 75 localmente com `npm run build:web`, `npm run build:api` e `npm test --workspace @ecclesiaos/api`.
@@ -203,5 +203,22 @@ Motivo: formularios ja ganharam indicadores; o maior ganho operacional agora e t
 3. Evoluir Formularios 2:
    - reordenacao visual de campos;
    - melhor separacao entre construcao e respostas;
+   - graficos para campos de selecao;
+   - status de notificacoes.
+# Proximos Passos Apos Fase 84
+
+1. Publicar a Fase 84 no GitHub e redeployar os ambientes.
+2. Evoluir Execucao do Culto 2:
+   - marcar item da liturgia como concluido direto pela tela;
+   - modo tela cheia;
+   - atalhos para editar Liturgia, Escalas e Musicas;
+   - destacar pendencias criticas.
+3. Evoluir Check-in Salas Infantis:
+   - configurar salas por idade;
+   - sugerir sala automaticamente no check-in;
+   - dashboard por sala;
+   - fila de retirada.
+4. Evoluir Formularios 2:
+   - reordenacao visual de campos;
    - graficos para campos de selecao;
    - status de notificacoes.
