@@ -1386,3 +1386,30 @@ Possivel escopo:
 ## Proxima fase sugerida
 
 - Relatorios de formularios ou visão unica operacional do culto.
+# Roadmap - Atualizacao Fase 81
+
+## Concluido
+
+- Fase 81 - Formularios: filtros de respostas.
+
+## Proxima fase sugerida
+
+- Relatorios agregados de formularios ou visão unica operacional do culto.
+# Roadmap - Atualizacao Fase 82
+
+## Concluido
+
+- Fase 82 - Visao unica operacional do culto.
+
+## Proxima fase sugerida
+
+- Relatorios agregados de formularios.
+
+## Alternativa
+
+- Modo execucao do culto, com tela limpa para uso durante o servico.
+
+## Depois
+
+- Check-in com salas infantis por idade.
+- Atalhos de edicao entre Culto, Agenda, Escalas, Musicas e Liturgia.

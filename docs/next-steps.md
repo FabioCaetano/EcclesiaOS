@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 74 - Pessoas 2 - Campos Ampliados**.
+O EcclesiaOS concluiu ate a **Fase 82 - Visao Unica Operacional Do Culto**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -23,6 +23,8 @@ A base atual ja cobre:
 - ambientes, reservas e calendario mensal/semanal;
 - check-in de evento, Kids, administracao kids, painel operacional por culto/evento, QR universal e etiquetas Brother;
 - escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe por posicao, pessoas habilitadas por posicao, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos por posicao;
+- musicas/repertorios por culto, liturgia/checklist por culto e visao unica operacional do culto;
+- formularios customizados com responsaveis, notificacoes por email, respostas, exportacao CSV e filtros;
 - financeiro com filtros/resumos/recibos;
 - auditoria administrativa;
 - testes automatizados de API, smoke tests do frontend e build/typecheck recorrentes.
@@ -50,11 +52,11 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar a Fase 74 no GitHub e redeployar Render/Vercel.
-2. Aplicar migrations Prisma pendentes, incluindo `20260507150000_people_extended_fields`.
-3. Seguir para Relatorios 1 - Pessoas.
-4. Musicas/Liturgia e Formularios seguem planejados.
-5. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
+1. Publicar a Fase 82 no GitHub e redeployar Render/Vercel.
+2. Aplicar migrations Prisma pendentes das fases 75 a 79 nos ambientes que ainda nao receberam deploy.
+3. Seguir para Relatorios de Formularios ou Modo Execucao do Culto.
+4. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
+5. A aba Culto pode ganhar atalhos diretos para editar Agenda, Escalas, Musicas e Liturgia.
 
 ## Proximas Fases Recomendadas
 
@@ -107,9 +109,9 @@ Valor: cria captação estruturada de informacoes sem depender de ferramentas ex
 
 ## Recomendacao Atual
 
-Primeiro publicar a Fase 74. Depois seguir para **Relatorios 1 - Pessoas**.
+Primeiro publicar a Fase 82. Depois seguir para **Relatorios De Formularios** ou **Modo Execucao Do Culto**.
 
-Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em Pessoas.
+Motivo: a tela Culto ja consolidou a operacao; agora faz sentido transformar formularios em indicadores ou criar uma tela limpa para acompanhar o culto em execucao.
 # Proximos Passos Apos Fase 75
 
 1. Validar a Fase 75 localmente com `npm run build:web`, `npm run build:api` e `npm test --workspace @ecclesiaos/api`.
@@ -168,3 +170,24 @@ Motivo: os dados necessarios para os relatorios iniciais ja foram adicionados em
 2. Adicionar relatorios de formularios.
 3. Registrar status de entrega de notificacoes.
 4. Retomar visão unica operacional do culto.
+# Proximos Passos Apos Fase 81
+
+1. Criar relatorios agregados de formularios.
+2. Melhorar construtor de campos com reordenacao visual.
+3. Registrar status de notificacoes.
+4. Retomar visão unica operacional do culto.
+# Proximos Passos Apos Fase 82
+
+1. Publicar a Fase 82 no GitHub e redeployar os ambientes.
+2. Criar relatorios agregados de formularios:
+   - total de respostas por formulario;
+   - respostas por periodo;
+   - agrupamento por campo de selecao;
+   - exportacao consolidada.
+3. Evoluir a aba Culto para modo execucao:
+   - tela mais limpa;
+   - foco em liturgia atual/proxima;
+   - repertorio do culto;
+   - escala e pendencias;
+   - resumo de check-in.
+4. Criar atalhos de edicao para Agenda, Escalas, Musicas e Liturgia a partir da aba Culto.

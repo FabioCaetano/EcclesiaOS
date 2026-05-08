@@ -63,6 +63,9 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [formState, setFormState] = useState<CustomFormInput>(emptyForm);
+  const [responseSearch, setResponseSearch] = useState("");
+  const [responseStartDate, setResponseStartDate] = useState("");
+  const [responseEndDate, setResponseEndDate] = useState("");
   const [status, setStatus] = useState("");
 
   const canManage = canManageModule(user.role, "forms");
@@ -80,6 +83,14 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
 
   const selectedForm = forms.find((form) => form.id === selectedFormId) || null;
   const selectedResponses = responses.filter((response) => response.formId === selectedFormId);
+  const filteredResponses = selectedResponses.filter((response) => {
+    const responseDate = response.submittedAt.slice(0, 10);
+    const matchesStart = !responseStartDate || responseDate >= responseStartDate;
+    const matchesEnd = !responseEndDate || responseDate <= responseEndDate;
+    const search = responseSearch.trim().toLowerCase();
+    const matchesSearch = !search || Object.values(response.answers).some((answer) => answer.toLowerCase().includes(search));
+    return matchesStart && matchesEnd && matchesSearch;
+  });
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, `${person.firstName} ${person.lastName}`.trim()])), [people]);
 
   const publicLink = selectedForm ? `${window.location.origin}/forms/${selectedForm.slug}` : "";
@@ -101,6 +112,12 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
     setSelectedFormId(null);
     setFormState(emptyForm);
     setStatus("");
+  };
+
+  const clearResponseFilters = () => {
+    setResponseSearch("");
+    setResponseStartDate("");
+    setResponseEndDate("");
   };
 
   const toggleResponsible = (personId: string) => {
@@ -246,11 +263,18 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
         <Card>
           <div className="section-title-row">
             <h3>Respostas de {selectedForm.title}</h3>
-            <button className="secondary-button" type="button" onClick={() => exportResponsesCsv(selectedForm, selectedResponses)} disabled={selectedResponses.length === 0}>
+            <button className="secondary-button" type="button" onClick={() => exportResponsesCsv(selectedForm, filteredResponses)} disabled={filteredResponses.length === 0}>
               <Download size={16} /> Exportar CSV
             </button>
           </div>
-          {selectedResponses.length === 0 ? <p className="muted">Nenhuma resposta recebida.</p> : selectedResponses.map((response) => (
+          <div className="filter-bar">
+            <label>Buscar<input value={responseSearch} onChange={(event) => setResponseSearch(event.target.value)} placeholder="Texto da resposta" /></label>
+            <label>Inicio<input type="date" value={responseStartDate} onChange={(event) => setResponseStartDate(event.target.value)} /></label>
+            <label>Fim<input type="date" value={responseEndDate} onChange={(event) => setResponseEndDate(event.target.value)} /></label>
+            <button className="secondary-button" type="button" onClick={clearResponseFilters}>Limpar</button>
+          </div>
+          <p className="muted">{filteredResponses.length} de {selectedResponses.length} resposta(s) exibida(s).</p>
+          {filteredResponses.length === 0 ? <p className="muted">Nenhuma resposta encontrada.</p> : filteredResponses.map((response) => (
             <article className="registration-row" key={response.id}>
               <button type="button">
                 <strong>{new Date(response.submittedAt).toLocaleString()}</strong>

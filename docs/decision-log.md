@@ -129,6 +129,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 100. Contexto operacional no Check-in: a aba Check-in passa a ter um evento/culto selecionado no topo; contadores e listas de Eventos, Kids, Administracao kids e Etiquetas usam esse contexto para reduzir confusao operacional sem criar novo menu lateral.
 
 101. Campos ampliados em Pessoas: `PersonProfile` passa a ter `membershipDate`, `address`, `baptized` e `gender`; ministerios que serve continuam derivados de Grupos/Ministerios para evitar duplicacao de dados; genero e nascimento servem como base para relatorios de membros por mulheres/homens, adolescentes e kids.
+102. Visao unica operacional do culto: novo modulo `serviceOps`, exibido como **Culto**, agrega Agenda, Escalas, Musicas, Liturgia e Inscricoes por `eventId`; a tela e uma superficie operacional, nao uma nova fonte de dados.
 
 ## Decisoes Pendentes
 
@@ -170,3 +171,11 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0080-form-notifications-export.md`
 - Formularios passam a usar email best-effort para responsaveis e exportacao CSV no frontend.
+# Decisao 0081
+
+- `docs/decisions/0081-form-response-filters.md`
+- Filtros de respostas de formularios foram implementados no frontend e a exportacao CSV respeita o recorte aplicado.
+# Decisao 0082
+
+- `docs/decisions/0082-service-ops-view.md`
+- Criada a aba Culto como visao unica operacional do culto/evento, agregando dados existentes por `eventId`.

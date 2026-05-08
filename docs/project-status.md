@@ -2,7 +2,7 @@
 
 ## Resumo
 
-O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API propria, autenticacao com senha em hash, registro publico com pessoa vinculada, PostgreSQL/Prisma configurado para teste local, gestao administrativa inicial de usuarios, auditoria consultavel no painel, cadastro da igreja com canal do YouTube, Inicio como painel operacional, pessoas com vinculo responsavel/crianca, grupos/ministerios, navegacao interna, presenca consolidada a partir de check-ins, agenda/eventos com recorrencia simples e expressao cron textual, inscricoes publicas de eventos com participantes, pagamento manual, recibo/ingresso, QR Code e check-in de participantes, reservas de ambientes, calendario visual mensal/semanal, check-in por evento e ministerio infantil com abas internas, etiqueta, QR Code, leitura por camera, impressao Brother em lote e retirada por responsavel logado, escalas/cultos com confirmacao propria, financeiro com filtros/resumos, testes automatizados de API, smoke tests do frontend e permissao granular inicial por modulo.
+O EcclesiaOS esta em desenvolvimento faseado. O projeto ja possui frontend, API propria, autenticacao com senha em hash, registro publico com pessoa vinculada, PostgreSQL/Prisma configurado para teste local, gestao administrativa inicial de usuarios, auditoria consultavel no painel, cadastro da igreja com canal do YouTube, Inicio como painel operacional, pessoas com vinculo responsavel/crianca, grupos/ministerios, navegacao interna, presenca consolidada a partir de check-ins, agenda/eventos com recorrencia simples e expressao cron textual, inscricoes publicas de eventos com participantes, pagamento manual, recibo/ingresso, QR Code e check-in de participantes, reservas de ambientes, calendario visual mensal/semanal, check-in por evento e ministerio infantil com abas internas, etiqueta, QR Code, leitura por camera, impressao Brother em lote e retirada por responsavel logado, escalas/cultos com confirmacao propria, musicas/repertorios, liturgia/checklists, formularios customizados, visao unica operacional do culto, financeiro com filtros/resumos, testes automatizados de API, smoke tests do frontend e permissao granular inicial por modulo.
 
 ## Stack Atual
 
@@ -68,6 +68,10 @@ Prioridades abertas:
 | Pre-Cadastro De Visitantes | Concluido | Endpoint publico `POST /public/visitors` cria pessoa visitor; pagina `/visitor` sem login; ChurchPage exibe QR Code com download PNG. |
 | Templates De Mensagem | Concluido | Entidade `MessageTemplate` com CRUD em `/message-templates`; variaveis `{{firstName}}`, `{{lastName}}`, `{{fullName}}`, `{{email}}`, `{{phone}}`, `{{churchName}}` substituidas por destinatario no email/whatsapp/mailto. |
 | Confirmacao De Email Em Inscricoes | Concluido | Flag opcional por evento `registrationRequiresEmailConfirmation`; status `pending_email_confirmation`; token sha256 + 24h; endpoint publico `POST /public/event-registrations/confirm`; capacidade ignora pendentes expirados; admin pode reenviar/renovar confirmacao por `POST /event-registrations/:id/resend-confirmation`. |
+| Musicas | Concluido | Biblioteca de musicas e repertorios vinculados a cultos/eventos. |
+| Liturgia | Concluido | Checklists/liturgias por culto/evento, com itens ordenados e status de concluido. |
+| Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV e filtros. |
+| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes. |
 
 ## Usuarios De Desenvolvimento
 
@@ -429,6 +433,32 @@ Fase 79 concluida. O EcclesiaOS agora possui uma area de Formularios customizado
 # Status Atual - Fase 80
 
 Fase 80 concluida. Formularios customizados agora enviam notificacao por email aos responsaveis quando uma resposta publica chega e permitem exportar respostas em CSV.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 81
+
+Fase 81 concluida. Formularios agora possuem busca e filtros por periodo nas respostas, e a exportacao CSV respeita o recorte visivel.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 82
+
+Fase 82 concluida. O EcclesiaOS agora possui a aba **Culto**, uma visao unica operacional do culto/evento com resumo de agenda, equipes solicitadas, escala, repertorio, liturgia e inscricoes/check-in.
+
+## Entregue na fase
+
+- Modulo `serviceOps` com permissao para autenticados e gestao por admin/lider.
+- Menu **Culto** no grupo Operacao.
+- KPIs operacionais do culto/evento selecionado.
+- Cards de equipes/escala, repertorio, liturgia e inscricoes.
+- Status de escala e inscricoes traduzidos para o usuario.
 
 ## Validacao
 

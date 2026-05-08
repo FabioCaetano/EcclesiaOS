@@ -4,14 +4,14 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 74 - Pessoas 2 - Campos Ampliados**.
+Fase atual concluida: **Fase 82 - Visao Unica Operacional Do Culto**.
 
 Ultimo modulo entregue:
 
-- Pessoas ganhou campos de membresia, endereco, batismo e genero;
-- Ministerio que serve aparece derivado dos grupos/ministerios;
-- cadastro esta pronto para relatorios iniciais;
-- Prisma ganhou migration para os novos campos de Pessoas;
+- nova aba **Culto** no menu Operacao;
+- visao unica por culto/evento consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes;
+- indicadores de equipes, escalados, musicas, liturgia, confirmacoes, pendencias, inscritos e repertorios;
+- sem nova migration, pois a fase usa os vinculos existentes por `eventId`;
 - builds e testes passaram apos a mudanca.
 
 Ambiente atual:
@@ -112,6 +112,14 @@ Ambiente atual:
 - [[phases/phase-72-member-service-positions-substitutes|Fase 72 - Posicoes Por Pessoa E Substitutos Mais Precisos]]
 - [[phases/phase-73-checkin-ux-2|Fase 73 - Check-in UX 2]]
 - [[phases/phase-74-people-extended-fields|Fase 74 - Pessoas 2 - Campos Ampliados]]
+- [[phases/phase-75-people-reports|Fase 75 - Relatorios 1 - Pessoas]]
+- [[phases/phase-76-music-repertoire|Fase 76 - Musicas E Repertorio]]
+- [[phases/phase-77-service-liturgy-checklist|Fase 77 - Liturgia E Checklist Do Culto]]
+- [[phases/phase-78-event-service-prep|Fase 78 - Agenda Com Preparo Do Culto]]
+- [[phases/phase-79-custom-forms|Fase 79 - Formularios Customizados]]
+- [[phases/phase-80-form-notifications-export|Fase 80 - Formularios: Notificacoes E Exportacao]]
+- [[phases/phase-81-form-response-filters|Fase 81 - Formularios: Filtros De Respostas]]
+- [[phases/phase-82-service-ops-view|Fase 82 - Visao Unica Operacional Do Culto]]
 
 ## Decisoes
 
@@ -189,18 +197,26 @@ Ambiente atual:
 - [[decisions/0072-member-service-positions-substitutes|0072 - Posicoes Por Pessoa E Substitutos Por Posicao]]
 - [[decisions/0073-checkin-operational-context|0073 - Contexto Operacional No Check-in]]
 - [[decisions/0074-people-extended-fields|0074 - Campos Ampliados Em Pessoas]]
+- [[decisions/0075-people-reports-client-side|0075 - Relatorios De Pessoas No Frontend]]
+- [[decisions/0076-music-repertoire-foundation|0076 - Musicas E Repertorio]]
+- [[decisions/0077-service-liturgy-checklist|0077 - Liturgia E Checklist Do Culto]]
+- [[decisions/0078-event-service-prep-summary|0078 - Resumo De Preparo Do Culto Na Agenda]]
+- [[decisions/0079-custom-forms|0079 - Formularios Customizados]]
+- [[decisions/0080-form-notifications-export|0080 - Formularios: Notificacoes E Exportacao]]
+- [[decisions/0081-form-response-filters|0081 - Formularios: Filtros De Respostas]]
+- [[decisions/0082-service-ops-view|0082 - Visao Unica Operacional Do Culto]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 74**: subir para GitHub, redeployar Render/Vercel e aplicar migrations Prisma pendentes.
-2. **Relatorios 1 - Pessoas**: aniversariantes, total de membros e segmentacoes.
-3. **Musicas E Liturgia**: repertorio, playlists por culto e checklist/liturgia.
-4. **Formularios**: criacao de formularios, responsaveis, notificacoes e relatorios.
-5. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
+1. **Publicar Fase 82**: subir para GitHub e redeployar Render/Vercel.
+2. **Relatorios De Formularios**: totais, respostas por periodo/campo e exportacoes mais refinadas.
+3. **Modo Execucao Do Culto**: tela limpa para acompanhar liturgia, musicas, escala e check-in durante o culto.
+4. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
+5. **Atalhos Entre Modulos**: abrir edicao de Agenda, Escalas, Musicas e Liturgia direto da aba Culto.
 
-Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
+Recomendacao atual: publicar a Fase 82 e seguir para **Relatorios De Formularios** ou **Modo Execucao Do Culto**.
 # Atualizacao - Fase 75
 
 - `docs/phases/phase-75-people-reports.md`: primeira versao da aba Relatorios com indicadores de pessoas, aniversariantes, perfil de membros, ministerios/equipes e exportacao CSV.
@@ -225,3 +241,11 @@ Recomendacao atual: publicar a Fase 74 e seguir para **Relatorios 1 - Pessoas**.
 
 - `docs/phases/phase-80-form-notifications-export.md`: Formularios agora notificam responsaveis por email e exportam respostas em CSV.
 - `docs/decisions/0080-form-notifications-export.md`: decisao de usar email best-effort e CSV no frontend.
+# Atualizacao - Fase 81
+
+- `docs/phases/phase-81-form-response-filters.md`: filtros e busca nas respostas dos formularios.
+- `docs/decisions/0081-form-response-filters.md`: decisao de aplicar filtros localmente no frontend nesta etapa.
+# Atualizacao - Fase 82
+
+- `docs/phases/phase-82-service-ops-view.md`: nova aba Culto como visao unica operacional do culto/evento.
+- `docs/decisions/0082-service-ops-view.md`: decisao de agregar dados existentes por `eventId`, sem criar nova fonte de dados.

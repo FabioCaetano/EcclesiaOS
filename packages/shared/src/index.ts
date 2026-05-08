@@ -23,7 +23,7 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "music" | "liturgy" | "forms" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "serviceOps" | "music" | "liturgy" | "forms" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
 
 export type MessageChannel = "email" | "whatsapp" | "manual";
 
@@ -164,6 +164,7 @@ export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   if (module === "messages") return role === "admin" || role === "leader";
   if (module === "music") return role === "admin" || role === "leader";
   if (module === "liturgy") return role === "admin" || role === "leader";
+  if (module === "serviceOps") return role === "admin" || role === "leader";
   if (module === "forms") return role === "admin" || role === "leader";
   if (module === "serving") return role === "admin";
   return role === "admin";
@@ -645,6 +646,7 @@ export const plannedModules: AppModuleSummary[] = [
   { key: "resources", name: "Ambientes", phase: "Fase 29", status: "active" },
   { key: "calendar", name: "Calendario da igreja", phase: "Fase 30", status: "active" },
   { key: "serving", name: "Escalas e cultos", phase: "Fase 7", status: "planned" },
+  { key: "serviceOps", name: "Operacao do culto", phase: "Fase 82", status: "active" },
   { key: "music", name: "Musicas e repertorio", phase: "Fase 76", status: "active" },
   { key: "liturgy", name: "Liturgia e checklist", phase: "Fase 77", status: "active" },
   { key: "forms", name: "Formularios", phase: "Fase 79", status: "active" },
