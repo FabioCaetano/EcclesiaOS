@@ -52,6 +52,13 @@ export interface DataFile {
 
 export const dataFilePath = process.env.ECCLESIAOS_DATA_FILE || resolve(process.cwd(), "data", "dev-db.json");
 const dataProvider = process.env.ECCLESIAOS_DATA_PROVIDER || "json";
+let prismaWriteQueue: Promise<void> = Promise.resolve();
+
+const queuePrismaWrite = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const queued = prismaWriteQueue.then(operation, operation);
+  prismaWriteQueue = queued.then(() => undefined, () => undefined);
+  return queued;
+};
 
 const defaultData = (): DataFile => ({
   attendance: defaultAttendance,
@@ -259,7 +266,7 @@ export const readData = async (): Promise<DataFile> => {
 export const writeData = async (data: DataFile) => {
   if (dataProvider === "prisma") {
     const { writePrismaData } = await import("./prismaStore.js");
-    await writePrismaData(data);
+    await queuePrismaWrite(() => writePrismaData(data));
     return;
   }
 
@@ -274,7 +281,7 @@ export const appendEventsAndServingPlans = async (events: ChurchEvent[], serving
 
   if (dataProvider === "prisma") {
     const { appendPrismaEventsAndServingPlans } = await import("./prismaStore.js");
-    await appendPrismaEventsAndServingPlans(events, servingPlans);
+    await queuePrismaWrite(() => appendPrismaEventsAndServingPlans(events, servingPlans));
     return;
   }
 

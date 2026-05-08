@@ -3,6 +3,26 @@ import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, Church
 import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isDeadlockError = (error: unknown) => (
+  error instanceof Error && (error.message.includes("deadlock detected") || error.message.includes("40P01"))
+);
+
+const withDeadlockRetry = async <T>(operation: () => Promise<T>): Promise<T> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isDeadlockError(error) || attempt === 2) break;
+      await sleep(100 * (attempt + 1));
+    }
+  }
+  throw lastError;
+};
+
 const asUserRole = (role: string): UserRole => (
   role === "leader" || role === "member" ? role : "admin"
 );
@@ -500,7 +520,7 @@ export const readPrismaData = async (): Promise<DataFile> => {
 };
 
 export const writePrismaData = async (data: DataFile) => {
-  await prisma.$transaction(async (tx) => {
+  await withDeadlockRetry(() => prisma.$transaction(async (tx) => {
     await tx.financialTransactionRecord.deleteMany();
     await tx.auditLogRecord.deleteMany();
     await tx.peopleMessageRecord.deleteMany();
@@ -761,13 +781,13 @@ export const writePrismaData = async (data: DataFile) => {
   }, {
     maxWait: 10000,
     timeout: 60000
-  });
+  }));
 };
 
 export const appendPrismaEventsAndServingPlans = async (events: ChurchEvent[], servingPlans: ServingPlan[]) => {
   if (events.length === 0 && servingPlans.length === 0) return;
 
-  await prisma.$transaction(async (tx) => {
+  await withDeadlockRetry(() => prisma.$transaction(async (tx) => {
     if (events.length > 0) {
       await tx.eventRecord.createMany({
         data: events.map((event) => ({
@@ -794,5 +814,5 @@ export const appendPrismaEventsAndServingPlans = async (events: ChurchEvent[], s
   }, {
     maxWait: 10000,
     timeout: 30000
-  });
+  }));
 };

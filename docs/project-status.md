@@ -316,6 +316,7 @@ Fluxos validados:
 - Auditoria ainda nao guarda diff completo de campos nem exporta relatorios.
 - Eventos recorrentes possuem materializacao para `weekly`, `monthly` e `cron`; ainda nao ha worker em background, geracao acontece sob demanda.
 - A materializacao sob demanda passou a usar escrita incremental no Prisma para novos eventos filhos e planos de escala; publicacao ainda pendente nesta sessao.
+- Em 2026-05-08 foi corrigido deadlock Prisma em escritas concorrentes com fila em memoria e retry para `40P01`; ver [[fixes/2026-05-08-prisma-deadlock-write-queue|Correcao - Deadlock Prisma Em Escritas Concorrentes]].
 - A reorganizacao de Escalas da Fase 68 passou em `build:web`, `build:api` e 37 testes da API em 2026-05-07.
 - A Fase 69 adicionou `servicePositions` em ministerios/equipes e requer migration Prisma `20260507130000_group_service_positions`.
 - A Fase 69 passou em `db:generate`, `build:web`, `build:api` e 37 testes da API em 2026-05-07.
