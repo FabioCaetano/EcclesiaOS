@@ -114,7 +114,7 @@ const App = () => {
       {currentView === "resources" && <ResourcesPage token={session.token} user={session.user} />}
       {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} />}
       {currentView === "serving" && <ServingPage token={session.token} user={session.user} />}
-      {currentView === "serviceOps" && <ServiceOpsPage token={session.token} user={session.user} />}
+      {currentView === "serviceOps" && <ServiceOpsPage token={session.token} user={session.user} onNavigate={setCurrentView} />}
       {currentView === "music" && <MusicPage token={session.token} user={session.user} />}
       {currentView === "liturgy" && <LiturgyPage token={session.token} user={session.user} />}
       {currentView === "forms" && <FormsPage token={session.token} user={session.user} />}

@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, CheckCircle2, ClipboardList, Clock, Expand, ListChecks, Music, PlayCircle, UsersRound } from "lucide-react";
+import { Activity, CalendarDays, CheckCircle2, ClipboardList, Clock, Expand, ListChecks, Music, PlayCircle, UsersRound } from "lucide-react";
+import { canAccessModule } from "@ecclesiaos/shared";
 import type { ChurchEvent, CurrentUser, EventRegistration, GroupProfile, PersonProfile, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
 import { loadEventRegistrations, loadEvents, loadGroups, loadPeople, loadServiceChecklists, loadServingPlans, loadSongs, loadWorshipSets, saveServiceChecklist } from "./api";
 import { eventTypeLabels } from "./constants";
+import type { AppView } from "./types";
 import { Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
 interface Props {
   token: string;
   user: CurrentUser;
+  onNavigate: (view: AppView) => void;
 }
 
 const todayString = () => new Date().toISOString().slice(0, 10);
@@ -26,7 +29,7 @@ const registrationStatusLabels: Record<string, string> = {
   cancelled: "Cancelada"
 };
 
-export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
+export const ServiceOpsPage: React.FC<Props> = ({ token, user, onNavigate }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
@@ -94,6 +97,12 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
     song: songsById.get(item.songId)
   }));
   const declinedAssignments = assignments.filter((assignment) => assignment.status === "declined");
+  const shortcutActions = [
+    { label: "Agenda", view: "events" as AppView, module: "events" as const, icon: CalendarDays },
+    { label: "Escalas", view: "serving" as AppView, module: "serving" as const, icon: ClipboardList },
+    { label: "Musicas", view: "music" as AppView, module: "music" as const, icon: Music },
+    { label: "Liturgia", view: "liturgy" as AppView, module: "liturgy" as const, icon: ListChecks }
+  ].filter((item) => canAccessModule(user.role, item.module));
 
   const updateChecklistItem = async (checklistId: string, itemId: string, completed: boolean) => {
     const checklist = checklists.find((item) => item.id === checklistId);
@@ -130,6 +139,18 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user }) => {
         icon={ClipboardList}
         title="Operacao do culto"
         description="Visao unica de agenda, equipes, escala, repertorio, liturgia e inscricoes."
+        actions={(
+          <div className="button-row service-shortcuts" aria-label="Atalhos da operacao do culto">
+            {shortcutActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button className="secondary-button" key={action.view} type="button" onClick={() => onNavigate(action.view)}>
+                  <Icon size={16} /> {action.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       />
 
       {status && <p className="form-status">{status}</p>}

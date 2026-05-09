@@ -735,6 +735,17 @@ button[type="submit"]:hover { background: var(--color-brand-strong); }
 }
 .text-button:hover { text-decoration: underline; }
 
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.service-shortcuts {
+  justify-content: flex-end;
+}
+
 /* Empty state */
 .empty-state {
   display: grid;

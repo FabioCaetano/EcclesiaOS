@@ -1467,3 +1467,40 @@ Possivel escopo:
 
 - Construtor de Formularios 2.
 - Permissoes operacionais mais granulares.
+
+# Roadmap - Atualizacao Fase 88
+
+## Concluido
+
+- Fase 88 - Polimento de Agenda, Ambientes e Escalas.
+
+## Proxima fase sugerida
+
+- Check-in Salas Infantis: salas por idade, sugestao automatica, etiqueta com sala e dashboard por sala.
+
+## Alternativa
+
+- Atalhos contextuais por culto selecionado.
+
+## Depois
+
+- Filtros rapidos de escala por pendente/recusada.
+- Aplicacao automatica de substituto sugerido.
+# Roadmap - Atualizacao Fase 87
+
+## Concluido
+
+- Fase 87 - Atalhos entre modulos.
+
+## Proxima fase sugerida
+
+- Check-in Salas Infantis.
+
+## Alternativa
+
+- Atalhos contextuais por culto selecionado.
+
+## Depois
+
+- Construtor de Formularios 2.
+- Permissoes operacionais mais granulares.

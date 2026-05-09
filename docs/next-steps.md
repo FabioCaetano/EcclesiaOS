@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 85 - Execucao Do Culto 2**.
+O EcclesiaOS concluiu ate a **Fase 87 - Atalhos Entre Modulos**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -23,7 +23,7 @@ A base atual ja cobre:
 - ambientes, reservas e calendario mensal/semanal;
 - check-in de evento, Kids, administracao kids, painel operacional por culto/evento, QR universal e etiquetas Brother;
 - escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe por posicao, pessoas habilitadas por posicao, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos por posicao;
-- musicas/repertorios por culto, liturgia/checklist por culto, visao unica operacional do culto, modo Execucao e acoes diretas na liturgia;
+- musicas/repertorios por culto, liturgia/checklist por culto, visao unica operacional do culto, modo Execucao, acoes diretas na liturgia e atalhos entre modulos;
 - formularios customizados com responsaveis, notificacoes por email, respostas, exportacao CSV, filtros e relatorios agregados;
 - financeiro com filtros/resumos/recibos;
 - auditoria administrativa;
@@ -52,9 +52,9 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar a Fase 85 no GitHub e redeployar Render/Vercel.
+1. Publicar a Fase 87 no GitHub e redeployar Render/Vercel.
 2. Aplicar migrations Prisma pendentes das fases 75 a 79 nos ambientes que ainda nao receberam deploy.
-3. Seguir para Check-in Salas Infantis, Atalhos entre modulos ou Construtor de Formularios 2.
+3. Seguir para Check-in Salas Infantis, Atalhos Contextuais ou Construtor de Formularios 2.
 4. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
 5. A aba Culto pode ganhar atalhos diretos para editar Agenda, Escalas, Musicas e Liturgia.
 
@@ -109,9 +109,9 @@ Valor: cria captação estruturada de informacoes sem depender de ferramentas ex
 
 ## Recomendacao Atual
 
-Primeiro publicar a Fase 85. Depois seguir para **Check-in Salas Infantis**.
+Primeiro publicar a Fase 87. Depois seguir para **Check-in Salas Infantis**.
 
-Motivo: a tela de execucao ja permite acoes diretas; o maior ganho operacional agora e aprofundar o Kids com salas por idade.
+Motivo: a operacao do culto ja tem leitura, execucao e atalhos; o maior ganho operacional agora e aprofundar o Kids com salas por idade.
 # Proximos Passos Apos Fase 75
 
 1. Validar a Fase 75 localmente com `npm run build:web`, `npm run build:api` e `npm test --workspace @ecclesiaos/api`.
@@ -236,3 +236,39 @@ Motivo: a tela de execucao ja permite acoes diretas; o maior ganho operacional a
    - da aba Culto para Musicas/Repertorio.
 4. Evoluir permissao operacional:
    - separar operador de culto/check-in de lider ministerial.
+# Proximos Passos Apos Fase 87
+
+1. Publicar a Fase 87 no GitHub e redeployar os ambientes.
+2. Iniciar Check-in Salas Infantis:
+   - cadastrar/configurar salas por faixa etaria;
+   - sugerir sala automaticamente no check-in infantil;
+   - mostrar sala na etiqueta;
+   - dashboard por sala;
+   - fila de retirada.
+3. Evoluir Atalhos Contextuais:
+   - abrir Liturgia ja filtrada pelo culto selecionado;
+   - abrir Escalas ja no plano do culto;
+   - abrir Musicas/Repertorio ja no culto selecionado.
+4. Evoluir Construtor de Formularios 2:
+   - reordenacao visual de campos;
+   - graficos para campos de selecao.
+
+# Proximos Passos Apos Fase 88
+
+1. Testar localmente com banco real:
+   - criar evento recorrente semanal e cron;
+   - conferir ocorrencias na Agenda e no Calendario;
+   - criar ambiente e reserva separadamente;
+   - criar escala como lider da equipe.
+2. Evoluir Check-in Kids por sala:
+   - configurar salas/faixas etarias;
+   - sugerir sala pela idade;
+   - mostrar sala na etiqueta;
+   - dashboard por sala.
+3. Evoluir Culto operacional:
+   - abrir Agenda/Escalas/Musicas/Liturgia ja filtradas pelo culto selecionado;
+   - consolidar reservas do culto na visao operacional.
+4. Evoluir Escalas:
+   - filtro rapido de pendentes/recusadas;
+   - aplicar substituto sugerido salvando automaticamente;
+   - notificacao mais clara para lider quando houver recusa.

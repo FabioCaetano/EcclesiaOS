@@ -2254,13 +2254,37 @@ const handleListServingPlans = async (req: IncomingMessage, res: ServerResponse)
 };
 
 const handleCreateServingPlan = async (req: IncomingMessage, res: ServerResponse) => {
-  const user = await requireAdmin(req, res);
+  const user = await requireUser(req, res);
   if (!user) return;
 
   const body = await readJson<ServingPlanInput>(req);
   if (!body?.date || !body?.title) {
     sendError(res, 400, "invalid_json", "Informe data e titulo do plano.");
     return;
+  }
+  if (user.role === "member") {
+    sendError(res, 403, "forbidden", "Membros podem responder escalas, mas nao criar planos.");
+    return;
+  }
+
+  if (user.role === "leader") {
+    const groups = await groupRepository.list();
+    const planGroup = groups.find((group) => group.id === String(body.groupId || "").trim());
+    const isLeader = Boolean(planGroup && user.personId && planGroup.leaderPersonId === user.personId);
+    if (!isLeader) {
+      sendError(res, 403, "forbidden", "Lider so pode criar escalas para equipes que lidera.");
+      return;
+    }
+
+    const memberSet = new Set(planGroup?.memberPersonIds || []);
+    const invalidAssignment = (Array.isArray(body.assignments) ? body.assignments : []).find((assignment) => {
+      const personId = String(assignment.personId || "").trim();
+      return personId && !memberSet.has(personId);
+    });
+    if (invalidAssignment) {
+      sendError(res, 403, "forbidden", "Lider so pode escalar pessoas da propria equipe.");
+      return;
+    }
   }
 
   const plan = await servingPlanRepository.create(sanitizeServingPlanInput(body));

@@ -37,6 +37,14 @@ Em outro terminal:
 npm run dev:api
 ```
 
+Tambem e possivel rodar de dentro de `apps/api`:
+
+```powershell
+npm run dev
+```
+
+Esse script usa `apps/api/tsconfig.dev.json` para resolver `@ecclesiaos/shared` diretamente de `packages/shared/src/index.ts` durante o `tsx --watch`, evitando erro local de export antigo como `@ecclesiaos/shared does not provide an export named canAccessModule`. O build de producao continua usando `apps/api/tsconfig.json` e o pacote compilado em `packages/shared/dist`.
+
 URL do health check:
 
 ```text

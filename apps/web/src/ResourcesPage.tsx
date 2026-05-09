@@ -19,6 +19,7 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
   const [resourceForm, setResourceForm] = useState<ChurchResourceInput>(emptyResourceInput);
   const [reservationForm, setReservationForm] = useState<RoomReservationInput>(emptyRoomReservationInput);
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
+  const [activeSection, setActiveSection] = useState<"resources" | "reservations">("resources");
   const [resourceStatus, setResourceStatus] = useState("");
   const [reservationStatus, setReservationStatus] = useState("");
 
@@ -189,7 +190,7 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
         title="Ambientes"
         description="Salas e espacos da igreja com reservas e bloqueio de conflito por horario."
         actions={user.role === "admin" && (
-          <button className="secondary-button" type="button" onClick={startNewReservation}>
+          <button className="secondary-button" type="button" onClick={() => { setActiveSection("reservations"); startNewReservation(); }}>
             <Plus size={16} /> Nova reserva
           </button>
         )}
@@ -206,7 +207,11 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
       <div className="filter-bar">
         <label>Mes<input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} /></label>
         <button className="secondary-button" type="button" onClick={() => setMonthFilter("")}>Todos</button>
-        <button className="secondary-button" type="button" onClick={startNewResource}>Novo ambiente</button>
+      </div>
+
+      <div className="tab-bar" role="tablist" aria-label="Areas de ambientes">
+        <button className={activeSection === "resources" ? "active" : ""} type="button" onClick={() => setActiveSection("resources")}>Cadastro de ambientes</button>
+        <button className={activeSection === "reservations" ? "active" : ""} type="button" onClick={() => setActiveSection("reservations")}>Reservas</button>
       </div>
 
       <div className="report-columns">
@@ -223,15 +228,15 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
         </div>
       </div>
 
-      <div className="section-heading">
+      {activeSection === "resources" && <div className="section-heading">
         <div>
           <p className="eyebrow">Ambientes</p>
           <h2>Criar e editar ambientes</h2>
         </div>
         {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewResource}>Novo ambiente</button>}
-      </div>
+      </div>}
 
-      <div className="people-layout">
+      {activeSection === "resources" && <div className="people-layout">
         <div className="people-list" aria-label="Lista de ambientes">
           {resources.map((resource) => (
             <button className={resource.id === selectedResourceId ? "person-row selected" : "person-row"} key={resource.id} type="button" onClick={() => selectResource(resource)}>
@@ -260,17 +265,17 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
             <p>{user.role === "admin" ? resourceStatus : "Somente administradores podem alterar ambientes."}</p>
           </div>
         </form>
-      </div>
+      </div>}
 
-      <div className="section-heading">
+      {activeSection === "reservations" && <div className="section-heading">
         <div>
           <p className="eyebrow">Reservas</p>
           <h2>Criar e controlar reservas</h2>
         </div>
         {user.role === "admin" && <button className="secondary-button" type="button" onClick={startNewReservation}>Nova reserva</button>}
-      </div>
+      </div>}
 
-      <div className="people-layout">
+      {activeSection === "reservations" && <div className="people-layout">
         <div className="people-list" aria-label="Lista de reservas">
           {selectedResourceReservations.map((reservation) => (
             <button className={reservation.id === selectedReservationId ? "person-row selected" : "person-row"} key={reservation.id} type="button" onClick={() => selectReservation(reservation)}>
@@ -315,7 +320,7 @@ export const ResourcesPage: React.FC<Props> = ({ token, user }) => {
             <p>{user.role === "admin" ? reservationStatus : "Somente administradores podem alterar reservas."}</p>
           </div>
         </form>
-      </div>
+      </div>}
       </Card>
     </>
   );

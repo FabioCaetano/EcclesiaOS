@@ -4,15 +4,14 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 85 - Execucao Do Culto 2**.
+Fase atual concluida: **Fase 87 - Atalhos Entre Modulos**.
 
 Ultimo modulo entregue:
 
-- modo Execucao permite concluir e reabrir itens da liturgia;
-- item atual pode ser marcado como concluido direto pela tela;
-- modo foco/tela cheia foi adicionado;
-- recusas de escala pendentes aparecem como alerta operacional;
-- sem nova migration, pois a fase usa dados e endpoints existentes;
+- aba Culto ganhou atalhos para Agenda, Escalas, Musicas e Liturgia;
+- atalhos respeitam permissao de acesso do usuario;
+- navegação usa o estado interno atual do app;
+- sem nova migration e sem nova API;
 - builds e testes passaram apos a mudanca.
 
 Ambiente atual:
@@ -124,6 +123,7 @@ Ambiente atual:
 - [[phases/phase-83-form-aggregate-reports|Fase 83 - Relatorios Agregados De Formularios]]
 - [[phases/phase-84-service-execution-mode|Fase 84 - Modo Execucao Do Culto]]
 - [[phases/phase-85-service-execution-actions|Fase 85 - Execucao Do Culto 2]]
+- [[phases/phase-87-service-module-shortcuts|Fase 87 - Atalhos Entre Modulos]]
 
 ## Decisoes
 
@@ -212,18 +212,20 @@ Ambiente atual:
 - [[decisions/0083-form-aggregate-reports|0083 - Relatorios Agregados De Formularios]]
 - [[decisions/0084-service-execution-mode|0084 - Modo Execucao Do Culto]]
 - [[decisions/0085-service-execution-actions|0085 - Acoes Diretas Na Execucao Do Culto]]
+- [[decisions/0087-service-module-shortcuts|0087 - Atalhos Entre Modulos Da Operacao Do Culto]]
+- [[decisions/0088-agenda-resources-serving-polish|0088 - Polimento De Agenda, Ambientes E Escalas]]
 
 ## Proximos Caminhos
 
 Opcoes recomendadas para a proxima fase:
 
-1. **Publicar Fase 85**: subir para GitHub e redeployar Render/Vercel.
+1. **Testar Fase 88 localmente**: recorrencias, ambientes/reservas e criacao de escala por lider.
 2. **Check-in Salas Infantis**: salas por idade, dashboard por sala e fila de retirada.
-3. **Atalhos Entre Modulos**: abrir edicao de Agenda, Escalas, Musicas e Liturgia direto da aba Culto.
+3. **Atalhos Contextuais**: abrir modulos ja filtrados pelo culto selecionado.
 4. **Construtor De Formularios 2**: reordenacao visual de campos e melhor UX de edicao.
 5. **Permissoes Operacionais**: papel ou permissao especifica para operadores de culto/check-in.
 
-Recomendacao atual: publicar a Fase 85 e seguir para **Check-in Salas Infantis**.
+Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir para **Check-in Salas Infantis**.
 # Atualizacao - Fase 75
 
 - `docs/phases/phase-75-people-reports.md`: primeira versao da aba Relatorios com indicadores de pessoas, aniversariantes, perfil de membros, ministerios/equipes e exportacao CSV.
@@ -268,3 +270,7 @@ Recomendacao atual: publicar a Fase 85 e seguir para **Check-in Salas Infantis**
 
 - `docs/phases/phase-85-service-execution-actions.md`: modo Execucao agora conclui/reabre itens de liturgia, possui modo foco e alerta recusas de escala.
 - `docs/decisions/0085-service-execution-actions.md`: decisao de reutilizar o endpoint existente de Liturgia para acoes diretas na execucao.
+# Atualizacao - Fase 87
+
+- `docs/phases/phase-87-service-module-shortcuts.md`: atalhos da aba Culto para Agenda, Escalas, Musicas e Liturgia.
+- `docs/decisions/0087-service-module-shortcuts.md`: decisao de usar navegacao interna existente e respeitar permissoes via `canAccessModule`.

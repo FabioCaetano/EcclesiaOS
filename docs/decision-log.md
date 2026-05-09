@@ -133,6 +133,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 103. Relatorios agregados de formularios: a primeira camada de indicadores usa dados ja carregados no frontend (`CustomForm` e `CustomFormResponse`), sem novo endpoint ou migration; futuramente pode migrar para endpoint dedicado se o volume crescer.
 104. Modo Execucao do Culto: o modulo Culto passa a ter duas visoes internas, **Operacao** para conferencia completa e **Execucao** para acompanhamento focado durante o culto; dados continuam vindo dos modulos de origem.
 105. Acoes diretas na Execucao do Culto: concluir/reabrir itens de liturgia na aba Culto reutiliza o endpoint existente de `ServiceChecklist`; Liturgia segue como fonte de edicao completa.
+106. Atalhos entre modulos: a aba Culto passa a oferecer atalhos para Agenda, Escalas, Musicas e Liturgia usando a navegacao interna existente e respeitando `canAccessModule`.
 
 ## Decisoes Pendentes
 
@@ -194,3 +195,11 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0085-service-execution-actions.md`
 - Modo Execucao passou a concluir/reabrir itens de liturgia usando o endpoint existente de checklists.
+# Decisao 0087
+
+- `docs/decisions/0087-service-module-shortcuts.md`
+- Aba Culto ganhou atalhos para os modulos de origem da operacao, respeitando permissoes de acesso.
+# Decisao 0088
+
+- `docs/decisions/0088-agenda-resources-serving-polish.md`
+- Agenda passou a gerar ocorrencias automaticamente, Ambientes foi separado em cadastro/reservas, e lider pode criar escala apenas para sua equipe.

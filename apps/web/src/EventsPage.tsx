@@ -176,9 +176,18 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
     setStatus("Salvando...");
     try {
       const saved = await saveEvent(token, eventForm, selectedEventId || undefined);
+      let occurrenceMessage = "";
+      if (!saved.parentEventId && saved.recurrence !== "none") {
+        try {
+          const result = await generateEventOccurrences(token, saved.id);
+          occurrenceMessage = ` Ocorrencias: ${result.generated} novas, ${result.skipped} ja existiam.`;
+        } catch {
+          occurrenceMessage = " Evento salvo, mas nao foi possivel gerar as ocorrencias automaticamente.";
+        }
+      }
       await refreshEvents();
       selectEvent(saved);
-      setStatus("Evento salvo.");
+      setStatus(`Evento salvo.${occurrenceMessage}`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nao foi possivel salvar o evento.");
     }
@@ -336,7 +345,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
                 {event.parentEventId && <span className="event-tag generated">ocorrencia</span>}
                 {!event.parentEventId && event.recurrence === "cron" && <span className="event-tag master">cron</span>}
               </strong>
-              <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - {event.location || "sem ambiente"}</span>
+              <span>{eventTypeLabels[event.type]} - {event.startTime || "sem horario"} - Ambiente: {event.location || "nao definido"}</span>
               <span>{event.groupId ? groupName(event.groupId) : "Agenda geral"} - {recurrenceLabels[event.recurrence]} - {event.registrationEnabled ? `${registrationCount(event.id)} inscrito(s)` : "sem inscricoes"}</span>
             </button>
           ))}

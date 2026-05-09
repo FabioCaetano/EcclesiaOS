@@ -71,7 +71,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const startNewPlan = () => {
     setSelectedPlanId(null);
-    setPlanForm(emptyServingPlanInput);
+    setPlanForm({ ...emptyServingPlanInput, groupId: user.role === "leader" ? teamGroups[0]?.id || "" : "" });
     setServingStatus("");
   };
 
@@ -96,8 +96,11 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const handlePlanSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (user.role !== "admin" && !canEditAssignments) return;
-    if (!selectedPlanId && user.role !== "admin") return;
+    if (!canEditCurrentForm) return;
+    if (!planForm.groupId && user.role === "leader") {
+      setServingStatus("Selecione uma equipe que voce lidera.");
+      return;
+    }
 
     setServingStatus("Salvando...");
     try {
@@ -273,13 +276,14 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   };
   const canEditMeta = user.role === "admin";
   const canEditAssignments = canManagePlan(selectedPlan);
+  const canEditCurrentForm = canEditAssignments || (!selectedPlanId && user.role !== "member" && (user.role === "admin" || teamGroups.length > 0));
   const eligiblePeople = useMemo(() => {
-    if (user.role === "admin" || !selectedPlan) return people;
-    const group = groups.find((item) => item.id === selectedPlan.groupId);
+    if (user.role === "admin") return people;
+    const group = groups.find((item) => item.id === (selectedPlan?.groupId || planForm.groupId));
     if (!group) return [];
     const memberSet = new Set(group.memberPersonIds);
     return people.filter((person) => memberSet.has(person.id));
-  }, [people, groups, selectedPlan, user.role]);
+  }, [people, groups, selectedPlan, planForm.groupId, user.role]);
   const declinedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "declined").length;
   const confirmedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "confirmed").length;
   const pendingCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "pending").length;
@@ -321,7 +325,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
         icon={ClipboardList}
         title="Escalas"
         description="Pendencias de escala, resposta dos voluntarios e indisponibilidades."
-        actions={user.role === "admin" && (
+        actions={(user.role === "admin" || teamGroups.length > 0) && (
           <button className="secondary-button" type="button" onClick={startNewPlan}>
             <Plus size={16} /> Nova escala
           </button>
@@ -506,18 +510,18 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
               />
             </div>
           )}
-          <label>Data<input disabled={!canEditMeta} type="date" value={planForm.date} onChange={(event) => updatePlanField("date", event.target.value)} /></label>
-          <label>Titulo<input disabled={!canEditMeta} value={planForm.title} onChange={(event) => updatePlanField("title", event.target.value)} /></label>
+          <label>Data<input disabled={user.role === "member" || (!selectedPlanId && user.role !== "admin" && teamGroups.length === 0)} type="date" value={planForm.date} onChange={(event) => updatePlanField("date", event.target.value)} /></label>
+          <label>Titulo<input disabled={user.role === "member" || (!selectedPlanId && user.role !== "admin" && teamGroups.length === 0)} value={planForm.title} onChange={(event) => updatePlanField("title", event.target.value)} /></label>
           <label>
             Grupo/ministerio
-            <select disabled={!canEditMeta} value={planForm.groupId} onChange={(event) => updatePlanField("groupId", event.target.value)}>
+            <select disabled={user.role === "member" || (selectedPlanId ? !canEditMeta : user.role !== "admin" && teamGroups.length <= 1)} value={planForm.groupId} onChange={(event) => updatePlanField("groupId", event.target.value)}>
               <option value="">Sem grupo</option>
-              {groups.map((group) => (
+              {(user.role === "admin" ? groups : teamGroups).map((group) => (
                 <option value={group.id} key={group.id}>{group.name}</option>
               ))}
             </select>
           </label>
-          <label className="wide-field">Observacoes<textarea disabled={!canEditAssignments} value={planForm.notes} onChange={(event) => updatePlanField("notes", event.target.value)} /></label>
+          <label className="wide-field">Observacoes<textarea disabled={user.role === "member" || (selectedPlanId ? !canEditAssignments : user.role !== "admin" && teamGroups.length === 0)} value={planForm.notes} onChange={(event) => updatePlanField("notes", event.target.value)} /></label>
 
           <fieldset className="member-picker plan-detail wide-field">
             <legend>Escalados</legend>
@@ -540,7 +544,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                 const suggestions = substitutesByAssignment[assignment.id];
                 return (
                   <div key={`${assignment.id || "new"}-${index}`}>
-                    {canEditAssignments ? (
+                    {canEditCurrentForm ? (
                       <div className="plan-position">
                         <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
                         <select className="pp-name" value={assignment.personId} onChange={(event) => updateAssignment(index, "personId", event.target.value)}>
@@ -604,7 +608,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                       </p>
                     )}
 
-                    {canEditAssignments && assignment.status === "declined" && assignment.id && (
+                    {canEditCurrentForm && assignment.status === "declined" && assignment.id && (
                       <div className="substitute-panel">
                         <div className="response-actions" style={{ justifyContent: "space-between" }}>
                           <h4>Substitutos sugeridos</h4>
@@ -634,7 +638,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
               })}
             </div>
 
-            {canEditAssignments && (
+            {canEditCurrentForm && (
               <button className="plan-position-add" type="button" onClick={addAssignment}>
                 <Plus size={16} /> Adicionar pessoa
               </button>
@@ -642,7 +646,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           </fieldset>
 
           <div className="form-footer">
-            {(canEditAssignments && (user.role === "admin" || selectedPlanId)) && <button type="submit">{selectedPlanId ? "Salvar escala" : "Criar escala"}</button>}
+            {canEditCurrentForm && <button type="submit">{selectedPlanId ? "Salvar escala" : "Criar escala"}</button>}
             {user.role === "admin" && selectedPlanId && <button className="danger-button" type="button" onClick={handleDeletePlan}>Remover</button>}
             <p>{canEditAssignments ? servingStatus : "Apenas admin ou lider da equipe pode alterar esta escala."}</p>
           </div>

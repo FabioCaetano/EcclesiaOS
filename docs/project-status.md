@@ -71,7 +71,7 @@ Prioridades abertas:
 | Musicas | Concluido | Biblioteca de musicas e repertorios vinculados a cultos/eventos. |
 | Liturgia | Concluido | Checklists/liturgias por culto/evento, com itens ordenados e status de concluido. |
 | Formularios | Concluido | Formularios customizados com campos configuraveis, responsaveis, link publico, respostas, notificacoes por email, exportacao CSV, filtros e relatorios agregados. |
-| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes, com modo Execucao, modo foco e acoes diretas na liturgia. |
+| Culto | Concluido | Visao unica operacional por culto/evento, consolidando Agenda, Escalas, Musicas, Liturgia e Inscricoes, com modo Execucao, modo foco, acoes diretas na liturgia e atalhos para modulos de origem. |
 
 ## Usuarios De Desenvolvimento
 
@@ -431,6 +431,25 @@ Fase 79 concluida. O EcclesiaOS agora possui uma area de Formularios customizado
 - `npm run build:web`: passou.
 - `npm run build:api`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+
+# Status Atual - Fase 88
+
+Fase 88 concluida. Agenda, Ambientes e Escalas receberam ajustes de fluxo para teste local com banco real.
+
+## Entregue na fase
+
+- Agenda gera ocorrencias automaticamente ao salvar evento recorrente.
+- Agenda exibe ambiente com linguagem mais clara.
+- Ambientes foi separado em abas internas de cadastro e reservas.
+- Lider pode criar escala apenas para equipe que lidera.
+- Membro segue restrito a responder escala e registrar indisponibilidade.
+- Backend reforca permissao de criacao de escala por lider.
+
+## Validacao
+
+- `npm run build:api`: passou.
+- `npm run build:web`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
 # Status Atual - Fase 80
 
 Fase 80 concluida. Formularios customizados agora enviam notificacao por email aos responsaveis quando uma resposta publica chega e permitem exportar respostas em CSV.
@@ -514,6 +533,24 @@ Fase 85 concluida. O modo **Execucao** da aba Culto agora permite atualizar a li
 - Modo foco com fullscreen do navegador quando permitido.
 - Alerta para recusas de escala pendentes.
 - Reuso do endpoint existente de Liturgia, sem nova API.
+
+## Validacao
+
+- `npm run build:web`: passou.
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+# Status Atual - Fase 87
+
+Fase 87 concluida. A aba **Culto** agora possui atalhos para os modulos de origem da operacao.
+
+## Entregue na fase
+
+- Atalho para Agenda.
+- Atalho para Escalas.
+- Atalho para Musicas.
+- Atalho para Liturgia.
+- Atalhos filtrados por permissao de acesso do usuario.
+- Navegacao usando o estado interno atual do frontend.
 
 ## Validacao
 
