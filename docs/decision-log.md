@@ -251,3 +251,27 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0100-kids-totem.md`
 - Criado Totem Kids autenticado por culto para operar etiquetas, presentes e retiradas.
+# Decisao 0101
+
+- `docs/decisions/0101-kids-precheckin-qr.md`
+- QR do responsavel passa a carregar lote de criancas no Totem Kids para impressao de etiquetas.
+# Decisao 0102
+
+- `docs/decisions/0102-guardian-child-registration.md`
+- Responsavel pode cadastrar crianca por rota reduzida que vincula automaticamente a nova pessoa ao usuario logado.
+# Decisao 0103
+
+- `docs/decisions/0103-qr-camera-selection.md`
+- Leitores de QR passam a usar camera selecionavel e alternancia entre cameras disponiveis.
+# Decisao 0104
+
+- `docs/decisions/0104-child-alerts.md`
+- Alertas infantis iniciais usam notas estruturadas para alergias, saude e retirada, sem migration nesta fase.
+# Decisao 0105
+
+- `docs/decisions/0105-kids-checkin-reports.md`
+- Totem Kids passa a ter relatorio operacional por culto com CSV e impressao.
+# Decisao 0106
+
+- `docs/decisions/0106-visitor-kids-checkin.md`
+- Visitante no Check-in Kids usa status de pessoa `visitor`, com entrada propria no login e redirecionamento ao Check-in apos cadastro.

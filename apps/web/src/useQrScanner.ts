@@ -15,6 +15,10 @@ export interface UseQrScannerResult {
   status: QrScannerStatus;
   message: string;
   decoder: "barcode_detector" | "jsqr" | "";
+  devices: MediaDeviceInfo[];
+  selectedDeviceId: string;
+  setSelectedDeviceId: (deviceId: string) => void;
+  switchCamera: () => void;
 }
 
 interface UseQrScannerOptions {
@@ -38,6 +42,8 @@ export const useQrScanner = ({ active, onDecode, scanIntervalMs = 350 }: UseQrSc
   const [status, setStatus] = useState<QrScannerStatus>("idle");
   const [message, setMessage] = useState<string>("");
   const [decoder, setDecoder] = useState<UseQrScannerResult["decoder"]>("");
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
 
   useEffect(() => {
     onDecodeRef.current = onDecode;
@@ -76,14 +82,25 @@ export const useQrScanner = ({ active, onDecode, scanIntervalMs = 350 }: UseQrSc
 
     const startScanner = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }
-        });
+        const constraints: MediaStreamConstraints = {
+          video: selectedDeviceId
+            ? { deviceId: { exact: selectedDeviceId } }
+            : { facingMode: { ideal: "environment" } }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
         streamRef.current = stream;
+        try {
+          const nextDevices = (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "videoinput");
+          setDevices(nextDevices);
+          const activeDeviceId = stream.getVideoTracks()[0]?.getSettings().deviceId || "";
+          if (activeDeviceId && !selectedDeviceId) setSelectedDeviceId(activeDeviceId);
+        } catch {
+          setDevices([]);
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           try {
@@ -167,7 +184,14 @@ export const useQrScanner = ({ active, onDecode, scanIntervalMs = 350 }: UseQrSc
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     };
-  }, [active, scanIntervalMs]);
+  }, [active, scanIntervalMs, selectedDeviceId]);
 
-  return { videoRef, canvasRef, status, message, decoder };
+  const switchCamera = () => {
+    if (devices.length <= 1) return;
+    const currentIndex = devices.findIndex((device) => device.deviceId === selectedDeviceId);
+    const next = devices[(currentIndex + 1) % devices.length] || devices[0];
+    setSelectedDeviceId(next.deviceId);
+  };
+
+  return { videoRef, canvasRef, status, message, decoder, devices, selectedDeviceId, setSelectedDeviceId, switchCamera };
 };

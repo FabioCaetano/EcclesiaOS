@@ -255,6 +255,16 @@ export interface PersonProfile {
 
 export type PersonInput = Omit<PersonProfile, "id" | "createdAt" | "updatedAt">;
 
+export interface GuardianChildInput {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  allergies: string;
+  medicalNotes: string;
+  pickupNotes: string;
+  notes: string;
+}
+
 export type GroupType = "small_group" | "ministry" | "class" | "team";
 
 export interface GroupProfile {

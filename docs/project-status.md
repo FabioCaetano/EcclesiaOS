@@ -659,6 +659,32 @@ Fase 96 implementada. O Passo 5 - Escalas recebeu polimento final com sobrecarga
 - `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
 - Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
 
+# Status Atual - Fase 106
+
+Fase 106 implementada. O fluxo de visitante no Check-in Kids agora esta mais explicito na entrada do app.
+
+## Entregue na fase
+
+- Botao **Visitante com crianca** na tela de login.
+- Cadastro de visitante inicia com status `visitor`.
+- Texto do cadastro explica o acesso limitado ao Check-in Kids.
+- Apos cadastro visitante, o app abre diretamente a aba Check-in.
+- Check-in Kids exibe aviso de acesso visitante para pessoa com status `visitor`.
+- Fluxo usa o cadastro de crianca ja existente, mantendo vinculo ao responsavel logado.
+
+## Pendencias da consolidacao
+
+- Cadastro publico unificado de responsavel + criancas.
+- Link compartilhavel dedicado para visitante Kids.
+- Edicao de crianca pelo responsavel.
+- Autorizados adicionais estruturados.
+- Envio de QR por email/WhatsApp.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
 # Status Atual - Fase 97
 
 Fase 97 implementada. A UX Operacional 2.0 comecou pela navegacao e pelo Calendario: Agenda saiu do menu lateral e o Calendario passou a ser o ponto de entrada para criar e acionar eventos/agendas.
@@ -760,6 +786,134 @@ Fase 100 implementada. O Check-in Kids agora possui uma tela de totem autenticad
 - Cadastro rapido de visitante e crianca.
 - Alternancia de camera frontal/traseira.
 - Relatorio final do culto.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 101
+
+Fase 101 implementada. O fluxo do responsavel agora conversa com o Totem Kids por QR de lote.
+
+## Entregue na fase
+
+- Responsavel ve QR das criancas ativas no culto.
+- Totem Kids reconhece QR de pre-check-in do responsavel.
+- Totem Kids valida culto, check-in e codigo de seguranca.
+- Lote lido fica selecionado no totem.
+- Operador pode imprimir somente o QR lido.
+- QR da etiqueta continua registrando retirada.
+
+## Pendencias da consolidacao
+
+- Cadastro de crianca pelo responsavel.
+- Cadastro rapido de visitante.
+- Alternancia de camera frontal/traseira.
+- Expiracao ou renovacao do QR.
+- Relatorios de Check-in.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 102
+
+Fase 102 implementada. O responsavel agora pode cadastrar uma crianca diretamente no Check-in Kids, com vinculo automatico.
+
+## Entregue na fase
+
+- Contrato `GuardianChildInput`.
+- Rota `POST /people/my-children`.
+- Backend exige usuario com pessoa vinculada.
+- Backend cria crianca com o responsavel logado em `guardianPersonIds`.
+- Frontend permite cadastrar crianca com nome, sobrenome, nascimento e observacoes.
+- Crianca cadastrada fica selecionada para o check-in.
+
+## Pendencias da consolidacao
+
+- Edicao de crianca pelo responsavel.
+- Autorizados adicionais para retirada.
+- Dados medicos/alertas.
+- Foto da crianca.
+- Alternancia de camera.
+
+## Validacao
+
+- `npm run build:api`: pendente por bloqueio do ambiente nesta execucao.
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 103
+
+Fase 103 implementada. O leitor de QR agora permite selecionar e alternar cameras nos fluxos operacionais.
+
+## Entregue na fase
+
+- `useQrScanner` lista cameras disponiveis.
+- Scanner permite selecionar `deviceId`.
+- Scanner permite alternar para a proxima camera.
+- Check-in Kids/Admin ganhou seletor e botao de virar camera.
+- Totem Kids ganhou seletor e botao de virar camera.
+- Leitor de ingresso em Eventos ganhou seletor e botao de virar camera.
+
+## Pendencias da consolidacao
+
+- Persistir camera preferida.
+- Feedback visual apos leitura.
+- Overlay/mira no video.
+- Som/vibracao apos sucesso.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 104
+
+Fase 104 implementada. O Check-in Kids agora destaca alertas importantes da crianca no fluxo do responsavel, no Totem e nas etiquetas.
+
+## Entregue na fase
+
+- Campos de alergias, saude e retirada no cadastro reduzido da crianca.
+- Backend salva esses campos como notas estruturadas.
+- Check-in Kids exibe alerta na lista do responsavel.
+- Totem Kids exibe alerta na lista operacional.
+- Etiquetas imprimem alerta quando existir.
+
+## Pendencias da consolidacao
+
+- Normalizar alertas em colunas futuras.
+- Permitir edicao pelo responsavel.
+- Autorizados adicionais estruturados.
+- Foto da crianca.
+- Relatorios de Check-in.
+
+## Validacao
+
+- `npm run build:api`: pendente por bloqueio do ambiente nesta execucao.
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 105
+
+Fase 105 implementada. O Totem Kids agora possui relatorio operacional por culto com exportacao CSV e impressao.
+
+## Entregue na fase
+
+- Acoes **CSV** e **Relatorio** no Totem Kids.
+- Exportacao CSV com crianca, responsavel, telefone, sala, idade, status, entrada, saida e alertas.
+- Painel de relatorio com distribuicao por sala.
+- Painel de alertas importantes.
+- Impressao de relatorio com elementos operacionais ocultos.
+
+## Pendencias da consolidacao
+
+- Relatorios historicos na aba Relatorios.
+- PDF dedicado.
+- Filtros entre cultos.
+- Relatorios de eventos nao infantis.
 
 ## Validacao
 

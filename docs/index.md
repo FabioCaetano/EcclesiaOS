@@ -4,14 +4,14 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 100 - Check-in 2.0: Totem Kids Por Culto**.
+Fase atual concluida: **Fase 106 - Visitante No Check-in Kids**.
 
 Ultimo modulo entregue:
 
-- nova rota autenticada `/kids-totem/:eventId`;
-- Check-in ganhou botao **Totem Kids** para o culto selecionado;
-- totem exibe presentes, retiradas, salas e etiquetas;
-- totem faz checkout manual ou por QR da etiqueta;
+- Login ganhou caminho **Visitante com crianca**;
+- cadastro visitante direciona para Check-in Kids apos criar conta;
+- visitante recebe aviso de acesso limitado dentro do Check-in;
+- criancas cadastradas seguem vinculadas ao responsavel logado;
 - build do frontend ainda esta pendente por bloqueio do ambiente nesta execucao.
 
 Ambiente atual:
@@ -327,3 +327,27 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-100-kids-totem.md`: Totem Kids autenticado por culto.
 - `docs/decisions/0100-kids-totem.md`: decisao de separar a operacao infantil em rota propria por evento.
+# Atualizacao - Fase 101
+
+- `docs/phases/phase-101-kids-precheckin-qr.md`: QR do responsavel para carregar lote no Totem Kids.
+- `docs/decisions/0101-kids-precheckin-qr.md`: decisao de tratar QR do responsavel como selecao segura de lote.
+# Atualizacao - Fase 102
+
+- `docs/phases/phase-102-guardian-child-registration.md`: cadastro reduzido de crianca pelo responsavel.
+- `docs/decisions/0102-guardian-child-registration.md`: decisao de criar rota segura para responsavel cadastrar suas proprias criancas.
+# Atualizacao - Fase 103
+
+- `docs/phases/phase-103-qr-camera-selection.md`: selecao e alternancia de camera nos leitores de QR.
+- `docs/decisions/0103-qr-camera-selection.md`: decisao de centralizar camera selecionavel no hook `useQrScanner`.
+# Atualizacao - Fase 104
+
+- `docs/phases/phase-104-child-alerts.md`: alertas infantis de alergias, saude e retirada.
+- `docs/decisions/0104-child-alerts.md`: decisao de salvar alertas em notas estruturadas nesta etapa.
+# Atualizacao - Fase 105
+
+- `docs/phases/phase-105-kids-checkin-reports.md`: relatorio de Check-in Kids por culto no Totem.
+- `docs/decisions/0105-kids-checkin-reports.md`: decisao de criar relatorio frontend antes de endpoint historico.
+# Atualizacao - Fase 106
+
+- `docs/phases/phase-106-visitor-kids-checkin.md`: caminho de visitante para Check-in Kids.
+- `docs/decisions/0106-visitor-kids-checkin.md`: decisao de manter visitante como status de pessoa nesta fase.

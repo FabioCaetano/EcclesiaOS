@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 100 - Check-in 2.0: Totem Kids Por Culto**.
+O EcclesiaOS concluiu ate a **Fase 106 - Visitante No Check-in Kids**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -447,3 +447,123 @@ Motivo: a operacao do culto ja tem leitura, execucao e atalhos; o maior ganho op
    - retiradas;
    - sala/idade;
    - atrasos de retirada.
+
+# Proximos Passos Apos Fase 101
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Cadastro de crianca pelo responsavel:
+   - formulario simples dentro do Check-in Kids;
+   - vinculo automatico com o responsavel logado;
+   - data de nascimento para sugestao de sala;
+   - observacoes importantes.
+3. Melhorar camera:
+   - seletor frontal/traseira;
+   - mensagem clara quando permissao da camera falhar;
+   - feedback visual apos leitura.
+4. Visitante:
+   - cadastro rapido do responsavel visitante;
+   - acesso limitado ao Check-in;
+   - criancas vinculadas ao visitante.
+5. Relatorios:
+   - presentes e retiradas por culto;
+   - criancas por sala;
+   - horarios de entrada/saida.
+
+# Proximos Passos Apos Fase 102
+
+1. Rodar `npm run build:api` e `npm run build:web` quando o ambiente permitir.
+2. Melhorar camera/leitor:
+   - seletor de camera;
+   - alternancia frontal/traseira;
+   - permissao negada com mensagem clara;
+   - feedback visual apos leitura.
+3. Evoluir dados da crianca:
+   - autorizados adicionais de retirada;
+   - alergias/observacoes medicas;
+   - foto opcional;
+   - edicao pelo responsavel com limite de campos.
+4. Visitante:
+   - cadastro rapido do responsavel visitante;
+   - crianca vinculada ao visitante;
+   - acesso limitado ao Check-in.
+5. Relatorios:
+   - presentes por culto;
+   - retiradas e horarios;
+   - ocupacao por sala.
+
+# Proximos Passos Apos Fase 103
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Evoluir dados da crianca:
+   - autorizados adicionais de retirada;
+   - alergias/observacoes medicas;
+   - avisos importantes no totem;
+   - impressao desses alertas na etiqueta quando habilitado.
+3. Melhorar feedback do leitor:
+   - feedback visual apos leitura;
+   - som/vibracao opcional;
+   - mira/overlay no video.
+4. Visitante:
+   - cadastro rapido do responsavel visitante;
+   - acesso limitado ao Check-in Kids;
+   - criancas vinculadas ao visitante.
+5. Relatorios:
+   - presentes por culto;
+   - retiradas e horarios;
+   - ocupacao por sala.
+
+# Proximos Passos Apos Fase 104
+
+1. Rodar `npm run build:api` e `npm run build:web` quando o ambiente permitir.
+2. Relatorios de Check-in Kids:
+   - presentes por culto;
+   - retiradas e horarios;
+   - criancas por sala;
+   - alertas importantes por culto.
+3. Evoluir dados da crianca:
+   - autorizados adicionais estruturados;
+   - edicao limitada pelo responsavel;
+   - foto opcional.
+4. Visitante:
+   - cadastro rapido do responsavel visitante;
+   - acesso limitado ao Check-in;
+   - criancas vinculadas ao visitante.
+5. Depois:
+   - Check-in Eventos 2.0;
+   - relatorios gerais de eventos.
+
+# Proximos Passos Apos Fase 105
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Retomar visitante no Check-in Kids:
+   - cadastro rapido do responsavel visitante;
+   - crianca vinculada ao visitante;
+   - acesso limitado ao Check-in;
+   - QR do responsavel visitante;
+   - impressao pelo Totem Kids.
+3. Depois evoluir relatorios:
+   - historico por culto na aba Relatorios;
+   - filtros por periodo/sala/status;
+   - PDF dedicado.
+4. Check-in Eventos 2.0:
+   - totem de evento;
+   - relatorio de participantes;
+   - presentes e ausentes.
+
+# Proximos Passos Apos Fase 106
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Criar link dedicado para cadastro visitante Kids:
+   - URL compartilhavel para visitantes;
+   - texto voltado para responsavel;
+   - opcao futura de cadastrar responsavel e criancas em uma etapa guiada.
+3. Evoluir Check-in Eventos 2.0:
+   - pagina/totem de evento por link;
+   - leitura de QR de ingresso;
+   - lista de inscritos presentes e ausentes;
+   - relatorio CSV/impresso do evento.
+4. Evoluir dados infantis:
+   - edicao limitada pelo responsavel;
+   - autorizados adicionais;
+   - foto opcional;
+   - historico por crianca.

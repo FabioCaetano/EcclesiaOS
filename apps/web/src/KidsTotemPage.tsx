@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { ArrowLeft, Camera, ClipboardCheck, Printer, ScanLine, Search } from "lucide-react";
+import { ArrowLeft, Camera, ClipboardCheck, Download, Printer, RotateCcw, ScanLine, Search } from "lucide-react";
 import type { ChildCheckIn, ChurchEvent, CurrentUser, KidsRoom, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
 import { checkOutChild, loadChildCheckIns, loadEvents, loadKidsRooms, loadLabelTemplates, loadPeople } from "./api";
 import { useQrScanner } from "./useQrScanner";
@@ -32,6 +32,18 @@ const parseChildQrPayload = (value: string) => {
   return { id: parts[1], securityCode: parts[2] };
 };
 
+const parseKidsPreCheckInPayload = (value: string) => {
+  const parts = value.trim().split(":");
+  if (parts.length !== 3 || parts[0] !== "ecclesiaos-kids-precheckin") return null;
+  const items = parts[2].split(",")
+    .map((item) => {
+      const [id, securityCode] = item.split(".");
+      return id && securityCode ? { id, securityCode } : null;
+    })
+    .filter((item): item is { id: string; securityCode: string } => Boolean(item));
+  return { eventId: parts[1], items };
+};
+
 const labelPageStyle = (template: LabelTemplate): string => {
   const width = Math.max(10, Number(template.widthMm) || 62);
   if (template.isContinuous) return `@page { size: ${width}mm auto; margin: 0; }`;
@@ -59,6 +71,12 @@ const childAge = (person: PersonProfile | null): string => {
   return age === null ? "" : `${age} ano(s)`;
 };
 
+const childAlertText = (person: PersonProfile | null): string => {
+  const notes = person?.notes.trim() || "";
+  if (!notes) return "";
+  return notes.split("\n").filter((line) => /^(Alergias|Saude|Retirada):/i.test(line)).join(" | ");
+};
+
 const ChildQrCode: React.FC<{ value: string }> = ({ value }) => {
   const [src, setSrc] = useState("");
 
@@ -80,6 +98,8 @@ const ChildQrCode: React.FC<{ value: string }> = ({ value }) => {
   return src ? <img className="child-label-qr" src={src} alt="QR Code de retirada infantil" /> : <div className="child-label-qr placeholder" />;
 };
 
+const csvEscape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+
 export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
@@ -93,6 +113,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
   const [scanInput, setScanInput] = useState("");
   const [scannerActive, setScannerActive] = useState(false);
   const [printMode, setPrintMode] = useState<"single" | "batch" | null>(null);
+  const [scannedBatchIds, setScannedBatchIds] = useState<string[]>([]);
   const [status, setStatus] = useState("");
 
   const canOperate = user.role === "admin" || user.role === "leader";
@@ -142,9 +163,23 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
     .filter((item) => selectedRoom === "all" || roomFor(item) === selectedRoom)
     .filter((item) => `${item.childName} ${item.guardianName}`.toLowerCase().includes(searchQuery.trim().toLowerCase()));
   const selected = eventCheckIns.find((item) => item.id === selectedId) || activeCheckIns[0] || eventCheckIns[0] || null;
+  const scannedBatchLabels = eventCheckIns.filter((item) => scannedBatchIds.includes(item.id) && !item.checkedOutAt);
+  const batchLabelsToPrint = scannedBatchLabels.length > 0 ? scannedBatchLabels : activeCheckIns;
   const roomSummary = activeRooms.map((room) => ({
     room,
     count: activeCheckIns.filter((item) => roomFor(item) === room.name).length
+  }));
+  const alertedCheckIns = eventCheckIns.filter((item) => childAlertText(childPersonFor(item)));
+  const reportRows = eventCheckIns.map((item) => ({
+    childName: item.childName,
+    guardianName: item.guardianName,
+    guardianPhone: item.guardianPhone,
+    room: roomFor(item),
+    age: childAge(childPersonFor(item)),
+    status: item.checkedOutAt ? "Saiu" : "Presente",
+    checkedInAt: item.checkedInAt ? new Date(item.checkedInAt).toLocaleString("pt-BR") : "",
+    checkedOutAt: item.checkedOutAt ? new Date(item.checkedOutAt).toLocaleString("pt-BR") : "",
+    alert: childAlertText(childPersonFor(item))
   }));
 
   const printLabels = (mode: "single" | "batch") => {
@@ -152,7 +187,56 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
     window.setTimeout(() => window.print(), 50);
   };
 
+  const exportReportCsv = () => {
+    const headers = ["Crianca", "Responsavel", "Telefone", "Sala", "Idade", "Status", "Entrada", "Saida", "Alertas"];
+    const csv = [
+      headers.map(csvEscape).join(","),
+      ...reportRows.map((row) => [
+        row.childName,
+        row.guardianName,
+        row.guardianPhone,
+        row.room,
+        row.age,
+        row.status,
+        row.checkedInAt,
+        row.checkedOutAt,
+        row.alert
+      ].map(csvEscape).join(","))
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `checkin-kids-${event?.date || "culto"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printReport = () => {
+    setPrintMode(null);
+    window.setTimeout(() => window.print(), 50);
+  };
+
   const completeCheckoutFromQr = async (value: string) => {
+    const preCheckIn = parseKidsPreCheckInPayload(value);
+    if (preCheckIn) {
+      if (preCheckIn.eventId !== eventId) {
+        setStatus("QR de check-in pertence a outro culto.");
+        return;
+      }
+      const validIds = preCheckIn.items
+        .filter((payloadItem) => eventCheckIns.some((checkIn) => checkIn.id === payloadItem.id && checkIn.securityCode === payloadItem.securityCode && !checkIn.checkedOutAt))
+        .map((payloadItem) => payloadItem.id);
+      if (validIds.length === 0) {
+        setStatus("Nenhuma crianca ativa encontrada neste QR.");
+        return;
+      }
+      setScannedBatchIds(validIds);
+      setSelectedId(validIds[0]);
+      setStatus(`${validIds.length} crianca(s) carregada(s) do QR. Confira e imprima as etiquetas.`);
+      return;
+    }
+
     const parsed = parseChildQrPayload(value);
     if (!parsed) {
       setStatus("QR Code invalido para retirada infantil.");
@@ -185,7 +269,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
     setScannerActive(false);
   };
 
-  const { videoRef, canvasRef, message: scannerStatus } = useQrScanner({
+  const { videoRef, canvasRef, message: scannerStatus, devices: scannerDevices, selectedDeviceId, setSelectedDeviceId, switchCamera } = useQrScanner({
     active: scannerActive,
     onDecode: handleQrDecoded
   });
@@ -225,6 +309,17 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
             <button className="secondary-button" type="button" onClick={() => printLabels("batch")} disabled={activeCheckIns.length === 0}>
               <Printer size={16} /> Imprimir presentes
             </button>
+            {scannedBatchLabels.length > 0 && (
+              <button className="secondary-button" type="button" onClick={() => printLabels("batch")}>
+                <Printer size={16} /> Imprimir QR lido
+              </button>
+            )}
+            <button className="secondary-button" type="button" onClick={exportReportCsv} disabled={eventCheckIns.length === 0}>
+              <Download size={16} /> CSV
+            </button>
+            <button className="secondary-button" type="button" onClick={printReport} disabled={eventCheckIns.length === 0}>
+              <Printer size={16} /> Relatorio
+            </button>
           </div>
         )}
       />
@@ -235,19 +330,54 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
           <article><span>Presentes</span><strong>{activeCheckIns.length}</strong></article>
           <article><span>Retiradas</span><strong>{checkedOutCheckIns.length}</strong></article>
           <article><span>Total</span><strong>{eventCheckIns.length}</strong></article>
-          <article><span>Salas</span><strong>{roomSummary.filter((item) => item.count > 0).length}</strong></article>
+          <article><span>Alertas</span><strong>{alertedCheckIns.length}</strong></article>
         </div>
+
+        <section className="kids-report-panel">
+          <div className="section-heading compact-heading">
+            <div>
+              <p className="eyebrow">Relatorio do culto</p>
+              <h3>Resumo operacional</h3>
+            </div>
+          </div>
+          <div className="report-columns">
+            <div>
+              <h4>Por sala</h4>
+              {roomSummary.filter((item) => item.count > 0).length === 0 ? <p className="muted">Nenhuma sala em uso.</p> : roomSummary.filter((item) => item.count > 0).map(({ room, count }) => (
+                <p className="report-row" key={room.id}><span>{room.name}</span><strong>{count}</strong></p>
+              ))}
+            </div>
+            <div>
+              <h4>Alertas importantes</h4>
+              {alertedCheckIns.length === 0 ? <p className="muted">Nenhum alerta informado.</p> : alertedCheckIns.slice(0, 6).map((item) => (
+                <p className="report-row" key={`alert-${item.id}`}><span>{item.childName}</span><strong>{childAlertText(childPersonFor(item))}</strong></p>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <div className="totem-grid">
           <section className="scanner-panel">
             <div>
               <h3>Leitor de retirada</h3>
-              <p className="muted">Leia o QR da etiqueta ou cole o conteudo manualmente.</p>
+            <p className="muted">Leia o QR do responsavel para imprimir etiquetas ou o QR da etiqueta para retirada.</p>
             </div>
             <div className="scanner-actions">
               <button className="secondary-button" type="button" onClick={() => setScannerActive((current) => !current)}>
                 <Camera size={16} /> {scannerActive ? "Parar camera" : "Abrir camera"}
               </button>
+              {scannerDevices.length > 1 && (
+                <>
+                  <select value={selectedDeviceId} onChange={(cameraEvent) => setSelectedDeviceId(cameraEvent.target.value)}>
+                    {scannerDevices.map((device, index) => (
+                      <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>
+                    ))}
+                  </select>
+                  <button className="secondary-button" type="button" onClick={switchCamera}>
+                    <RotateCcw size={16} /> Virar camera
+                  </button>
+                </>
+              )}
               <input value={scanInput} onChange={(scanEvent) => setScanInput(scanEvent.target.value)} placeholder="ecclesiaos-child-checkout:..." />
               <button className="secondary-button" type="button" onClick={() => completeCheckoutFromQr(scanInput)}>
                 <ScanLine size={16} /> Validar
@@ -300,6 +430,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
                       <strong>{item.childName}</strong>
                       <span>{roomFor(item)} - codigo {item.securityCode}</span>
                       <small>{item.guardianName} - {item.guardianPhone || "sem telefone"}</small>
+                      {childAlertText(childPersonFor(item)) && <small className="child-alert-text">{childAlertText(childPersonFor(item))}</small>}
                     </div>
                     <div className="response-actions">
                       <StatusPill tone={item.checkedOutAt ? "muted" : "success"}>{item.checkedOutAt ? "Saiu" : "Presente"}</StatusPill>
@@ -336,6 +467,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
                   <p>Sala: {roomFor(selected)}</p>
                   <p>Responsavel: {selected.guardianName}</p>
                   {childAge(childPersonFor(selected)) && <p>Idade: {childAge(childPersonFor(selected))}</p>}
+                  {childAlertText(childPersonFor(selected)) && <p>Alerta: {childAlertText(childPersonFor(selected))}</p>}
                   <p>Telefone: {selected.guardianPhone || "Nao informado"}</p>
                   {selected.checkedOutAt && <p>Retirado</p>}
                 </div>
@@ -347,10 +479,10 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
           </aside>
         </div>
 
-        {activeCheckIns.length > 0 && (
+        {batchLabelsToPrint.length > 0 && (
           <div className="batch-label-preview">
             {printMode === "batch" && <style>{labelPageStyle(template)}</style>}
-            {activeCheckIns.map((item) => (
+            {batchLabelsToPrint.map((item) => (
               <div className={`child-label-card child-label-print-area batch-label-print-area ${labelPresetClass(template)}`} key={item.id}>
                 <p className="eyebrow">EcclesiaOS Kids</p>
                 <h3>{item.childName}</h3>
@@ -361,6 +493,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
                 <p>{event?.title || "Culto"}</p>
                 <p>Sala: {roomFor(item)}</p>
                 <p>Responsavel: {item.guardianName}</p>
+                {childAlertText(childPersonFor(item)) && <p>Alerta: {childAlertText(childPersonFor(item))}</p>}
               </div>
             ))}
           </div>

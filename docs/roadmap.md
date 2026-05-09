@@ -1734,3 +1734,119 @@ Possivel escopo:
 - Alternancia de camera.
 - Check-in Eventos 2.0.
 - Relatorios de Check-in.
+
+# Roadmap - Atualizacao Fase 101
+
+## Concluido
+
+- Fase 101 - QR do responsavel para carregar lote no Totem Kids.
+
+## Proxima fase sugerida
+
+- Cadastro de crianca pelo responsavel dentro do Check-in Kids.
+
+## Alternativa
+
+- Alternancia de camera frontal/traseira no leitor de QR.
+
+## Depois
+
+- Visitante com cadastro rapido.
+- Relatorios de Check-in.
+- Check-in Eventos 2.0.
+
+# Roadmap - Atualizacao Fase 102
+
+## Concluido
+
+- Fase 102 - Cadastro reduzido de crianca pelo responsavel.
+
+## Proxima fase sugerida
+
+- Melhorias do leitor de QR/camera.
+
+## Alternativa
+
+- Autorizados adicionais e dados medicos da crianca.
+
+## Depois
+
+- Visitante com cadastro rapido.
+- Relatorios de Check-in.
+- Check-in Eventos 2.0.
+
+# Roadmap - Atualizacao Fase 103
+
+## Concluido
+
+- Fase 103 - Selecao e alternancia de camera nos leitores de QR.
+
+## Proxima fase sugerida
+
+- Dados sensiveis da crianca no Check-in Kids: autorizados, alergias e alertas.
+
+## Alternativa
+
+- Feedback visual/sonoro do scanner.
+
+## Depois
+
+- Visitante com cadastro rapido.
+- Relatorios de Check-in.
+- Check-in Eventos 2.0.
+
+# Roadmap - Atualizacao Fase 104
+
+## Concluido
+
+- Fase 104 - Alertas infantis no Check-in, Totem e etiquetas.
+
+## Proxima fase sugerida
+
+- Relatorios de Check-in Kids por culto.
+
+## Alternativa
+
+- Autorizados adicionais estruturados para retirada.
+
+## Depois
+
+- Visitante com cadastro rapido.
+- Check-in Eventos 2.0.
+
+# Roadmap - Atualizacao Fase 105
+
+## Concluido
+
+- Fase 105 - Relatorio de Check-in Kids por culto no Totem.
+
+## Proxima fase sugerida
+
+- Visitante no Check-in Kids com cadastro rapido e acesso limitado.
+
+## Alternativa
+
+- Relatorios historicos de Check-in na aba Relatorios.
+
+## Depois
+
+- Check-in Eventos 2.0.
+
+# Roadmap - Atualizacao Fase 106
+
+## Concluido
+
+- Fase 106 - Visitante no Check-in Kids com entrada explicita no login e acesso direcionado ao Check-in.
+
+## Proxima fase sugerida
+
+- Check-in Eventos 2.0 com totem de evento, leitura de QR de ingresso e relatorio de participantes.
+
+## Alternativa
+
+- Cadastro publico unificado de responsavel visitante + criancas.
+
+## Depois
+
+- Relatorios historicos de Check-in na aba Relatorios.
+- Notificacoes internas.

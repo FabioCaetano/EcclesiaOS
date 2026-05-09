@@ -93,7 +93,9 @@ const App = () => {
   const handleLogin = (nextSession: AuthSession) => {
     setSession(nextSession);
     saveSession(nextSession);
-    setCurrentView("home");
+    const postLoginView = window.localStorage.getItem("ecclesiaos.postLoginView");
+    window.localStorage.removeItem("ecclesiaos.postLoginView");
+    setCurrentView(postLoginView === "checkin" ? "checkin" : "home");
   };
 
   const handleLogout = () => {

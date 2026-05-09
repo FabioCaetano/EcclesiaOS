@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, KidsRoom, KidsRoomInput, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, GuardianChildInput, KidsRoom, KidsRoomInput, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -378,6 +378,17 @@ export const savePerson = async (token: string, input: PersonInput, id?: string)
   });
 
   if (!response.ok) throw new Error("person-save-failed");
+  return response.json() as Promise<PersonProfile>;
+};
+
+export const createMyChild = async (token: string, input: GuardianChildInput): Promise<PersonProfile> => {
+  const response = await fetch(`${apiBaseUrl}/people/my-children`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error("guardian-child-create-failed");
   return response.json() as Promise<PersonProfile>;
 };
 

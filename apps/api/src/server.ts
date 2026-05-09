@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, KidsRoomInput, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, GuardianChildInput, HealthResponse, KidsRoomInput, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -676,6 +676,47 @@ const handleCreatePerson = async (req: IncomingMessage, res: ServerResponse) => 
   const person = await personRepository.create(sanitizePersonInput(body));
   await recordAudit(user, "create", "person", person.id, `Pessoa criada: ${person.firstName} ${person.lastName}`.trim());
   sendJson(res, 201, person);
+};
+
+const handleCreateMyChild = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!user.personId) {
+    sendError(res, 403, "forbidden", "Seu usuario precisa estar vinculado a uma pessoa para cadastrar criancas.");
+    return;
+  }
+
+  const body = await readJson<GuardianChildInput>(req);
+  const firstName = String(body?.firstName || "").trim();
+  const lastName = String(body?.lastName || "").trim();
+  if (!firstName && !lastName) {
+    sendError(res, 400, "invalid_json", "Informe o nome da crianca.");
+    return;
+  }
+
+  const notes = [
+    String(body?.allergies || "").trim() ? `Alergias: ${String(body?.allergies || "").trim()}` : "",
+    String(body?.medicalNotes || "").trim() ? `Saude: ${String(body?.medicalNotes || "").trim()}` : "",
+    String(body?.pickupNotes || "").trim() ? `Retirada: ${String(body?.pickupNotes || "").trim()}` : "",
+    String(body?.notes || "").trim()
+  ].filter(Boolean).join("\n");
+
+  const child = await personRepository.create({
+    firstName,
+    lastName,
+    email: "",
+    phone: "",
+    birthDate: String(body?.birthDate || "").trim(),
+    membershipDate: "",
+    address: "",
+    baptized: false,
+    gender: "unspecified",
+    status: "visitor",
+    guardianPersonIds: [user.personId],
+    notes
+  });
+  await recordAudit(user, "create", "person", child.id, `Crianca cadastrada pelo responsavel: ${child.firstName} ${child.lastName}`.trim());
+  sendJson(res, 201, child);
 };
 
 const handleUpdatePerson = async (req: IncomingMessage, res: ServerResponse, id: string) => {
@@ -2925,6 +2966,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/people") {
     void handleCreatePerson(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/people/my-children") {
+    void handleCreateMyChild(req, res);
     return;
   }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { ArrowLeft, CalendarDays, Plus } from "lucide-react";
+import { ArrowLeft, CalendarDays, Plus, RotateCcw } from "lucide-react";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
 import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
@@ -110,7 +110,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
     setTicketScannerActive(false);
   };
 
-  const { videoRef: ticketVideoRef, canvasRef: ticketCanvasRef, message: ticketScannerStatus } = useQrScanner({
+  const { videoRef: ticketVideoRef, canvasRef: ticketCanvasRef, message: ticketScannerStatus, devices: ticketScannerDevices, selectedDeviceId: ticketScannerDeviceId, setSelectedDeviceId: setTicketScannerDeviceId, switchCamera: switchTicketScannerCamera } = useQrScanner({
     active: ticketScannerActive,
     onDecode: handleTicketScan
   });
@@ -568,6 +568,18 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
             </div>
             <div className="scanner-actions">
               <button className="secondary-button" type="button" onClick={() => setTicketScannerActive((current) => !current)}>{ticketScannerActive ? "Parar camera" : "Abrir camera"}</button>
+              {ticketScannerDevices.length > 1 && (
+                <>
+                  <select value={ticketScannerDeviceId} onChange={(event) => setTicketScannerDeviceId(event.target.value)}>
+                    {ticketScannerDevices.map((device, index) => (
+                      <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>
+                    ))}
+                  </select>
+                  <button className="secondary-button" type="button" onClick={switchTicketScannerCamera}>
+                    <RotateCcw size={16} /> Virar camera
+                  </button>
+                </>
+              )}
               <input value={ticketScanInput} onChange={(event) => setTicketScanInput(event.target.value)} placeholder="ecclesiaos-event-ticket:..." />
               <button className="secondary-button" type="button" onClick={() => completeTicketCheckIn(ticketScanInput)}>Validar ingresso</button>
             </div>

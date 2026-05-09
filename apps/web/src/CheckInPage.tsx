@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Camera, ClipboardCheck, MessageCircle, Printer, ScanLine, Search, Tag, X } from "lucide-react";
+import { Camera, ClipboardCheck, MessageCircle, Printer, RotateCcw, ScanLine, Search, Tag, X } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
-import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, KidsRoom, KidsRoomInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
-import { checkOutChild, deleteEventCheckIn, deleteKidsRoom, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadKidsRooms, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn, saveKidsRoom } from "./api";
+import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, GuardianChildInput, KidsRoom, KidsRoomInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
+import { checkOutChild, createMyChild, deleteEventCheckIn, deleteKidsRoom, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadKidsRooms, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn, saveKidsRoom } from "./api";
 import { useQrScanner } from "./useQrScanner";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
@@ -35,6 +35,16 @@ const emptyKidsRoomInput: KidsRoomInput = {
   capacity: 0,
   responsiblePersonIds: [],
   isActive: true
+};
+
+const emptyGuardianChildInput: GuardianChildInput = {
+  firstName: "",
+  lastName: "",
+  birthDate: "",
+  allergies: "",
+  medicalNotes: "",
+  pickupNotes: "",
+  notes: ""
 };
 
 type PrintMode = "single" | "batch" | null;
@@ -112,6 +122,10 @@ const parseChildQrPayload = (value: string) => {
   return { id: parts[1], securityCode: parts[2] };
 };
 
+const kidsPreCheckInPayload = (eventId: string, checkIns: ChildCheckIn[]) => (
+  `ecclesiaos-kids-precheckin:${eventId}:${checkIns.map((item) => `${item.id}.${item.securityCode}`).join(",")}`
+);
+
 const ChildQrCode: React.FC<{ value: string }> = ({ value }) => {
   const [src, setSrc] = useState("");
 
@@ -158,6 +172,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [printMode, setPrintMode] = useState<PrintMode>(null);
   const [activeView, setActiveView] = useState<CheckInView>((user.role === "admin" || user.role === "leader") ? "events" : "kids");
   const [selectedGuardianChildIds, setSelectedGuardianChildIds] = useState<string[]>([]);
+  const [guardianChildForm, setGuardianChildForm] = useState<GuardianChildInput>(emptyGuardianChildInput);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -238,7 +253,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
     setScannerActive(false);
   };
 
-  const { videoRef, canvasRef, status: scannerCameraStatus, message: scannerStatus } = useQrScanner({
+  const { videoRef, canvasRef, message: scannerStatus, devices: scannerDevices, selectedDeviceId, setSelectedDeviceId, switchCamera } = useQrScanner({
     active: scannerActive,
     onDecode: handleQrDecoded
   });
@@ -273,6 +288,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const childAge = (person: PersonProfile | null): string => {
     const age = childAgeNumber(person);
     return age === null ? "" : `${age} ano(s)`;
+  };
+
+  const childAlertText = (person: PersonProfile | null): string => {
+    const notes = person?.notes.trim() || "";
+    if (!notes) return "";
+    return notes.split("\n").filter((line) => /^(Alergias|Saude|Retirada):/i.test(line)).join(" | ");
   };
 
   const childPersonFor = (item: ChildCheckIn): PersonProfile | null => (
@@ -532,6 +553,25 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
     }
   };
 
+  const submitGuardianChild = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!guardianChildForm.firstName.trim() && !guardianChildForm.lastName.trim()) {
+      setStatus("Informe o nome da crianca.");
+      return;
+    }
+
+    setStatus("Cadastrando crianca...");
+    try {
+      const child = await createMyChild(token, guardianChildForm);
+      await refresh();
+      setSelectedGuardianChildIds((current) => [...current, child.id]);
+      setGuardianChildForm(emptyGuardianChildInput);
+      setStatus("Crianca cadastrada e selecionada para o check-in.");
+    } catch {
+      setStatus("Nao foi possivel cadastrar a crianca.");
+    }
+  };
+
   const guardianMessageLink = (item: ChildCheckIn) => {
     const phone = item.guardianPhone.replace(/\D/g, "");
     const message = encodeURIComponent(`Ola, ${item.guardianName}. A crianca ${item.childName} ainda esta aguardando retirada no ministerio infantil. Codigo: ${item.securityCode}.`);
@@ -611,6 +651,18 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           <button className="secondary-button" type="button" onClick={() => setScannerActive((current) => !current)}>
             <Camera size={16} /> {scannerActive ? "Parar camera" : "Abrir camera"}
           </button>
+          {scannerDevices.length > 1 && (
+            <>
+              <select value={selectedDeviceId} onChange={(event) => setSelectedDeviceId(event.target.value)}>
+                {scannerDevices.map((device, index) => (
+                  <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>
+                ))}
+              </select>
+              <button className="secondary-button" type="button" onClick={switchCamera}>
+                <RotateCcw size={16} /> Virar camera
+              </button>
+            </>
+          )}
           <input value={scanInput} onChange={(event) => setScanInput(event.target.value)} placeholder="ecclesiaos-child-checkout:..." />
           <button className="secondary-button" type="button" onClick={() => completeCheckoutFromQr(scanInput)}>
             <ScanLine size={16} /> Validar QR
@@ -683,6 +735,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                 <p className="muted">Selecione as criancas que estao com voce neste culto.</p>
               </div>
             </div>
+            {currentPerson?.status === "visitor" && (
+              <div className="visitor-checkin-note">
+                <strong>Acesso visitante</strong>
+                <span>Voce pode cadastrar criancas, gerar QR do Check-in Kids e acompanhar a retirada. Outros modulos continuam restritos.</span>
+              </div>
+            )}
             {!currentPerson && <p className="form-status">Seu usuario ainda nao esta vinculado a uma pessoa.</p>}
             {guardianChildren.length === 0 ? (
               <EmptyState icon={ClipboardCheck} title="Nenhuma crianca vinculada" description="Peça para a secretaria vincular seus familiares no cadastro de pessoas." />
@@ -703,6 +761,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                       <span>
                         <strong>{child.firstName} {child.lastName}</strong>
                         <small>{active ? "Ja esta em check-in" : `${childAge(child)} - ${room}`}</small>
+                        {childAlertText(child) && <small className="child-alert-text">{childAlertText(child)}</small>}
                       </span>
                     </button>
                   );
@@ -715,9 +774,29 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               </button>
               <p>{status}</p>
             </div>
+            <form className="guardian-child-form" onSubmit={submitGuardianChild}>
+              <h4>Adicionar crianca</h4>
+              <label>Nome<input value={guardianChildForm.firstName} onChange={(event) => setGuardianChildForm((current) => ({ ...current, firstName: event.target.value }))} /></label>
+              <label>Sobrenome<input value={guardianChildForm.lastName} onChange={(event) => setGuardianChildForm((current) => ({ ...current, lastName: event.target.value }))} /></label>
+              <label>Data de nascimento<input type="date" value={guardianChildForm.birthDate} onChange={(event) => setGuardianChildForm((current) => ({ ...current, birthDate: event.target.value }))} /></label>
+              <label>Alergias<input value={guardianChildForm.allergies} onChange={(event) => setGuardianChildForm((current) => ({ ...current, allergies: event.target.value }))} /></label>
+              <label>Saude<input value={guardianChildForm.medicalNotes} onChange={(event) => setGuardianChildForm((current) => ({ ...current, medicalNotes: event.target.value }))} /></label>
+              <label>Retirada<input value={guardianChildForm.pickupNotes} onChange={(event) => setGuardianChildForm((current) => ({ ...current, pickupNotes: event.target.value }))} /></label>
+              <label className="wide-field">Observacoes<input value={guardianChildForm.notes} onChange={(event) => setGuardianChildForm((current) => ({ ...current, notes: event.target.value }))} /></label>
+              <div className="form-footer">
+                <button type="submit">Cadastrar crianca</button>
+              </div>
+            </form>
             {guardianActiveCheckIns.length > 0 && (
               <div className="guardian-active-list">
                 <h4>Criancas ativas neste culto</h4>
+                <div className="guardian-precheckin-qr">
+                  <ChildQrCode value={kidsPreCheckInPayload(operationEventId, guardianActiveCheckIns)} />
+                  <div>
+                    <strong>QR do check-in</strong>
+                    <span>Apresente este QR no Totem Kids para imprimir as etiquetas.</span>
+                  </div>
+                </div>
                 {guardianActiveCheckIns.map((item) => (
                   <p className="report-row" key={item.id}>
                     <span>{item.childName} - {suggestedRoomForCheckIn(item)}</span>
