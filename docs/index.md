@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 87 - Atalhos Entre Modulos**.
+Fase atual concluida: **Fase 91 - Check-in Kids Dashboard 2**.
 
 Ultimo modulo entregue:
 
-- aba Culto ganhou atalhos para Agenda, Escalas, Musicas e Liturgia;
-- atalhos respeitam permissao de acesso do usuario;
-- navegação usa o estado interno atual do app;
-- sem nova migration e sem nova API;
-- builds e testes passaram apos a mudanca.
+- Check-in Kids ganhou filtros por sala;
+- dashboard lateral de salas e clicavel;
+- ocupacao/capacidade aparece por sala;
+- alertas indicam sala lotada, perto do limite e criancas sem sala definida;
+- build do frontend passou apos a mudanca.
 
 Ambiente atual:
 
@@ -214,6 +214,7 @@ Ambiente atual:
 - [[decisions/0085-service-execution-actions|0085 - Acoes Diretas Na Execucao Do Culto]]
 - [[decisions/0087-service-module-shortcuts|0087 - Atalhos Entre Modulos Da Operacao Do Culto]]
 - [[decisions/0088-agenda-resources-serving-polish|0088 - Polimento De Agenda, Ambientes E Escalas]]
+- [[decisions/0089-kids-room-suggestions-client-side|0089 - Salas Kids Sugeridas Pelo Frontend]]
 
 ## Proximos Caminhos
 
@@ -274,3 +275,35 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-87-service-module-shortcuts.md`: atalhos da aba Culto para Agenda, Escalas, Musicas e Liturgia.
 - `docs/decisions/0087-service-module-shortcuts.md`: decisao de usar navegacao interna existente e respeitar permissoes via `canAccessModule`.
+# Atualizacao - Fase 88
+
+- `docs/phases/phase-88-agenda-checkin-serving-polish.md`: polimento de Agenda, Ambientes e Escalas.
+- `docs/decisions/0088-agenda-resources-serving-polish.md`: decisao de gerar recorrencias automaticamente e separar melhor ambientes/reservas.
+# Atualizacao - Fase 89
+
+- `docs/phases/phase-89-kids-room-suggestions.md`: Check-in Kids com salas sugeridas por idade.
+- `docs/decisions/0089-kids-room-suggestions-client-side.md`: decisao de calcular sala no frontend como primeiro passo.
+# Atualizacao - Fase 90
+
+- `docs/phases/phase-90-kids-room-configuration.md`: salas infantis configuraveis e persistidas.
+- `docs/decisions/0090-kids-room-configuration.md`: decisao de tratar salas infantis como configuracao operacional do Check-in.
+# Atualizacao - Fase 91
+
+- `docs/phases/phase-91-checkin-kids-dashboard-2.md`: dashboard Kids com filtro por sala e alertas de lotacao.
+- `docs/decisions/0091-checkin-kids-dashboard-2.md`: decisao de tratar lotacao como alerta operacional nesta etapa.
+# Atualizacao - Fase 92
+
+- `docs/phases/phase-92-serving-operational-filters.md`: Escalas com filtros operacionais por status/equipe e substituto rapido.
+- `docs/decisions/0092-serving-operational-filters.md`: decisao de manter substituicao por rascunho e acao rapida de aplicar/salvar.
+# Atualizacao - Fase 93
+
+- `docs/phases/phase-93-serving-plan-status-sections.md`: detalhe da escala agrupado por recusadas, pendentes e confirmadas.
+- `docs/decisions/0093-serving-plan-status-sections.md`: decisao de priorizar recusas e pendencias no detalhe operacional da escala.
+# Atualizacao - Fase 94
+
+- `docs/phases/phase-94-serving-substitute-api.md`: rota dedicada para aplicar substituto em uma escala.
+- `docs/decisions/0094-serving-substitute-api.md`: decisao de centralizar substituicao no backend com validacoes, auditoria e notificacao.
+# Atualizacao - Fase 95
+
+- `docs/phases/phase-95-serving-monthly-leader-view.md`: visao mensal de escalas por equipe para lider/admin.
+- `docs/decisions/0095-serving-monthly-leader-view.md`: decisao de transformar a matriz em acompanhamento mensal por equipe.

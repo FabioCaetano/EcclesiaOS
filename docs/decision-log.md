@@ -203,3 +203,31 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0088-agenda-resources-serving-polish.md`
 - Agenda passou a gerar ocorrencias automaticamente, Ambientes foi separado em cadastro/reservas, e lider pode criar escala apenas para sua equipe.
+# Decisao 0089
+
+- `docs/decisions/0089-kids-room-suggestions-client-side.md`
+- Check-in Kids passou a sugerir sala pela idade no frontend, exibindo a sala no dashboard e nas etiquetas.
+# Decisao 0090
+
+- `docs/decisions/0090-kids-room-configuration.md`
+- Salas infantis viraram configuracao persistida do Check-in, com faixa etaria, capacidade, responsaveis e status ativo.
+# Decisao 0091
+
+- `docs/decisions/0091-checkin-kids-dashboard-2.md`
+- Lotacao das salas infantis passou a ser alerta operacional no frontend, com filtros por sala no Check-in.
+# Decisao 0092
+
+- `docs/decisions/0092-serving-operational-filters.md`
+- Escalas recebeu filtros operacionais e acao rapida para aplicar substituto sugerido salvando o plano.
+# Decisao 0093
+
+- `docs/decisions/0093-serving-plan-status-sections.md`
+- O detalhe da escala passou a agrupar escalados por status, priorizando recusas e pendencias.
+# Decisao 0094
+
+- `docs/decisions/0094-serving-substitute-api.md`
+- Aplicacao de substituto em Escalas ganhou rota dedicada com validacoes, auditoria e notificacao best-effort.
+# Decisao 0095
+
+- `docs/decisions/0095-serving-monthly-leader-view.md`
+- Escalas ganhou visao mensal por equipe com carga por voluntario, resumo de status e abertura direta do plano.

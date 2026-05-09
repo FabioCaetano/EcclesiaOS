@@ -1486,6 +1486,61 @@ Possivel escopo:
 
 - Filtros rapidos de escala por pendente/recusada.
 - Aplicacao automatica de substituto sugerido.
+
+# Roadmap - Atualizacao Fase 89
+
+## Concluido
+
+- Fase 89 - Check-in Kids com salas sugeridas por idade.
+
+## Proxima fase sugerida
+
+- Configuracao administravel de salas infantis: faixa etaria, capacidade e responsaveis.
+
+## Alternativa
+
+- Dashboard Kids 2: lotacao por sala, alerta de sala cheia e fila de retirada.
+
+## Depois
+
+- Atalhos contextuais por culto selecionado.
+- Aplicacao automatica de substituto sugerido em Escalas.
+# Roadmap - Atualizacao Fase 90
+
+## Concluido
+
+- Fase 90 - Salas Infantis Configuraveis.
+
+## Proxima fase sugerida
+
+- Dashboard Kids 2: lotacao por sala, alerta de sala cheia e filtro operacional por sala.
+
+## Alternativa
+
+- Construtor de Formularios 2.
+
+## Depois
+
+- Permissoes por responsavel de sala.
+- Aplicacao automatica de substituto sugerido em Escalas.
+# Roadmap - Atualizacao Fase 91
+
+## Concluido
+
+- Fase 91 - Check-in Kids Dashboard 2.
+
+## Proxima fase sugerida
+
+- Check-in Eventos 2: painel operacional de participantes por evento, filtros por status e leitura/check-in mais direta.
+
+## Alternativa
+
+- Escalas 2: aplicar substituto sugerido com um clique e reduzir poluicao visual da tela.
+
+## Depois
+
+- Bloqueio opcional de sala cheia com override por lider/admin.
+- Permissoes por responsavel de sala.
 # Roadmap - Atualizacao Fase 87
 
 ## Concluido
@@ -1504,3 +1559,80 @@ Possivel escopo:
 
 - Construtor de Formularios 2.
 - Permissoes operacionais mais granulares.
+
+# Roadmap - Atualizacao Fase 92
+
+## Concluido
+
+- Fase 92 - Escalas com filtros operacionais e substituto rapido.
+
+## Proxima fase sugerida
+
+- Escalas 3: organizar o detalhe do plano por pendentes/recusadas/confirmadas e criar fluxo dedicado de substituicao com auditoria.
+
+## Alternativa
+
+- Retomar Culto operacional com atalhos contextuais por culto selecionado.
+
+## Depois
+
+- Notificacao ao substituto aplicado.
+- Visao mensal do lider por equipe.
+- Check-in Eventos 2.
+
+# Roadmap - Atualizacao Fase 93
+
+## Concluido
+
+- Fase 93 - Detalhe da escala agrupado por status.
+
+## Proxima fase sugerida
+
+- Escalas 4: substituicao dedicada no backend, com auditoria e notificacao.
+
+## Alternativa
+
+- Visao mensal do lider por equipe.
+
+## Depois
+
+- Atalhos contextuais do Culto para abrir a escala do evento.
+- Check-in Eventos 2.
+
+# Roadmap - Atualizacao Fase 94
+
+## Concluido
+
+- Fase 94 - Rota dedicada para aplicar substituto em Escalas.
+
+## Proxima fase sugerida
+
+- Escalas 5: visao mensal do lider por equipe.
+
+## Alternativa
+
+- Exibir resultado da notificacao e historico de substituicao no frontend.
+
+## Depois
+
+- Atalhos contextuais do Culto para abrir a escala do evento.
+- Check-in Eventos 2.
+
+# Roadmap - Atualizacao Fase 95
+
+## Concluido
+
+- Fase 95 - Visao mensal do lider por equipe.
+
+## Proxima fase sugerida
+
+- Encerrar Passo 5 com polimento de Escalas: sobrecarga, exportacao/impressao mensal e feedback de notificacao.
+
+## Alternativa
+
+- Retomar Passo 3 - Culto operacional com atalhos contextuais por culto.
+
+## Depois
+
+- Check-in Eventos 2.
+- Fila de retirada Kids.

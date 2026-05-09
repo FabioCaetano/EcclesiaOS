@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 87 - Atalhos Entre Modulos**.
+O EcclesiaOS concluiu ate a **Fase 91 - Check-in Kids Dashboard 2**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -21,7 +21,7 @@ A base atual ja cobre:
 - agenda/eventos com inscricoes publicas, ingresso, QR Code, pagamento manual, confirmacao opcional de email, reenvio administrativo de confirmacao e check-in self-service;
 - cron real com ocorrencias materializadas como eventos filhos;
 - ambientes, reservas e calendario mensal/semanal;
-- check-in de evento, Kids, administracao kids, painel operacional por culto/evento, QR universal e etiquetas Brother;
+- check-in de evento, Kids, administracao kids, salas infantis configuraveis, filtro por sala, alerta de lotacao, painel operacional por culto/evento, QR universal e etiquetas Brother;
 - escalas estilo Planning Center: evento solicita equipes, lider escala a propria equipe por posicao, pessoas habilitadas por posicao, matrix view para admin/lider, pendencias por perfil, indisponibilidade no modulo, lembretes por email e substitutos automaticos por posicao;
 - musicas/repertorios por culto, liturgia/checklist por culto, visao unica operacional do culto, modo Execucao, acoes diretas na liturgia e atalhos entre modulos;
 - formularios customizados com responsaveis, notificacoes por email, respostas, exportacao CSV, filtros e relatorios agregados;
@@ -52,11 +52,11 @@ Para ambiente publicado:
 
 ## Bloqueadores Imediatos
 
-1. Publicar a Fase 87 no GitHub e redeployar Render/Vercel.
-2. Aplicar migrations Prisma pendentes das fases 75 a 79 nos ambientes que ainda nao receberam deploy.
-3. Seguir para Check-in Salas Infantis, Atalhos Contextuais ou Construtor de Formularios 2.
-4. Check-in ainda pode evoluir com salas infantis por idade e dashboard por sala.
-5. A aba Culto pode ganhar atalhos diretos para editar Agenda, Escalas, Musicas e Liturgia.
+1. Publicar as Fases 90 e 91 no GitHub e redeployar Render/Vercel.
+2. Aplicar a migration `20260509090000_kids_rooms` no ambiente online.
+3. Testar Check-in > Salas e Check-in > Administracao kids com admin/lider.
+4. Seguir para o proximo bloco combinado: Escalas ou um polimento final de Check-in Eventos.
+5. Retomar proximas fases fora de auditoria, conforme prioridade do produto.
 
 ## Proximas Fases Recomendadas
 
@@ -272,3 +272,82 @@ Motivo: a operacao do culto ja tem leitura, execucao e atalhos; o maior ganho op
    - filtro rapido de pendentes/recusadas;
    - aplicar substituto sugerido salvando automaticamente;
    - notificacao mais clara para lider quando houver recusa.
+
+# Proximos Passos Apos Fase 89
+
+1. Testar Check-in Kids localmente:
+   - vincular crianca a pessoa com data de nascimento;
+   - registrar check-in infantil;
+   - conferir sala sugerida;
+   - imprimir/preview de etiqueta com sala.
+2. Transformar salas em configuracao administravel:
+   - cadastro de salas;
+   - faixa etaria inicial/final;
+   - capacidade por sala;
+   - responsaveis por sala.
+3. Evoluir dashboard kids:
+   - lotacao por sala;
+   - alerta de sala cheia;
+   - fila de retirada.
+4. Retomar atalhos contextuais do Culto:
+   - abrir modulos ja filtrados pelo culto selecionado.
+
+# Proximos Passos Apos Fase 92
+
+1. Publicar a Fase 92 no GitHub e redeployar o frontend.
+2. Continuar o Passo 5 - Escalas:
+   - separar visualmente pendentes, recusadas e confirmadas dentro do plano selecionado;
+   - criar acao de backend especifica para substituicao com auditoria;
+   - enviar notificacao opcional quando substituto for aplicado;
+   - melhorar a visao mensal do lider por equipe.
+3. Retomar Passo 3 - Liturgia/Culto operacional:
+   - atalhos contextuais abrindo modulos ja filtrados pelo culto selecionado;
+   - consolidar reservas e check-in do culto na visao operacional.
+4. Retomar Passo 4 - Check-in:
+   - painel operacional de eventos;
+   - fila de retirada Kids;
+   - regras de bloqueio/override para sala cheia.
+
+# Proximos Passos Apos Fase 93
+
+1. Publicar a Fase 93 no GitHub e redeployar o frontend.
+2. Continuar Passo 5 - Escalas:
+   - criar endpoint especifico para aplicar substituto;
+   - registrar auditoria da substituicao;
+   - notificar substituto quando aplicado;
+   - criar visao mensal do lider por equipe.
+3. Retomar Passo 3 - Culto operacional:
+   - abrir Escalas, Liturgia e Musicas ja filtradas pelo culto selecionado;
+   - consolidar reservas e check-in do culto na visao operacional.
+4. Retomar Passo 4 - Check-in:
+   - painel operacional de eventos;
+   - fila de retirada Kids;
+   - refinamento das etiquetas por sala.
+
+# Proximos Passos Apos Fase 94
+
+1. Publicar a Fase 94 no GitHub e redeployar API e frontend.
+2. Continuar Passo 5 - Escalas:
+   - exibir resultado da notificacao ao aplicar substituto;
+   - criar visao mensal do lider por equipe;
+   - permitir motivo estruturado para substituicao;
+   - destacar historico de substituicoes na auditoria.
+3. Retomar Passo 3 - Culto operacional:
+   - abrir Escalas, Liturgia e Musicas ja filtradas pelo culto selecionado.
+4. Retomar Passo 4 - Check-in:
+   - painel operacional de eventos;
+   - fila de retirada Kids.
+
+# Proximos Passos Apos Fase 95
+
+1. Publicar a Fase 95 no GitHub e redeployar o frontend.
+2. Fechar Passo 5 - Escalas com polimentos:
+   - exibir resultado da notificacao ao aplicar substituto;
+   - destacar pessoas sobrecarregadas no mes;
+   - permitir exportar/imprimir escala mensal;
+   - permitir motivo estruturado para substituicao.
+3. Retomar Passo 3 - Culto operacional:
+   - abrir Escalas, Liturgia e Musicas ja filtradas pelo culto selecionado.
+4. Retomar Passo 4 - Check-in:
+   - painel operacional de eventos;
+   - fila de retirada Kids.

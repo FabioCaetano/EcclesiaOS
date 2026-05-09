@@ -22,7 +22,7 @@ Prioridades abertas:
 - Agenda ja foi estabilizada na Fase 66 com erros especificos, Ambiente em vez de Local e recorrencias materializadas.
 - Estabilizacao aplicada: falha Prisma `P2028` na materializacao lazy de recorrencias em `GET /events` nao deve mais derrubar a API, e novas ocorrencias usam escrita incremental no Prisma.
 - Rotas publicas no Vercel ja possuem rewrite SPA na Fase 66.
-- Check-in ganhou contexto operacional por evento/culto na Fase 73; ainda pode evoluir para salas infantis por idade e dashboard por sala.
+- Check-in ganhou contexto operacional por evento/culto na Fase 73 e salas infantis configuraveis na Fase 90.
 - Escalas foi reorganizada na Fase 68: membro ve proprias escalas, lider ve equipes lideradas, matriz fica para admin/lider e indisponibilidade fica no modulo.
 - Grupos/ministerios suportam posicoes operacionais e posicoes por pessoa desde a Fase 72.
 - Ambientes teve mensagens e formularios separados na Fase 67; ainda pode receber polimento visual adicional.
@@ -59,7 +59,7 @@ Prioridades abertas:
 | Ambientes E Reservas | Concluido | Cadastro de ambientes, reservas por horario, bloqueio de conflito e mensagens separadas por formulario. |
 | Calendario | Concluido | Visao mensal/semanal, detalhe do dia e filtro por ambiente. |
 | Presenca Por Evento | Concluido | `eventId` em presenca, resumo por evento e consolidacao automatica de check-ins. |
-| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, contexto operacional por evento/culto, administracao kids interna, aba Etiquetas, preview configuravel, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
+| Check-in | Implementado | Check-in de pessoas por evento com presenca consolidada, Kids separado, contexto operacional por evento/culto, administracao kids interna, filtros por sala, alerta de lotacao, aba Salas com faixa etaria/capacidade/responsaveis, aba Etiquetas, preview configuravel, mensagem ao responsavel, etiqueta com QR Code, leitura por camera, impressao Brother individual/lote, saida e retirada por responsavel logado. |
 | Inicio | Concluido | Painel operacional com KPIs, proximos eventos e area de transmissoes do YouTube. |
 | YouTube | Concluido | Endpoint proprio le feed RSS publico do canal, suporta handle e exibe os ultimos videos na Inicio. |
 | Cron Real | Concluido | Expressao cron gera ocorrencias reais materializadas como eventos filhos com `parentEventId`; geracao lazy ao listar e manual por endpoint admin. |
@@ -450,6 +450,22 @@ Fase 88 concluida. Agenda, Ambientes e Escalas receberam ajustes de fluxo para t
 - `npm run build:api`: passou.
 - `npm run build:web`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+
+# Status Atual - Fase 89
+
+Fase 89 concluida. O Check-in Kids agora possui sala sugerida por idade, dashboard por sala e impressao da sala nas etiquetas.
+
+## Entregue na fase
+
+- Regras iniciais de salas infantis por idade.
+- Sala sugerida no formulario de check-in infantil.
+- Dashboard lateral por sala na administracao kids.
+- Sala exibida nos cards de criancas ativas.
+- Campo opcional de sala na etiqueta infantil.
+
+## Validacao
+
+- `npm run build:web`: passou.
 # Status Atual - Fase 80
 
 Fase 80 concluida. Formularios customizados agora enviam notificacao por email aos responsaveis quando uma resposta publica chega e permitem exportar respostas em CSV.
@@ -557,3 +573,72 @@ Fase 87 concluida. A aba **Culto** agora possui atalhos para os modulos de orige
 - `npm run build:web`: passou.
 - `npm run build:api`: passou.
 - `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+
+# Status Atual - Fase 92
+
+Fase 92 concluida. A aba **Escalas** recebeu o primeiro polimento operacional do Passo 5, reduzindo ruido na lista e deixando recusas mais faceis de tratar.
+
+## Entregue na fase
+
+- Filtro de escalas por acoes pendentes, todas, pendentes, recusadas e confirmadas.
+- Filtro de escalas por equipe/ministerio.
+- Acoes pendentes respeitam o perfil:
+  - membro ve principalmente escalas pendentes dele;
+  - lider/admin ve planos com pendencias ou recusas.
+- Sugestao de substituto com botao **Aplicar e salvar**.
+- Substituto aplicado volta a atribuicao para status pendente e registra nota de substituicao.
+
+## Validacao
+
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 93
+
+Fase 93 concluida. O detalhe da escala agora separa os escalados por status, deixando recusas e pendencias mais visiveis para o lider.
+
+## Entregue na fase
+
+- Resumo por status no detalhe do plano.
+- Agrupamento visual de escalados em recusadas, pendentes e confirmadas.
+- Recusas priorizadas no topo da lista.
+- Edicao e substituicao preservadas sobre os mesmos registros.
+
+## Validacao
+
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 94
+
+Fase 94 concluida. A aplicacao de substituto em Escalas agora possui uma rota propria no backend, com validacoes, auditoria e notificacao best-effort.
+
+## Entregue na fase
+
+- Contrato compartilhado para aplicar substituto.
+- Endpoint dedicado `PATCH /serving-plans/:planId/assignments/:assignmentId/substitute`.
+- Validacao de permissao por admin/lider da equipe.
+- Validacao de membro da equipe, posicao ministerial, duplicidade na escala e indisponibilidade.
+- Auditoria da substituicao.
+- Frontend usando a nova API no botao **Aplicar e salvar**.
+
+## Validacao
+
+- `npm run build:api`: passou.
+- `npm test --workspace @ecclesiaos/api`: passou com 40 testes.
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 95
+
+Fase 95 concluida. Lideres e administradores agora possuem uma visao mensal de escalas por equipe, com carga por voluntario e status por culto/plano.
+
+## Entregue na fase
+
+- Aba **Mensal** em Escalas.
+- Filtro por equipe e mes.
+- Indicadores mensais de planos, confirmadas, pendentes e recusadas.
+- Carga mensal por voluntario.
+- Grade pessoa x plano do mes.
+- Abertura direta do plano ao clicar em uma celula escalada.
+
+## Validacao
+
+- `npm run build:web`: passou.

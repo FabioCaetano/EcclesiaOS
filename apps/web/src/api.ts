@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, KidsRoom, KidsRoomInput, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -197,6 +197,35 @@ export const deleteLabelTemplate = async (token: string, id: string) => {
   if (!response.ok) throw new Error("label-template-delete-failed");
 };
 
+export const loadKidsRooms = async (token: string): Promise<KidsRoom[]> => {
+  const response = await fetch(`${apiBaseUrl}/kids-rooms`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("kids-rooms-load-failed");
+  return response.json() as Promise<KidsRoom[]>;
+};
+
+export const saveKidsRoom = async (token: string, input: KidsRoomInput, id?: string): Promise<KidsRoom> => {
+  const response = await fetch(id ? `${apiBaseUrl}/kids-rooms/${id}` : `${apiBaseUrl}/kids-rooms`, {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error("kids-room-save-failed");
+  return response.json() as Promise<KidsRoom>;
+};
+
+export const deleteKidsRoom = async (token: string, id: string): Promise<void> => {
+  const response = await fetch(`${apiBaseUrl}/kids-rooms/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("kids-room-delete-failed");
+};
+
 export const loadBlockOuts = async (token: string, personId?: string): Promise<PersonBlockOut[]> => {
   const url = personId ? `${apiBaseUrl}/block-outs?personId=${encodeURIComponent(personId)}` : `${apiBaseUrl}/block-outs`;
   const response = await fetch(url, { headers: authHeaders(token) });
@@ -233,6 +262,17 @@ export const loadSubstituteSuggestions = async (token: string, planId: string, a
 
   if (!response.ok) throw new Error("substitutes-load-failed");
   return response.json() as Promise<SubstituteSuggestion[]>;
+};
+
+export const applyServingSubstitute = async (token: string, planId: string, assignmentId: string, input: ServingSubstituteApplyInput): Promise<ServingSubstituteApplyResponse> => {
+  const response = await fetch(`${apiBaseUrl}/serving-plans/${planId}/assignments/${assignmentId}/substitute`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) throw new Error("serving-substitute-apply-failed");
+  return response.json() as Promise<ServingSubstituteApplyResponse>;
 };
 
 export const loadPeopleMessages = async (token: string): Promise<PeopleMessage[]> => {

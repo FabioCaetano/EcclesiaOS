@@ -311,6 +311,20 @@ export interface ChildCheckOutRequest {
   securityCode: string;
 }
 
+export interface KidsRoom {
+  id: string;
+  name: string;
+  minAge: number;
+  maxAge: number;
+  capacity: number;
+  responsiblePersonIds: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type KidsRoomInput = Omit<KidsRoom, "id" | "createdAt" | "updatedAt">;
+
 export type EventType = "service" | "meeting" | "class" | "outreach" | "other";
 export type EventRecurrence = "none" | "weekly" | "monthly" | "cron";
 
@@ -462,6 +476,15 @@ export interface ServingAssignmentStatusUpdate {
 
 export interface ServingAssignmentStatusResponse extends ServingPlan {
   substituteSuggestions: SubstituteSuggestion[];
+  substituteEmailSent: boolean;
+}
+
+export interface ServingSubstituteApplyInput {
+  personId: string;
+  notes: string;
+}
+
+export interface ServingSubstituteApplyResponse extends ServingPlan {
   substituteEmailSent: boolean;
 }
 

@@ -106,6 +106,34 @@ export const servingPlanRepository = {
     return updated;
   },
 
+  async applySubstitute(planId: string, assignmentId: string, personId: string, notes: string): Promise<ServingPlan | null> {
+    const data = await readData();
+    const existing = data.servingPlans.find((plan) => plan.id === planId);
+    if (!existing) return null;
+
+    let found = false;
+    const updated: ServingPlan = {
+      ...existing,
+      assignments: existing.assignments.map((assignment) => {
+        if (assignment.id !== assignmentId) return assignment;
+        found = true;
+        return {
+          ...assignment,
+          personId: String(personId || "").trim(),
+          status: "pending",
+          notes: String(notes || "").trim() || assignment.notes,
+          reminderSentAt: ""
+        };
+      }),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (!found) return null;
+
+    await writeData({ ...data, servingPlans: data.servingPlans.map((plan) => plan.id === planId ? updated : plan) });
+    return updated;
+  },
+
   async markRemindersSent(updates: Array<{ planId: string; assignmentId: string; sentAt: string }>): Promise<void> {
     if (updates.length === 0) return;
     const data = await readData();

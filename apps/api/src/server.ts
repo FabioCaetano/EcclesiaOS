@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
-import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
+import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, HealthResponse, KidsRoomInput, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
 import { churchRepository } from "./data/churchRepository.js";
@@ -14,6 +14,7 @@ import { eventRegistrationRepository, reservedQuantityFor } from "./data/eventRe
 import { checkInRepository } from "./data/checkInRepository.js";
 import { customFormRepository } from "./data/customFormRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
+import { kidsRoomRepository } from "./data/kidsRoomRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
 import { messageTemplateRepository } from "./data/messageTemplateRepository.js";
 import { musicRepository } from "./data/musicRepository.js";
@@ -1275,6 +1276,22 @@ const sanitizeLabelTemplateInput = (body: LabelTemplateInput): LabelTemplateInpu
   isDefault: Boolean(body.isDefault)
 });
 
+const sanitizeKidsRoomInput = (body: KidsRoomInput): KidsRoomInput => {
+  const minAge = Math.max(0, Number(body.minAge) || 0);
+  const maxAge = Math.max(minAge, Number(body.maxAge) || minAge);
+
+  return {
+    name: String(body.name || "").trim(),
+    minAge,
+    maxAge,
+    capacity: Math.max(0, Number(body.capacity) || 0),
+    responsiblePersonIds: Array.isArray(body.responsiblePersonIds)
+      ? body.responsiblePersonIds.map(String).filter(Boolean)
+      : [],
+    isActive: body.isActive !== false
+  };
+};
+
 const handleListLabelTemplates = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await requireUser(req, res);
   if (!user) return;
@@ -1336,6 +1353,62 @@ const handleDeleteLabelTemplate = async (req: IncomingMessage, res: ServerRespon
   }
 
   await recordAudit(user, "delete", "label_template", id, `Template removido: ${id}`);
+  sendJson(res, 200, { ok: true });
+};
+
+const handleListKidsRooms = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireModuleAccess(req, res, "checkin");
+  if (!user) return;
+
+  sendJson(res, 200, await kidsRoomRepository.list());
+};
+
+const handleCreateKidsRoom = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireModuleManage(req, res, "checkin");
+  if (!user) return;
+
+  const body = await readJson<KidsRoomInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome da sala infantil.");
+    return;
+  }
+
+  const room = await kidsRoomRepository.create(sanitizeKidsRoomInput(body));
+  await recordAudit(user, "create", "kids_room", room.id, `Sala infantil criada: ${room.name}`);
+  sendJson(res, 201, room);
+};
+
+const handleUpdateKidsRoom = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireModuleManage(req, res, "checkin");
+  if (!user) return;
+
+  const body = await readJson<KidsRoomInput>(req);
+  if (!body?.name) {
+    sendError(res, 400, "invalid_json", "Informe o nome da sala infantil.");
+    return;
+  }
+
+  const room = await kidsRoomRepository.update(id, sanitizeKidsRoomInput(body));
+  if (!room) {
+    sendError(res, 404, "not_found", "Sala infantil nao encontrada.");
+    return;
+  }
+
+  await recordAudit(user, "update", "kids_room", room.id, `Sala infantil atualizada: ${room.name}`);
+  sendJson(res, 200, room);
+};
+
+const handleDeleteKidsRoom = async (req: IncomingMessage, res: ServerResponse, id: string) => {
+  const user = await requireModuleManage(req, res, "checkin");
+  if (!user) return;
+
+  const removed = await kidsRoomRepository.remove(id);
+  if (!removed) {
+    sendError(res, 404, "not_found", "Sala infantil nao encontrada.");
+    return;
+  }
+
+  await recordAudit(user, "delete", "kids_room", id, `Sala infantil removida: ${id}`);
   sendJson(res, 200, { ok: true });
 };
 
@@ -2366,11 +2439,11 @@ const sanitizeServingAssignmentStatusUpdate = (body: ServingAssignmentStatusUpda
   notes: String(body.notes || "").trim()
 });
 
-const notifyNewAssignment = async (personId: string, plan: { title: string; date: string }, role: string) => {
-  if (!isEmailConfigured()) return;
+const notifyNewAssignment = async (personId: string, plan: { title: string; date: string }, role: string): Promise<boolean> => {
+  if (!isEmailConfigured()) return false;
   try {
     const person = (await personRepository.list()).find((item) => item.id === personId);
-    if (!person?.email) return;
+    if (!person?.email) return false;
 
     const safeRole = role || "Funcao a definir";
     const link = `${webBaseUrl}/`;
@@ -2382,9 +2455,11 @@ const notifyNewAssignment = async (personId: string, plan: { title: string; date
 <p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#216869;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Abrir EcclesiaOS</a></p>
 <p style="color:#5c6b78;font-size:13px;">Acesse o sistema para confirmar ou recusar.</p>`;
 
-    await sendEmail({ to: person.email, subject, text, html });
+    const result = await sendEmail({ to: person.email, subject, text, html });
+    return result.ok;
   } catch {
     // best effort
+    return false;
   }
 };
 
@@ -2541,6 +2616,93 @@ const handleUpdateServingAssignmentStatus = async (req: IncomingMessage, res: Se
   const response: ServingAssignmentStatusResponse = {
     ...plan,
     substituteSuggestions,
+    substituteEmailSent
+  };
+  sendJson(res, 200, response);
+};
+
+const sanitizeServingSubstituteApplyInput = (body: ServingSubstituteApplyInput | null): ServingSubstituteApplyInput => ({
+  personId: String(body?.personId || "").trim(),
+  notes: String(body?.notes || "").trim()
+});
+
+const handleApplyServingSubstitute = async (req: IncomingMessage, res: ServerResponse, planId: string, assignmentId: string) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const body = sanitizeServingSubstituteApplyInput(await readJson<ServingSubstituteApplyInput>(req));
+  if (!body.personId) {
+    sendError(res, 400, "invalid_json", "Informe a pessoa substituta.");
+    return;
+  }
+
+  const existingPlan = (await servingPlanRepository.list()).find((plan) => plan.id === planId);
+  const assignment = existingPlan?.assignments.find((item) => item.id === assignmentId);
+  if (!existingPlan || !assignment) {
+    sendError(res, 404, "not_found", "Escala ou pessoa escalada nao encontrada.");
+    return;
+  }
+
+  const groups = await groupRepository.list();
+  const group = groups.find((item) => item.id === existingPlan.groupId);
+  const isLeader = Boolean(group && user.personId && group.leaderPersonId === user.personId);
+  if (user.role !== "admin" && !isLeader) {
+    sendError(res, 403, "forbidden", "Apenas admin ou lider da equipe pode aplicar substituto.");
+    return;
+  }
+
+  if (!group) {
+    sendError(res, 400, "invalid_json", "Plano sem equipe valida para substituicao.");
+    return;
+  }
+
+  if (!group.memberPersonIds.includes(body.personId)) {
+    sendError(res, 400, "invalid_json", "Substituto precisa fazer parte da equipe.");
+    return;
+  }
+
+  const alreadyAssigned = existingPlan.assignments.some((item) => item.id !== assignmentId && item.personId === body.personId);
+  if (alreadyAssigned) {
+    sendError(res, 409, "conflict", "Substituto ja esta escalado neste plano.");
+    return;
+  }
+
+  const requiresPosition = Boolean(assignment.role && group.servicePositions.includes(assignment.role));
+  if (requiresPosition && !(group.memberServicePositions[body.personId] || []).includes(assignment.role)) {
+    sendError(res, 400, "invalid_json", "Substituto nao esta habilitado para esta posicao.");
+    return;
+  }
+
+  const blocked = (await blockOutRepository.list()).some((blockOut) =>
+    blockOut.personId === body.personId && existingPlan.date >= blockOut.startDate && existingPlan.date <= blockOut.endDate
+  );
+  if (blocked) {
+    sendError(res, 409, "conflict", "Substituto marcou indisponibilidade nesta data.");
+    return;
+  }
+
+  const people = await personRepository.list();
+  const previousPerson = people.find((person) => person.id === assignment.personId);
+  const substitutePerson = people.find((person) => person.id === body.personId);
+  const substituteName = substitutePerson ? `${substitutePerson.firstName} ${substitutePerson.lastName}`.trim() : body.personId;
+  const previousName = previousPerson ? `${previousPerson.firstName} ${previousPerson.lastName}`.trim() : assignment.personId;
+  const notes = body.notes || (assignment.notes ? `${assignment.notes} | Substituto: ${substituteName}` : `Substituto: ${substituteName}`);
+
+  const plan = await servingPlanRepository.applySubstitute(planId, assignmentId, body.personId, notes);
+  if (!plan) {
+    sendError(res, 404, "not_found", "Escala ou pessoa escalada nao encontrada.");
+    return;
+  }
+
+  const updatedAssignment = plan.assignments.find((item) => item.id === assignmentId);
+  const substituteEmailSent = updatedAssignment
+    ? await notifyNewAssignment(updatedAssignment.personId, { title: plan.title, date: plan.date }, updatedAssignment.role)
+    : false;
+
+  await recordAudit(user, "update", "serving_plan", plan.id, `Substituto aplicado em ${plan.title}: ${previousName || "Pessoa"} -> ${substituteName}.`);
+
+  const response: ServingSubstituteApplyResponse = {
+    ...plan,
     substituteEmailSent
   };
   sendJson(res, 200, response);
@@ -2945,6 +3107,27 @@ export const createEcclesiaServer = () => createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/kids-rooms") {
+    void handleListKidsRooms(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/kids-rooms") {
+    void handleCreateKidsRoom(req, res);
+    return;
+  }
+
+  const kidsRoomMatch = url.pathname.match(/^\/kids-rooms\/([^/]+)$/);
+  if (kidsRoomMatch && req.method === "PUT") {
+    void handleUpdateKidsRoom(req, res, kidsRoomMatch[1]);
+    return;
+  }
+
+  if (kidsRoomMatch && req.method === "DELETE") {
+    void handleDeleteKidsRoom(req, res, kidsRoomMatch[1]);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/attendance") {
     void handleListAttendance(req, res);
     return;
@@ -3136,6 +3319,12 @@ export const createEcclesiaServer = () => createServer((req, res) => {
   const servingAssignmentMatch = url.pathname.match(/^\/serving-plans\/([^/]+)\/assignments\/([^/]+)\/status$/);
   if (servingAssignmentMatch && req.method === "PATCH") {
     void handleUpdateServingAssignmentStatus(req, res, servingAssignmentMatch[1], servingAssignmentMatch[2]);
+    return;
+  }
+
+  const servingSubstituteApplyMatch = url.pathname.match(/^\/serving-plans\/([^/]+)\/assignments\/([^/]+)\/substitute$/);
+  if (servingSubstituteApplyMatch && req.method === "PATCH") {
+    void handleApplyServingSubstitute(req, res, servingSubstituteApplyMatch[1], servingSubstituteApplyMatch[2]);
     return;
   }
 

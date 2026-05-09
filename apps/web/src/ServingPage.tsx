@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ClipboardList, Grid3x3, List, Plus, UserPlus, X } from "lucide-react";
 import type { CurrentUser, GroupProfile, PersonBlockOut, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion } from "@ecclesiaos/shared";
-import { createBlockOut, deleteBlockOut, deleteServingPlan, loadBlockOuts, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, loadSubstituteSuggestions, saveServingPlan, updateServingAssignmentStatus } from "./api";
+import { applyServingSubstitute, createBlockOut, deleteBlockOut, deleteServingPlan, loadBlockOuts, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, loadSubstituteSuggestions, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
 import { toServingPlanInput } from "./mappers";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
@@ -33,6 +33,24 @@ const assignmentStatusLabels: Record<ServingAssignment["status"], string> = {
   declined: "Recusado"
 };
 
+const assignmentStatusSectionLabels: Record<ServingAssignment["status"], string> = {
+  declined: "Recusadas",
+  pending: "Pendentes",
+  confirmed: "Confirmadas"
+};
+
+const assignmentStatusSectionDescriptions: Record<ServingAssignment["status"], string> = {
+  declined: "Prioridade para buscar substitutos.",
+  pending: "Aguardando resposta dos voluntarios.",
+  confirmed: "Pessoas ja confirmadas para servir."
+};
+
+const assignmentStatusOrder: Record<ServingAssignment["status"], number> = {
+  declined: 0,
+  pending: 1,
+  confirmed: 2
+};
+
 export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const [plans, setPlans] = useState<ServingPlan[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
@@ -44,8 +62,10 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const [servingStatus, setServingStatus] = useState("");
   const [substitutesByAssignment, setSubstitutesByAssignment] = useState<Record<string, SubstituteSuggestion[]>>({});
   const [viewMode, setViewMode] = useState<"list" | "matrix" | "availability">("list");
+  const [planStatusFilter, setPlanStatusFilter] = useState<"action" | "all" | ServingAssignment["status"]>("action");
+  const [planGroupFilter, setPlanGroupFilter] = useState("");
   const [matrixGroupId, setMatrixGroupId] = useState<string>("");
-  const [matrixWeeks, setMatrixWeeks] = useState<number>(8);
+  const [matrixMonth, setMatrixMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [blockStart, setBlockStart] = useState("");
   const [blockEnd, setBlockEnd] = useState("");
   const [blockReason, setBlockReason] = useState("");
@@ -213,6 +233,37 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
     setServingStatus(`Substituto aplicado: ${substitute.name}. Salve a escala para confirmar.`);
   };
 
+  const applyAndSaveSubstitute = async (index: number, substitute: SubstituteSuggestion) => {
+    if (!selectedPlanId || !canEditCurrentForm) return;
+
+    setServingStatus("Aplicando substituto...");
+    try {
+      const assignment = planForm.assignments[index];
+      if (!assignment?.id) {
+        setServingStatus("Salve a escala antes de aplicar substituto.");
+        return;
+      }
+      const saved = await applyServingSubstitute(token, selectedPlanId, assignment.id, {
+        personId: substitute.personId,
+        notes: assignment.notes ? `${assignment.notes} | Substituto: ${substitute.name}` : `Substituto: ${substitute.name}`
+      });
+      await refreshPlans();
+      await refreshNotifications();
+      selectPlan(saved);
+      const assignmentId = assignment.id;
+      if (assignmentId) {
+        setSubstitutesByAssignment((current) => {
+          const next = { ...current };
+          delete next[assignmentId];
+          return next;
+        });
+      }
+      setServingStatus(`Substituto aplicado e escala salva: ${substitute.name}.`);
+    } catch {
+      setServingStatus("Nao foi possivel aplicar o substituto.");
+    }
+  };
+
   const myLeadingGroupIds = useMemo(() => {
     if (!user.personId) return [] as string[];
     return groups.filter((group) => group.leaderPersonId === user.personId).map((group) => group.id);
@@ -239,14 +290,14 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const matrixGroup = teamGroups.find((group) => group.id === matrixGroupId) || null;
   const matrixPlans = useMemo(() => {
     if (!matrixGroup) return [];
-    const today = new Date().toISOString().slice(0, 10);
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + matrixWeeks * 7);
-    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const month = matrixMonth || new Date().toISOString().slice(0, 7);
+    const start = `${month}-01`;
+    const endDate = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0);
+    const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
     return plans
-      .filter((plan) => plan.groupId === matrixGroup.id && plan.date >= today && plan.date <= cutoffStr)
+      .filter((plan) => plan.groupId === matrixGroup.id && plan.date >= start && plan.date <= end)
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [plans, matrixGroup, matrixWeeks]);
+  }, [plans, matrixGroup, matrixMonth]);
 
   const matrixMembers = useMemo(() => {
     if (!matrixGroup) return [];
@@ -258,6 +309,11 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
   const findAssignmentInPlan = (plan: ServingPlan, personId: string): ServingAssignment | null =>
     plan.assignments.find((assignment) => assignment.personId === personId) || null;
+  const matrixAssignments = matrixPlans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment })));
+  const matrixMemberLoad = (personId: string) => matrixAssignments.filter(({ assignment }) => assignment.personId === personId).length;
+  const matrixPendingTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "pending").length;
+  const matrixDeclinedTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "declined").length;
+  const matrixConfirmedTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "confirmed").length;
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
   const selectedPlanGroup = groups.find((group) => group.id === (selectedPlan?.groupId || planForm.groupId)) || null;
@@ -287,6 +343,23 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const declinedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "declined").length;
   const confirmedCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "confirmed").length;
   const pendingCount = (plan: ServingPlan) => plan.assignments.filter((assignment) => assignment.status === "pending").length;
+  const planHasAction = (plan: ServingPlan) => (
+    user.role === "member"
+      ? Boolean(user.personId && plan.assignments.some((assignment) => assignment.personId === user.personId && assignment.status === "pending"))
+      : plan.assignments.some((assignment) => assignment.status === "pending" || assignment.status === "declined")
+  );
+  const planMatchesStatusFilter = (plan: ServingPlan) => {
+    if (planStatusFilter === "all") return true;
+    if (planStatusFilter === "action") return planHasAction(plan);
+    return plan.assignments.some((assignment) => assignment.status === planStatusFilter);
+  };
+  const filteredVisiblePlans = visiblePlans.filter((plan) => (
+    (!planGroupFilter || plan.groupId === planGroupFilter) && planMatchesStatusFilter(plan)
+  ));
+  const orderedPlanAssignments = planForm.assignments
+    .map((assignment, index) => ({ assignment, index }))
+    .sort((a, b) => assignmentStatusOrder[a.assignment.status] - assignmentStatusOrder[b.assignment.status]);
+  const assignmentSectionCount = (status: ServingAssignment["status"]) => planForm.assignments.filter((assignment) => assignment.status === status).length;
 
   const pendingAssignments = plans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment }))).filter((item) => item.assignment.status === "pending");
   const declinedAssignments = plans.flatMap((plan) => plan.assignments.map((assignment) => ({ plan, assignment }))).filter((item) => item.assignment.status === "declined");
@@ -338,7 +411,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
         </button>
         {user.role !== "member" && (
           <button className={viewMode === "matrix" ? "active" : ""} type="button" onClick={() => setViewMode("matrix")}>
-            <Grid3x3 size={14} /> Matriz
+            <Grid3x3 size={14} /> Mensal
           </button>
         )}
         <button className={viewMode === "availability" ? "active" : ""} type="button" onClick={() => setViewMode("availability")}>
@@ -351,7 +424,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           <div className="section-heading">
             <div>
               <p className="eyebrow"><Grid3x3 size={12} />Visao panoramica</p>
-              <h2>{matrixGroup ? matrixGroup.name : "Selecione uma equipe"}</h2>
+              <h2>{matrixGroup ? `${matrixGroup.name} - ${matrixMonth}` : "Selecione uma equipe"}</h2>
             </div>
           </div>
 
@@ -366,14 +439,31 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
               </select>
             </label>
             <label>
-              Janela
-              <select value={matrixWeeks} onChange={(event) => setMatrixWeeks(Number(event.target.value))}>
-                <option value={4}>4 semanas</option>
-                <option value={8}>8 semanas</option>
-                <option value={12}>12 semanas</option>
-              </select>
+              Mes
+              <input type="month" value={matrixMonth} onChange={(event) => setMatrixMonth(event.target.value)} />
             </label>
           </div>
+
+          {matrixGroup && (
+            <div className="monthly-serving-summary">
+              <article>
+                <span>Planos no mes</span>
+                <strong>{matrixPlans.length}</strong>
+              </article>
+              <article>
+                <span>Confirmadas</span>
+                <strong>{matrixConfirmedTotal}</strong>
+              </article>
+              <article>
+                <span>Pendentes</span>
+                <strong>{matrixPendingTotal}</strong>
+              </article>
+              <article>
+                <span>Recusadas</span>
+                <strong>{matrixDeclinedTotal}</strong>
+              </article>
+            </div>
+          )}
 
           {!matrixGroup ? (
             <EmptyState
@@ -385,7 +475,7 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             <EmptyState
               icon={Grid3x3}
               title="Sem escalas no periodo"
-              description="Nao ha planos para essa equipe na janela selecionada."
+              description="Nao ha planos para essa equipe no mes selecionado."
             />
           ) : matrixMembers.length === 0 ? (
             <EmptyState
@@ -399,9 +489,10 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                 <thead>
                   <tr>
                     <th className="serving-matrix-name">Pessoa</th>
+                    <th>Carga</th>
                     {matrixPlans.map((plan) => (
                       <th key={plan.id}>
-                        <div>{plan.date}</div>
+                        <div>{plan.date.slice(8, 10)}</div>
                         <small>{plan.title}</small>
                       </th>
                     ))}
@@ -414,17 +505,23 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                         <Avatar name={`${person.firstName} ${person.lastName}`} size="sm" tone="brand" />
                         <span>{person.firstName} {person.lastName}</span>
                       </th>
+                      <td>
+                        <strong>{matrixMemberLoad(person.id)}</strong>
+                      </td>
                       {matrixPlans.map((plan) => {
                         const assignment = findAssignmentInPlan(plan, person.id);
                         return (
                           <td key={plan.id}>
                             {assignment ? (
-                              <div className="serving-matrix-cell">
+                              <button className="serving-matrix-cell serving-matrix-action" type="button" onClick={() => {
+                                selectPlan(plan);
+                                setViewMode("list");
+                              }}>
                                 <StatusPill tone={statusToneFor(assignment.status)}>
                                   {assignmentStatusLabels[assignment.status]}
                                 </StatusPill>
                                 {assignment.role && <small>{assignment.role}</small>}
-                              </div>
+                              </button>
                             ) : (
                               <span className="muted serving-matrix-empty">-</span>
                             )}
@@ -486,7 +583,20 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
 
       <div className="people-layout">
         <div className="people-list" aria-label="Lista de escalas">
-          {visiblePlans.length === 0 ? <p className="muted">Nenhuma escala visivel para o seu perfil.</p> : visiblePlans.map((plan) => (
+          <div className="serving-list-filters">
+            <select value={planStatusFilter} onChange={(event) => setPlanStatusFilter(event.target.value as typeof planStatusFilter)}>
+              <option value="action">Acoes pendentes</option>
+              <option value="all">Todas</option>
+              <option value="pending">Pendentes</option>
+              <option value="declined">Recusadas</option>
+              <option value="confirmed">Confirmadas</option>
+            </select>
+            <select value={planGroupFilter} onChange={(event) => setPlanGroupFilter(event.target.value)}>
+              <option value="">Todas as equipes</option>
+              {teamGroups.map((group) => <option value={group.id} key={group.id}>{group.name}</option>)}
+            </select>
+          </div>
+          {visiblePlans.length === 0 ? <p className="muted">Nenhuma escala visivel para o seu perfil.</p> : filteredVisiblePlans.length === 0 ? <p className="muted">Nenhuma escala neste filtro.</p> : filteredVisiblePlans.map((plan) => (
             <button className={plan.id === selectedPlanId ? "person-row selected" : "person-row"} key={plan.id} type="button" onClick={() => selectPlan(plan)}>
               <strong>{plan.date} - {plan.title}</strong>
               <span>{groupName(plan.groupId)} - {plan.assignments.length} pessoa(s)</span>
@@ -528,6 +638,11 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             <div className="plan-detail-header">
               <h2>{selectedPlan?.title || "Nova escala"}</h2>
               <span>{selectedPlan ? `${selectedPlan.date} - ${groupName(selectedPlan.groupId)}` : "Defina os campos acima e adicione pessoas"}</span>
+              <div className="plan-detail-status-strip">
+                <span className="status-dot declined">{assignmentSectionCount("declined")} recusada(s)</span>
+                <span className="status-dot pending">{assignmentSectionCount("pending")} pendente(s)</span>
+                <span className="status-dot confirmed">{assignmentSectionCount("confirmed")} confirmada(s)</span>
+              </div>
             </div>
 
             {planForm.assignments.length === 0 && (
@@ -535,7 +650,9 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             )}
 
             <div className="plan-positions">
-              {planForm.assignments.map((assignment, index) => {
+              {orderedPlanAssignments.map(({ assignment, index }, orderedIndex) => {
+                const previousStatus = orderedIndex > 0 ? orderedPlanAssignments[orderedIndex - 1].assignment.status : null;
+                const showSectionHeader = previousStatus !== assignment.status;
                 const blocked = selectedPlan ? isBlockedOnDate(assignment.personId, selectedPlan.date) : false;
                 const positionMismatch = Boolean(assignment.personId && assignment.role && !personCanServePosition(assignment.personId, assignment.role));
                 const assignmentPeople = assignment.role
@@ -543,7 +660,17 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                   : eligiblePeople;
                 const suggestions = substitutesByAssignment[assignment.id];
                 return (
-                  <div key={`${assignment.id || "new"}-${index}`}>
+                  <React.Fragment key={`${assignment.id || "new"}-${index}`}>
+                    {showSectionHeader && (
+                      <div className={`assignment-section-title status-${assignment.status}`}>
+                        <div>
+                          <strong>{assignmentStatusSectionLabels[assignment.status]}</strong>
+                          <span>{assignmentStatusSectionDescriptions[assignment.status]}</span>
+                        </div>
+                        <em>{assignmentSectionCount(assignment.status)}</em>
+                      </div>
+                    )}
+                    <div>
                     {canEditCurrentForm ? (
                       <div className="plan-position">
                         <span className="pp-avatar"><Avatar name={personName(assignment.personId) || "?"} size="md" tone={statusToneFor(assignment.status) === "success" ? "success" : "brand"} /></span>
@@ -627,13 +754,17 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                                 <button className="secondary-button btn-sm" type="button" onClick={() => applySubstitute(index, suggestion)}>
                                   Escalar
                                 </button>
+                                <button className="secondary-button btn-sm" type="button" onClick={() => applyAndSaveSubstitute(index, suggestion)}>
+                                  Aplicar e salvar
+                                </button>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  </React.Fragment>
                 );
               })}
             </div>

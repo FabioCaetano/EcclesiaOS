@@ -1047,6 +1047,25 @@ test("declined serving assignment returns automatic substitute suggestions", asy
   assert.equal(declined.body?.substituteEmailSent, false);
   assert.equal(declined.body?.substituteSuggestions.some((item) => item.personId === availablePerson.body!.id), true);
   assert.equal(declined.body?.substituteSuggestions.some((item) => item.personId === blockedPerson.body!.id), false);
+
+  const applied = await requestJson<ServingPlan & { substituteEmailSent: boolean }>(`/serving-plans/${plan.body!.id}/assignments/${assignmentId}/substitute`, {
+    method: "PATCH",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({ personId: availablePerson.body!.id, notes: "Substituto aplicado pelo lider" })
+  });
+  assert.equal(applied.response.status, 200);
+  const updatedAssignment = applied.body?.assignments.find((assignment) => assignment.id === assignmentId);
+  assert.equal(updatedAssignment?.personId, availablePerson.body!.id);
+  assert.equal(updatedAssignment?.status, "pending");
+  assert.equal(updatedAssignment?.notes, "Substituto aplicado pelo lider");
+  assert.equal(applied.body?.substituteEmailSent, false);
+
+  const blockedApply = await requestJson<{ error: string }>(`/serving-plans/${plan.body!.id}/assignments/${assignmentId}/substitute`, {
+    method: "PATCH",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({ personId: blockedPerson.body!.id, notes: "" })
+  });
+  assert.equal(blockedApply.response.status, 409);
 });
 
 test("admin and leader can send people messages while member can only read", async () => {

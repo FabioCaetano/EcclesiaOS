@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormField, CustomFormFieldType, CustomFormResponse, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServiceChecklist, ServiceChecklistItem, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, AuditAction, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormField, CustomFormFieldType, CustomFormResponse, EventCheckIn, EventRegistration, EventRegistrationStatus, EventRecurrence, EventType, FinancialTransaction, GroupProfile, KidsRoom, LabelLayout, LabelTemplate, MessageChannel, MessageTemplate, PeopleMessage, PersonBlockOut, RoomReservation, RoomReservationStatus, ServiceChecklist, ServiceChecklistItem, ServingAssignment, ServingPlan, Song, UserRole, WorshipSet, WorshipSetItem } from "@ecclesiaos/shared";
 import type { DataFile, PasswordResetTokenRecord } from "./dataStore.js";
 import { prisma } from "./prismaClient.js";
 
@@ -412,8 +412,25 @@ const toMessageTemplate = (template: {
   updatedAt: template.updatedAt.toISOString()
 });
 
+const toKidsRoom = (room: {
+  id: string;
+  name: string;
+  minAge: number;
+  maxAge: number;
+  capacity: number;
+  responsiblePersonIds: Prisma.JsonValue;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): KidsRoom => ({
+  ...room,
+  responsiblePersonIds: asStringArray(room.responsiblePersonIds),
+  createdAt: room.createdAt.toISOString(),
+  updatedAt: room.updatedAt.toISOString()
+});
+
 export const readPrismaData = async (): Promise<DataFile> => {
-  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, customForms, customFormResponses, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
+  const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, kidsRooms, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, customForms, customFormResponses, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
     prisma.churchProfileRecord.findFirst(),
     prisma.userRecord.findMany(),
     prisma.personRecord.findMany(),
@@ -422,6 +439,7 @@ export const readPrismaData = async (): Promise<DataFile> => {
     prisma.eventRecord.findMany(),
     prisma.eventCheckInRecord.findMany(),
     prisma.childCheckInRecord.findMany(),
+    prisma.kidsRoomRecord.findMany({ orderBy: { minAge: "asc" } }),
     prisma.eventRegistrationRecord.findMany(),
     prisma.churchResourceRecord.findMany(),
     prisma.roomReservationRecord.findMany(),
@@ -472,6 +490,7 @@ export const readPrismaData = async (): Promise<DataFile> => {
       checkedOutByPersonId: checkIn.checkedOutByPersonId || "",
       checkedInAt: checkIn.checkedInAt.toISOString()
     })),
+    kidsRooms: kidsRooms.map(toKidsRoom),
     eventRegistrations: eventRegistrations.map((registration): EventRegistration => {
       const extended = registration as typeof registration & {
         emailConfirmationTokenHash?: string | null;
@@ -528,6 +547,7 @@ export const writePrismaData = async (data: DataFile) => {
     await tx.personBlockOutRecord.deleteMany();
     await tx.passwordResetTokenRecord.deleteMany();
     await tx.labelTemplateRecord.deleteMany();
+    await tx.kidsRoomRecord.deleteMany();
     await tx.roomReservationRecord.deleteMany();
     await tx.churchResourceRecord.deleteMany();
     await tx.eventRegistrationRecord.deleteMany();
@@ -612,6 +632,17 @@ export const writePrismaData = async (data: DataFile) => {
         data: {
           ...checkIn,
           checkedInAt: new Date(checkIn.checkedInAt)
+        }
+      });
+    }
+
+    for (const room of data.kidsRooms) {
+      await tx.kidsRoomRecord.create({
+        data: {
+          ...room,
+          responsiblePersonIds: room.responsiblePersonIds as unknown as Prisma.InputJsonValue,
+          createdAt: new Date(room.createdAt),
+          updatedAt: new Date(room.updatedAt)
         }
       });
     }

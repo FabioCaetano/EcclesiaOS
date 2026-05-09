@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormResponse, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
+import type { AttendanceRecord, AuditLogEntry, ChildCheckIn, ChurchEvent, ChurchProfile, ChurchResource, CustomForm, CustomFormResponse, EventCheckIn, EventRegistration, FinancialTransaction, GroupProfile, KidsRoom, LabelTemplate, MessageTemplate, PeopleMessage, PersonBlockOut, PersonProfile, RoomReservation, ServiceChecklist, ServingPlan, Song, WorshipSet } from "@ecclesiaos/shared";
 import { defaultAttendance } from "./defaultAttendance.js";
 import { defaultChurch } from "./defaultChurch.js";
 import { defaultFinancialTransactions } from "./defaultFinancialTransactions.js";
@@ -35,6 +35,7 @@ export interface DataFile {
   events: ChurchEvent[];
   financialTransactions: FinancialTransaction[];
   groups: GroupProfile[];
+  kidsRooms: KidsRoom[];
   labelTemplates: LabelTemplate[];
   messageTemplates: MessageTemplate[];
   peopleMessages: PeopleMessage[];
@@ -54,6 +55,17 @@ export const dataFilePath = process.env.ECCLESIAOS_DATA_FILE || resolve(process.
 const dataProvider = process.env.ECCLESIAOS_DATA_PROVIDER || "json";
 let prismaWriteQueue: Promise<void> = Promise.resolve();
 
+export const defaultKidsRooms = (): KidsRoom[] => {
+  const now = new Date().toISOString();
+  return [
+    { id: "kids_room_nursery", name: "Berçario", minAge: 0, maxAge: 2, capacity: 12, responsiblePersonIds: [], isActive: true, createdAt: now, updatedAt: now },
+    { id: "kids_room_toddler", name: "Maternal", minAge: 3, maxAge: 5, capacity: 18, responsiblePersonIds: [], isActive: true, createdAt: now, updatedAt: now },
+    { id: "kids_room_kids", name: "Kids", minAge: 6, maxAge: 8, capacity: 24, responsiblePersonIds: [], isActive: true, createdAt: now, updatedAt: now },
+    { id: "kids_room_juniors", name: "Juniores", minAge: 9, maxAge: 11, capacity: 24, responsiblePersonIds: [], isActive: true, createdAt: now, updatedAt: now },
+    { id: "kids_room_teens", name: "Teens", minAge: 12, maxAge: 17, capacity: 30, responsiblePersonIds: [], isActive: true, createdAt: now, updatedAt: now }
+  ];
+};
+
 const queuePrismaWrite = async <T>(operation: () => Promise<T>): Promise<T> => {
   const queued = prismaWriteQueue.then(operation, operation);
   prismaWriteQueue = queued.then(() => undefined, () => undefined);
@@ -72,6 +84,7 @@ const defaultData = (): DataFile => ({
   events: defaultEvents,
   financialTransactions: defaultFinancialTransactions,
   groups: defaultGroups,
+  kidsRooms: defaultKidsRooms(),
   labelTemplates: defaultLabelTemplates,
   messageTemplates: [],
   peopleMessages: [],
@@ -147,6 +160,14 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     ...group,
     servicePositions: Array.isArray(group.servicePositions) ? group.servicePositions : [],
     memberServicePositions: group.memberServicePositions && typeof group.memberServicePositions === "object" ? group.memberServicePositions : {}
+  })),
+  kidsRooms: (data.kidsRooms || defaultKidsRooms()).map((room) => ({
+    ...room,
+    minAge: Math.max(0, Number(room.minAge) || 0),
+    maxAge: Math.max(0, Number(room.maxAge) || 0),
+    capacity: Math.max(0, Number(room.capacity) || 0),
+    responsiblePersonIds: Array.isArray(room.responsiblePersonIds) ? room.responsiblePersonIds.map(String).filter(Boolean) : [],
+    isActive: room.isActive !== false
   })),
   labelTemplates: (data.labelTemplates || defaultLabelTemplates).map((template) => ({
     ...template,

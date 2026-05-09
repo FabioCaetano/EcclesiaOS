@@ -168,6 +168,21 @@ model ChildCheckInRecord {
   notes         String
 }
 
+model KidsRoomRecord {
+  id                   String   @id
+  name                 String
+  minAge               Int
+  maxAge               Int
+  capacity             Int      @default(0)
+  responsiblePersonIds Json     @default("[]")
+  isActive             Boolean  @default(true)
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([isActive])
+  @@index([minAge])
+}
+
 model ServingPlanRecord {
   id          String   @id
   date        String

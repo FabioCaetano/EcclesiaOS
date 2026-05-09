@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { Camera, ClipboardCheck, MessageCircle, Printer, ScanLine, Search, Tag, X } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
-import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
-import { checkOutChild, deleteEventCheckIn, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn } from "./api";
+import type { AttendanceRecord, ChildCheckIn, ChildCheckInInput, ChurchEvent, CurrentUser, EventCheckIn, EventCheckInInput, KidsRoom, KidsRoomInput, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
+import { checkOutChild, deleteEventCheckIn, deleteKidsRoom, loadAttendance, loadChildCheckIns, loadEventCheckIns, loadEvents, loadKidsRooms, loadLabelTemplates, loadPeople, saveChildCheckIn, saveEventCheckIn, saveKidsRoom } from "./api";
 import { useQrScanner } from "./useQrScanner";
 import { Avatar, Card, EmptyState, PageHeader, StatusPill } from "./ui";
 
@@ -28,8 +28,25 @@ const emptyChildCheckIn: ChildCheckInInput = {
   notes: ""
 };
 
+const emptyKidsRoomInput: KidsRoomInput = {
+  name: "",
+  minAge: 0,
+  maxAge: 0,
+  capacity: 0,
+  responsiblePersonIds: [],
+  isActive: true
+};
+
 type PrintMode = "single" | "batch" | null;
-type CheckInView = "events" | "kids" | "admin" | "labels";
+type CheckInView = "events" | "kids" | "admin" | "labels" | "rooms";
+
+const FALLBACK_KIDS_ROOMS: KidsRoom[] = [
+  { id: "kids_room_nursery", name: "Berçario", minAge: 0, maxAge: 2, capacity: 12, responsiblePersonIds: [], isActive: true, createdAt: "", updatedAt: "" },
+  { id: "kids_room_toddler", name: "Maternal", minAge: 3, maxAge: 5, capacity: 18, responsiblePersonIds: [], isActive: true, createdAt: "", updatedAt: "" },
+  { id: "kids_room_kids", name: "Kids", minAge: 6, maxAge: 8, capacity: 24, responsiblePersonIds: [], isActive: true, createdAt: "", updatedAt: "" },
+  { id: "kids_room_juniors", name: "Juniores", minAge: 9, maxAge: 11, capacity: 24, responsiblePersonIds: [], isActive: true, createdAt: "", updatedAt: "" },
+  { id: "kids_room_teens", name: "Teens", minAge: 12, maxAge: 17, capacity: 30, responsiblePersonIds: [], isActive: true, createdAt: "", updatedAt: "" }
+];
 
 const FALLBACK_TEMPLATES: LabelTemplate[] = [
   {
@@ -128,8 +145,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [kidsTemplates, setKidsTemplates] = useState<LabelTemplate[]>(FALLBACK_TEMPLATES);
   const [labelTemplateId, setLabelTemplateId] = useState<string>(FALLBACK_TEMPLATES[0]!.id);
+  const [kidsRooms, setKidsRooms] = useState<KidsRoom[]>(FALLBACK_KIDS_ROOMS);
+  const [editingKidsRoomId, setEditingKidsRoomId] = useState<string | null>(null);
+  const [kidsRoomForm, setKidsRoomForm] = useState<KidsRoomInput>(emptyKidsRoomInput);
   const [labelFields, setLabelFields] = useState({
     age: true,
+    room: true,
     guardianPhone: true,
     notes: false,
     qr: true
@@ -139,10 +160,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKidsRoomFilter, setSelectedKidsRoomFilter] = useState("all");
   const [selectedOperationEventId, setSelectedOperationEventId] = useState("");
   const [status, setStatus] = useState("");
 
   const canManage = canManageModule(user.role, "checkin");
+  const activeKidsRooms = useMemo(() => kidsRooms.filter((room) => room.isActive), [kidsRooms]);
   const serviceEvents = useMemo(() => events.filter((event) => event.type === "service"), [events]);
   const today = new Date().toISOString().slice(0, 10);
   const upcomingEvents = useMemo(
@@ -191,6 +214,12 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
   }, [token]);
 
   useEffect(() => {
+    loadKidsRooms(token)
+      .then((rooms) => setKidsRooms(rooms.length > 0 ? rooms : FALLBACK_KIDS_ROOMS))
+      .catch(() => setKidsRooms(FALLBACK_KIDS_ROOMS));
+  }, [token]);
+
+  useEffect(() => {
     if (!selectedOperationEventId && operationEventOptions[0]) {
       setSelectedOperationEventId(operationEventOptions[0].id);
     }
@@ -229,16 +258,52 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
     ? people.filter((person) => people.find((child) => child.id === childForm.childPersonId)?.guardianPersonIds.includes(person.id))
     : [];
 
-  const childAge = (person: PersonProfile | null): string => {
-    if (!person?.birthDate) return "";
+  const childAgeNumber = (person: PersonProfile | null): number | null => {
+    if (!person?.birthDate) return null;
     const birth = new Date(`${person.birthDate}T00:00:00`);
-    if (Number.isNaN(birth.getTime())) return "";
+    if (Number.isNaN(birth.getTime())) return null;
     const now = new Date();
     let age = now.getFullYear() - birth.getFullYear();
     const hadBirthday = now.getMonth() > birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
     if (!hadBirthday) age -= 1;
-    return age >= 0 ? `${age} ano(s)` : "";
+    return age >= 0 ? age : null;
   };
+
+  const childAge = (person: PersonProfile | null): string => {
+    const age = childAgeNumber(person);
+    return age === null ? "" : `${age} ano(s)`;
+  };
+
+  const childPersonFor = (item: ChildCheckIn): PersonProfile | null => (
+    item.childPersonId ? people.find((person) => person.id === item.childPersonId) || null : null
+  );
+
+  const suggestedRoomForPerson = (person: PersonProfile | null): string => {
+    const age = childAgeNumber(person);
+    if (age === null) return "Sala a definir";
+    return activeKidsRooms.find((room) => age >= room.minAge && age <= room.maxAge)?.name || "Sala a definir";
+  };
+
+  const suggestedRoomForCheckIn = (item: ChildCheckIn): string => suggestedRoomForPerson(childPersonFor(item));
+  const matchesKidsRoomFilter = (item: ChildCheckIn) => (
+    selectedKidsRoomFilter === "all" || suggestedRoomForCheckIn(item) === selectedKidsRoomFilter
+  );
+
+  const roomSummary = activeKidsRooms.map((room) => ({
+    name: room.name,
+    range: `${room.minAge}-${room.maxAge} anos`,
+    capacity: room.capacity,
+    children: openChildrenForOperation.filter((item) => suggestedRoomForCheckIn(item) === room.name),
+    isFull: room.capacity > 0 && openChildrenForOperation.filter((item) => suggestedRoomForCheckIn(item) === room.name).length >= room.capacity,
+    isNearLimit: room.capacity > 0 && openChildrenForOperation.filter((item) => suggestedRoomForCheckIn(item) === room.name).length >= Math.ceil(room.capacity * 0.8)
+  }));
+  const undefinedRoomChildren = openChildrenForOperation.filter((item) => suggestedRoomForCheckIn(item) === "Sala a definir");
+  const filteredOpenChildrenForOperation = openChildrenForOperation.filter(matchesKidsRoomFilter);
+  const filteredChildCheckInsForOperation = childCheckInsForOperation.filter(matchesKidsRoomFilter);
+  const fullRooms = roomSummary.filter((room) => room.isFull);
+  const nearLimitRooms = roomSummary.filter((room) => !room.isFull && room.isNearLimit);
+  const childFormPerson = childForm.childPersonId ? people.find((person) => person.id === childForm.childPersonId) || null : null;
+  const childFormRoom = suggestedRoomForPerson(childFormPerson);
 
   const updateChildPerson = (personId: string) => {
     const person = people.find((item) => item.id === personId);
@@ -320,6 +385,54 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       setStatus("Retirada infantil registrada.");
     } catch {
       setStatus("Nao foi possivel registrar a retirada.");
+    }
+  };
+
+  const editKidsRoom = (room: KidsRoom) => {
+    setEditingKidsRoomId(room.id);
+    setKidsRoomForm({
+      name: room.name,
+      minAge: room.minAge,
+      maxAge: room.maxAge,
+      capacity: room.capacity,
+      responsiblePersonIds: room.responsiblePersonIds,
+      isActive: room.isActive
+    });
+  };
+
+  const resetKidsRoomForm = () => {
+    setEditingKidsRoomId(null);
+    setKidsRoomForm(emptyKidsRoomInput);
+  };
+
+  const submitKidsRoom = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canManage) return;
+
+    setStatus("Salvando sala infantil...");
+    try {
+      await saveKidsRoom(token, kidsRoomForm, editingKidsRoomId || undefined);
+      const rooms = await loadKidsRooms(token);
+      setKidsRooms(rooms.length > 0 ? rooms : FALLBACK_KIDS_ROOMS);
+      resetKidsRoomForm();
+      setStatus("Sala infantil salva.");
+    } catch {
+      setStatus("Nao foi possivel salvar a sala infantil.");
+    }
+  };
+
+  const removeKidsRoom = async (id: string) => {
+    if (!canManage) return;
+
+    setStatus("Removendo sala infantil...");
+    try {
+      await deleteKidsRoom(token, id);
+      const rooms = await loadKidsRooms(token);
+      setKidsRooms(rooms.length > 0 ? rooms : FALLBACK_KIDS_ROOMS);
+      if (editingKidsRoomId === id) resetKidsRoomForm();
+      setStatus("Sala infantil removida.");
+    } catch {
+      setStatus("Nao foi possivel remover a sala infantil.");
     }
   };
 
@@ -412,14 +525,29 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       <div className="report-grid">
         <article><span>Check-ins evento</span><strong>{eventCheckInsForOperation.length}</strong></article>
         <article><span>Criancas ativas</span><strong>{openChildrenForOperation.length}</strong></article>
-        <article><span>Retiradas kids</span><strong>{checkedOutChildrenForOperation.length}</strong></article>
-        <article><span>Presenca consolidada</span><strong>{consolidatedPeopleCount}</strong></article>
+        <article><span>Salas em uso</span><strong>{roomSummary.filter((room) => room.children.length > 0).length}</strong></article>
+        <article><span>Salas no limite</span><strong>{fullRooms.length}</strong></article>
       </div>
+
+      {(fullRooms.length > 0 || nearLimitRooms.length > 0 || undefinedRoomChildren.length > 0) && (
+        <div className="checkin-alert-strip">
+          {fullRooms.map((room) => (
+            <span className="checkin-alert danger" key={`full-${room.name}`}>{room.name}: lotada</span>
+          ))}
+          {nearLimitRooms.map((room) => (
+            <span className="checkin-alert warning" key={`near-${room.name}`}>{room.name}: perto do limite</span>
+          ))}
+          {undefinedRoomChildren.length > 0 && (
+            <span className="checkin-alert warning">Sala a definir: {undefinedRoomChildren.length}</span>
+          )}
+        </div>
+      )}
 
       <div className="tab-bar" role="tablist" aria-label="Areas de check-in">
         <button className={activeView === "events" ? "active" : ""} type="button" onClick={() => setActiveView("events")}>Eventos</button>
         <button className={activeView === "kids" ? "active" : ""} type="button" onClick={() => setActiveView("kids")}>Kids</button>
         <button className={activeView === "admin" ? "active" : ""} type="button" onClick={() => setActiveView("admin")}>Administracao kids</button>
+        <button className={activeView === "rooms" ? "active" : ""} type="button" onClick={() => setActiveView("rooms")}>Salas</button>
         <button className={activeView === "labels" ? "active" : ""} type="button" onClick={() => setActiveView("labels")}>Etiquetas</button>
       </div>
 
@@ -527,6 +655,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           </label>
           <label>Responsavel<input disabled={!canManage} value={childForm.guardianName} onChange={(event) => setChildForm((current) => ({ ...current, guardianName: event.target.value }))} /></label>
           <label>Telefone<input disabled={!canManage} value={childForm.guardianPhone} onChange={(event) => setChildForm((current) => ({ ...current, guardianPhone: event.target.value }))} /></label>
+          <div className="kids-room-hint wide-field">
+            <span>Sala sugerida</span>
+            <strong>{childFormRoom}</strong>
+            <small>{childAge(childFormPerson) || "Cadastre a data de nascimento da crianca para sugerir a sala."}</small>
+          </div>
           <label className="wide-field">Notas<input disabled={!canManage} value={childForm.notes} onChange={(event) => setChildForm((current) => ({ ...current, notes: event.target.value }))} /></label>
           <div className="form-footer">
             {canManage && <button type="submit">Registrar crianca</button>}
@@ -534,17 +667,27 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           </div>
         </form>
         <div>
-          <h3>Criancas ativas</h3>
-          {openChildrenForOperation.length === 0 ? (
+          <div className="section-heading compact-heading">
+            <div>
+              <h3>Criancas ativas</h3>
+              <p className="muted">{selectedKidsRoomFilter === "all" ? "Todas as salas" : selectedKidsRoomFilter}</p>
+            </div>
+            <select value={selectedKidsRoomFilter} onChange={(event) => setSelectedKidsRoomFilter(event.target.value)}>
+              <option value="all">Todas as salas</option>
+              {activeKidsRooms.map((room) => <option key={room.id} value={room.name}>{room.name}</option>)}
+              <option value="Sala a definir">Sala a definir</option>
+            </select>
+          </div>
+          {filteredOpenChildrenForOperation.length === 0 ? (
             <EmptyState icon={ClipboardCheck} title="Sem criancas ativas" description="Nenhuma crianca aguardando retirada agora." />
           ) : (
             <div className="checkin-grid">
-              {openChildrenForOperation.map((item) => (
+              {filteredOpenChildrenForOperation.map((item) => (
                 <article className="checkin-card" key={item.id}>
                   <Avatar name={item.childName} size="md" tone="info" />
                   <div className="checkin-card-text">
                     <strong>{item.childName}</strong>
-                    <span>{eventName(item.eventId)} - codigo {item.securityCode}</span>
+                    <span>{eventName(item.eventId)} - {suggestedRoomForCheckIn(item)} - codigo {item.securityCode}</span>
                   </div>
                   <button className="secondary-button btn-sm" type="button" onClick={() => setSelectedLabelId(item.id)}>
                     <Tag size={14} /> Etiqueta
@@ -572,9 +715,16 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
         <div className="checkin-layout">
           <div>
             <h3>Administracao infantil</h3>
-            <div className="checkin-search">
-              <Search size={16} className="checkin-search-icon" />
-              <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar crianca ou responsavel..." />
+            <div className="checkin-filter-row">
+              <div className="checkin-search">
+                <Search size={16} className="checkin-search-icon" />
+                <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar crianca ou responsavel..." />
+              </div>
+              <select value={selectedKidsRoomFilter} onChange={(event) => setSelectedKidsRoomFilter(event.target.value)}>
+                <option value="all">Todas as salas</option>
+                {activeKidsRooms.map((room) => <option key={room.id} value={room.name}>{room.name}</option>)}
+                <option value="Sala a definir">Sala a definir</option>
+              </select>
             </div>
             {canManage && (
               <div className="batch-toolbar">
@@ -586,11 +736,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                 <span>{selectedBatchLabels.length} selecionada(s)</span>
               </div>
             )}
-            {childCheckIns.length === 0 ? (
+            {filteredChildCheckInsForOperation.length === 0 ? (
               <EmptyState icon={ClipboardCheck} title="Sem check-ins infantis" description="Registre criancas na aba Kids para que elas apareçam aqui." />
             ) : (
               <div className="checkin-grid">
-                {childCheckInsForOperation
+                {filteredChildCheckInsForOperation
                   .filter((item) => matchesQuery(`${item.childName} ${item.guardianName}`, searchQuery))
                   .map((item) => (
                     <article className="checkin-card" key={item.id}>
@@ -612,6 +762,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                           {eventName(item.eventId)} - codigo {item.securityCode}
                           {item.checkedInAt && ` - ${relativeTime(item.checkedInAt)}`}
                         </span>
+                        <small className="kids-room-chip">{suggestedRoomForCheckIn(item)}</small>
                       </div>
                       <div className="response-actions">
                         {item.checkedOutAt ? (
@@ -642,16 +793,41 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
 
           <aside className="checkin-side" aria-label="No momento">
             <h3>No momento</h3>
-            {openChildrenForOperation.length === 0 ? (
+            <div className="kids-room-dashboard">
+              {roomSummary.map((room) => (
+                <button
+                  className={`kids-room-row ${room.isFull ? "danger" : room.isNearLimit ? "attention" : ""} ${selectedKidsRoomFilter === room.name ? "active" : ""}`}
+                  key={room.name}
+                  type="button"
+                  onClick={() => setSelectedKidsRoomFilter((current) => current === room.name ? "all" : room.name)}
+                >
+                  <span>{room.name}</span>
+                  <strong>{room.capacity > 0 ? `${room.children.length}/${room.capacity}` : room.children.length}</strong>
+                  <small>{room.range}{room.isFull ? " - lotada" : room.isNearLimit ? " - perto do limite" : ""}</small>
+                </button>
+              ))}
+              {undefinedRoomChildren.length > 0 && (
+                <button
+                  className={`kids-room-row attention ${selectedKidsRoomFilter === "Sala a definir" ? "active" : ""}`}
+                  type="button"
+                  onClick={() => setSelectedKidsRoomFilter((current) => current === "Sala a definir" ? "all" : "Sala a definir")}
+                >
+                  <span>Sala a definir</span>
+                  <strong>{undefinedRoomChildren.length}</strong>
+                  <small>sem idade cadastrada</small>
+                </button>
+              )}
+            </div>
+            {filteredOpenChildrenForOperation.length === 0 ? (
               <p className="muted">Nenhuma crianca presente.</p>
             ) : (
               <div className="checkin-side-list">
-                {openChildrenForOperation.slice(0, 12).map((item) => (
+                {filteredOpenChildrenForOperation.slice(0, 12).map((item) => (
                   <div className="checkin-side-item" key={item.id}>
                     <Avatar name={item.childName} size="sm" tone="info" />
                     <div>
                       <strong>{item.childName}</strong>
-                      <span>{relativeTime(item.checkedInAt)}</span>
+                      <span>{suggestedRoomForCheckIn(item)} - {relativeTime(item.checkedInAt)}</span>
                     </div>
                     <StatusPill tone="success">Aqui</StatusPill>
                   </div>
@@ -659,6 +835,76 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               </div>
             )}
           </aside>
+        </div>
+      )}
+
+      {activeView === "rooms" && (
+        <div className="report-columns">
+          <form className="person-form" onSubmit={submitKidsRoom}>
+            <h3 className="wide-field">{editingKidsRoomId ? "Editar sala infantil" : "Nova sala infantil"}</h3>
+            <label>
+              Nome da sala
+              <input disabled={!canManage} value={kidsRoomForm.name} onChange={(event) => setKidsRoomForm((current) => ({ ...current, name: event.target.value }))} />
+            </label>
+            <label>
+              Idade minima
+              <input disabled={!canManage} type="number" min="0" value={kidsRoomForm.minAge} onChange={(event) => setKidsRoomForm((current) => ({ ...current, minAge: Number(event.target.value) }))} />
+            </label>
+            <label>
+              Idade maxima
+              <input disabled={!canManage} type="number" min="0" value={kidsRoomForm.maxAge} onChange={(event) => setKidsRoomForm((current) => ({ ...current, maxAge: Number(event.target.value) }))} />
+            </label>
+            <label>
+              Capacidade
+              <input disabled={!canManage} type="number" min="0" value={kidsRoomForm.capacity} onChange={(event) => setKidsRoomForm((current) => ({ ...current, capacity: Number(event.target.value) }))} />
+            </label>
+            <label className="wide-field">
+              Responsaveis pela sala
+              <select
+                disabled={!canManage}
+                multiple
+                value={kidsRoomForm.responsiblePersonIds}
+                onChange={(event) => {
+                  const selected = Array.from(event.target.selectedOptions).map((option) => option.value);
+                  setKidsRoomForm((current) => ({ ...current, responsiblePersonIds: selected }));
+                }}
+              >
+                {people.map((person) => <option key={person.id} value={person.id}>{person.firstName} {person.lastName}</option>)}
+              </select>
+            </label>
+            <label className="checkbox-inline wide-field">
+              <input disabled={!canManage} type="checkbox" checked={kidsRoomForm.isActive} onChange={(event) => setKidsRoomForm((current) => ({ ...current, isActive: event.target.checked }))} />
+              Sala ativa para sugestao de check-in
+            </label>
+            <div className="form-footer">
+              {canManage && <button type="submit">{editingKidsRoomId ? "Salvar sala" : "Criar sala"}</button>}
+              {editingKidsRoomId && <button className="secondary-button" type="button" onClick={resetKidsRoomForm}>Cancelar edicao</button>}
+              <p>{status}</p>
+            </div>
+          </form>
+          <div>
+            <h3>Salas cadastradas</h3>
+            <div className="checkin-grid">
+              {kidsRooms.map((room) => (
+                <article className="checkin-card" key={room.id}>
+                  <Avatar name={room.name} size="md" tone={room.isActive ? "info" : "muted"} />
+                  <div className="checkin-card-text">
+                    <strong>{room.name}</strong>
+                    <span>{room.minAge}-{room.maxAge} anos - capacidade {room.capacity || "sem limite"}</span>
+                    <small className="kids-room-chip">
+                      {room.isActive ? "Ativa" : "Inativa"} - {room.responsiblePersonIds.length} responsavel(is)
+                    </small>
+                  </div>
+                  {canManage && (
+                    <div className="response-actions">
+                      <button className="secondary-button btn-sm" type="button" onClick={() => editKidsRoom(room)}>Editar</button>
+                      <button className="secondary-button btn-sm danger" type="button" onClick={() => removeKidsRoom(room.id)}>Remover</button>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -681,7 +927,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                   <Avatar name={item.childName} size="md" tone={item.checkedOutAt ? "muted" : "info"} />
                   <div className="checkin-card-text">
                     <strong>{item.childName}</strong>
-                    <span>{eventName(item.eventId)} - codigo {item.securityCode}</span>
+                    <span>{eventName(item.eventId)} - {suggestedRoomForCheckIn(item)} - codigo {item.securityCode}</span>
                   </div>
                   <button className="secondary-button btn-sm" type="button" onClick={() => setSelectedLabelId(item.id)}>
                     <Tag size={14} /> Preview
@@ -693,6 +939,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           <aside className="checkin-side">
             <h3>Campos da etiqueta</h3>
             <label className="checkbox-inline"><input type="checkbox" checked={labelFields.age} onChange={(event) => setLabelFields((current) => ({ ...current, age: event.target.checked }))} /> Idade</label>
+            <label className="checkbox-inline"><input type="checkbox" checked={labelFields.room} onChange={(event) => setLabelFields((current) => ({ ...current, room: event.target.checked }))} /> Sala sugerida</label>
             <label className="checkbox-inline"><input type="checkbox" checked={labelFields.guardianPhone} onChange={(event) => setLabelFields((current) => ({ ...current, guardianPhone: event.target.checked }))} /> Telefone do responsavel</label>
             <label className="checkbox-inline"><input type="checkbox" checked={labelFields.notes} onChange={(event) => setLabelFields((current) => ({ ...current, notes: event.target.checked }))} /> Observacoes</label>
             <label className="checkbox-inline"><input type="checkbox" checked={labelFields.qr} onChange={(event) => setLabelFields((current) => ({ ...current, qr: event.target.checked }))} /> QR Code</label>
@@ -728,6 +975,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               {labelFields.qr && <ChildQrCode value={selectedLabelQrValue} />}
             </div>
             <p>{eventName(selectedLabel.eventId)}</p>
+            {labelFields.room && <p>Sala: {suggestedRoomForCheckIn(selectedLabel)}</p>}
             <p>Responsavel: {selectedLabel.guardianName}</p>
             {labelFields.age && childAge(selectedLabelPerson) && <p>Idade: {childAge(selectedLabelPerson)}</p>}
             {labelFields.guardianPhone && <p>Telefone: {selectedLabel.guardianPhone || "Nao informado"}</p>}
@@ -750,6 +998,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
                 {labelFields.qr && <ChildQrCode value={`ecclesiaos-child-checkout:${label.id}:${label.securityCode}`} />}
               </div>
               <p>{eventName(label.eventId)}</p>
+              {labelFields.room && <p>Sala: {suggestedRoomForCheckIn(label)}</p>}
               <p>Responsavel: {label.guardianName}</p>
               {labelFields.guardianPhone && <p>Telefone: {label.guardianPhone || "Nao informado"}</p>}
               {labelFields.notes && label.notes && <p>Obs.: {label.notes}</p>}
