@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ClipboardList, Grid3x3, List, Plus, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, ClipboardList, Download, Grid3x3, List, Plus, Printer, UserPlus, X } from "lucide-react";
 import type { CurrentUser, GroupProfile, PersonBlockOut, PersonProfile, ServingAssignment, ServingNotification, ServingPlan, ServingPlanInput, SubstituteSuggestion } from "@ecclesiaos/shared";
 import { applyServingSubstitute, createBlockOut, deleteBlockOut, deleteServingPlan, loadBlockOuts, loadGroups, loadPeople, loadServingNotifications, loadServingPlans, loadSubstituteSuggestions, saveServingPlan, updateServingAssignmentStatus } from "./api";
 import { emptyServingPlanInput } from "./constants";
@@ -258,7 +258,9 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
           return next;
         });
       }
-      setServingStatus(`Substituto aplicado e escala salva: ${substitute.name}.`);
+      setServingStatus(saved.substituteEmailSent
+        ? `Substituto aplicado e notificado: ${substitute.name}.`
+        : `Substituto aplicado: ${substitute.name}. Notificacao nao enviada ou email nao configurado.`);
     } catch {
       setServingStatus("Nao foi possivel aplicar o substituto.");
     }
@@ -314,6 +316,9 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
   const matrixPendingTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "pending").length;
   const matrixDeclinedTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "declined").length;
   const matrixConfirmedTotal = matrixAssignments.filter(({ assignment }) => assignment.status === "confirmed").length;
+  const matrixAverageLoad = matrixMembers.length > 0 ? matrixAssignments.length / matrixMembers.length : 0;
+  const matrixOverloadThreshold = Math.max(3, Math.ceil(matrixAverageLoad + 1));
+  const matrixOverloadedMembers = matrixMembers.filter((person) => matrixMemberLoad(person.id) >= matrixOverloadThreshold && matrixMemberLoad(person.id) > 0);
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
   const selectedPlanGroup = groups.find((group) => group.id === (selectedPlan?.groupId || planForm.groupId)) || null;
@@ -391,6 +396,30 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
     }
   };
 
+  const exportMonthlyMatrixCsv = () => {
+    if (!matrixGroup) return;
+    const headers = ["Pessoa", "Carga", ...matrixPlans.map((plan) => `${plan.date} ${plan.title}`)];
+    const rows = matrixMembers.map((person) => [
+      `${person.firstName} ${person.lastName}`.trim(),
+      String(matrixMemberLoad(person.id)),
+      ...matrixPlans.map((plan) => {
+        const assignment = findAssignmentInPlan(plan, person.id);
+        if (!assignment) return "";
+        return `${assignmentStatusLabels[assignment.status]}${assignment.role ? ` - ${assignment.role}` : ""}`;
+      })
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `escala-${matrixGroup.name}-${matrixMonth}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <PageHeader
@@ -465,6 +494,21 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
             </div>
           )}
 
+          {matrixGroup && (
+            <div className="monthly-serving-actions">
+              <div>
+                <strong>{matrixOverloadedMembers.length} pessoa(s) com alta carga</strong>
+                <span>{matrixOverloadedMembers.length > 0 ? matrixOverloadedMembers.map((person) => `${person.firstName} ${person.lastName}`.trim()).join(", ") : "Distribuicao equilibrada para o criterio atual."}</span>
+              </div>
+              <button className="secondary-button" type="button" onClick={exportMonthlyMatrixCsv} disabled={matrixPlans.length === 0}>
+                <Download size={16} /> Exportar CSV
+              </button>
+              <button className="secondary-button" type="button" onClick={() => window.print()} disabled={matrixPlans.length === 0}>
+                <Printer size={16} /> Imprimir
+              </button>
+            </div>
+          )}
+
           {!matrixGroup ? (
             <EmptyState
               icon={Grid3x3}
@@ -499,14 +543,18 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {matrixMembers.map((person) => (
+                  {matrixMembers.map((person) => {
+                    const load = matrixMemberLoad(person.id);
+                    const isOverloaded = load >= matrixOverloadThreshold && load > 0;
+                    return (
                     <tr key={person.id}>
                       <th className="serving-matrix-name">
                         <Avatar name={`${person.firstName} ${person.lastName}`} size="sm" tone="brand" />
                         <span>{person.firstName} {person.lastName}</span>
+                        {isOverloaded && <AlertTriangle size={14} className="serving-load-alert" />}
                       </th>
                       <td>
-                        <strong>{matrixMemberLoad(person.id)}</strong>
+                        <strong className={isOverloaded ? "serving-load-count overloaded" : "serving-load-count"}>{load}</strong>
                       </td>
                       {matrixPlans.map((plan) => {
                         const assignment = findAssignmentInPlan(plan, person.id);
@@ -529,7 +577,8 @@ export const ServingPage: React.FC<Props> = ({ token, user }) => {
                         );
                       })}
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 91 - Check-in Kids Dashboard 2**.
+O EcclesiaOS concluiu ate a **Fase 100 - Check-in 2.0: Totem Kids Por Culto**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -351,3 +351,99 @@ Motivo: a operacao do culto ja tem leitura, execucao e atalhos; o maior ganho op
 4. Retomar Passo 4 - Check-in:
    - painel operacional de eventos;
    - fila de retirada Kids.
+
+# Proximos Passos Apos Fase 96
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Publicar a Fase 96 no GitHub e redeployar o frontend.
+3. Retomar Passo 3 - Culto operacional:
+   - abrir Escalas, Liturgia e Musicas ja filtradas pelo culto selecionado;
+   - consolidar reservas e check-in do culto na visao operacional.
+4. Retomar Passo 4 - Check-in:
+   - painel operacional de eventos;
+   - fila de retirada Kids.
+
+# Proximos Passos Apos Fase 97
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Concluir Agenda dentro do Calendario:
+   - editar evento clicado com formulario ja preenchido;
+   - excluir evento com confirmacao clara;
+   - abrir Culto ja no contexto do evento;
+   - mover a lista de eventos/agendas para baixo do Calendario.
+3. Avancar para Check-in 2.0:
+   - responsavel pre-cadastra criancas no app;
+   - responsavel seleciona criancas e gera QR do culto;
+   - totem do culto escaneia QR, imprime etiquetas e faz check-out;
+   - evento pago/gratuito envia QR por email e usa totem proprio sem check-out.
+4. Refinar Liturgia e Musicas:
+   - liturgia em linhas simples sem botao de concluido na criacao;
+   - responsavel pesquisavel por nome;
+   - musicas com biblioteca prioritaria, link obrigatorio e repertorios por culto.
+5. Grupos, Pessoas e Ambientes:
+   - familiares pesquisaveis;
+   - ministerios com posicoes e membros por busca;
+   - calendario de ambientes com bloqueio de conflito.
+6. Iniciar notificacoes internas:
+   - central de avisos por usuario;
+   - notificacoes de escala, formulario, check-in e mensagens operacionais.
+
+# Proximos Passos Apos Fase 98
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Escolher o proximo corte:
+   - **Calendario 3**: lista completa de eventos abaixo do Calendario e formularios mais contextuais;
+   - **Check-in 2.0**: pre-registro de criancas, QR por culto e totem operacional.
+3. Se seguir Calendario 3:
+   - mover eventos/agendas para baixo do Calendario;
+   - melhorar feedback de exclusao;
+   - preparar formulario em drawer/modal futuro.
+4. Se seguir Check-in 2.0:
+   - modelar criancas vinculadas ao responsavel;
+   - gerar QR do culto para criancas selecionadas;
+   - criar fluxo de totem para leitura, etiqueta e checkout.
+
+# Proximos Passos Apos Fase 99
+
+1. Rodar `npm run build:api` e `npm run build:web` quando o ambiente permitir.
+2. Criar **Totem Kids por culto**:
+   - rota/tela operacional por evento;
+   - dashboard de criancas esperadas, presentes e retiradas;
+   - leitura de QR/pre-check-in;
+   - impressao de etiquetas;
+   - checkout manual e por QR.
+3. Evoluir cadastro pelo responsavel:
+   - adicionar crianca pelo app;
+   - editar dados basicos da crianca vinculada;
+   - sugerir sala pela idade antes do check-in.
+4. Evoluir visitante:
+   - cadastro rapido do responsavel visitante;
+   - acesso limitado ao app com Check-in Kids;
+   - check-in das criancas do visitante.
+5. Depois retomar:
+   - Check-in Eventos 2.0;
+   - alternancia de camera frontal/traseira;
+   - relatorios do culto/evento.
+
+# Proximos Passos Apos Fase 100
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Evoluir pre-check-in com QR do responsavel:
+   - responsavel seleciona criancas;
+   - app gera QR do lote;
+   - totem le o QR;
+   - operador confirma entrada;
+   - etiquetas sao impressas para as criancas do lote.
+3. Melhorar camera:
+   - seletor de camera;
+   - alternancia frontal/traseira;
+   - feedback visual de leitura.
+4. Evoluir cadastro rapido:
+   - visitante cria cadastro reduzido;
+   - visitante adiciona crianca;
+   - acesso limitado ao Check-in Kids.
+5. Depois criar relatorios:
+   - presentes por culto;
+   - retiradas;
+   - sala/idade;
+   - atrasos de retirada.

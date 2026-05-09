@@ -642,3 +642,126 @@ Fase 95 concluida. Lideres e administradores agora possuem uma visao mensal de e
 ## Validacao
 
 - `npm run build:web`: passou.
+
+# Status Atual - Fase 96
+
+Fase 96 implementada. O Passo 5 - Escalas recebeu polimento final com sobrecarga mensal, exportacao, impressao e feedback de notificacao ao aplicar substituto.
+
+## Entregue na fase
+
+- Alerta de alta carga por voluntario na visao mensal.
+- Exportacao CSV da escala mensal.
+- Impressao da visao mensal.
+- Feedback quando substituto e aplicado com ou sem notificacao enviada.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 97
+
+Fase 97 implementada. A UX Operacional 2.0 comecou pela navegacao e pelo Calendario: Agenda saiu do menu lateral e o Calendario passou a ser o ponto de entrada para criar e acionar eventos/agendas.
+
+## Entregue na fase
+
+- Agenda removida do menu lateral.
+- Botao **Novo evento/agenda** no Calendario para administradores.
+- Acoes rapidas no detalhe do dia: abrir, editar e excluir evento.
+- Reservas continuam abrindo o modulo Ambientes.
+- Modulos operacionais sensiveis foram ocultados para usuarios `member`.
+- Lista do detalhe do Calendario ajustada para desktop e mobile.
+
+## Pendencias da consolidacao
+
+- Edicao contextual com formulario ja preenchido pelo evento clicado.
+- Abrir Culto ja filtrado pelo evento clicado.
+- Lista completa de eventos/agendas abaixo do Calendario.
+- Remocao final da Agenda como tela interna depois da transicao.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 98
+
+Fase 98 implementada. O Calendario agora abre as telas internas no contexto do evento clicado, reduzindo a navegacao solta entre Calendario, Agenda e Culto.
+
+## Entregue na fase
+
+- Evento clicado no Calendario pode abrir Agenda interna com formulario preenchido.
+- Evento clicado no Calendario pode abrir Culto operacional ja selecionado.
+- Novo evento/agenda limpa o contexto antes de abrir o formulario.
+- Agenda interna ganhou retorno para Calendario.
+- Culto operacional respeita o evento recebido da navegacao contextual.
+- Atalho do Culto agora aponta para Calendario, nao para Agenda.
+
+## Pendencias da consolidacao
+
+- Transformar Agenda em formulario contextual dentro do proprio Calendario.
+- Mover lista completa de eventos/agendas para baixo do Calendario.
+- Passar o mesmo contexto para Escalas, Musicas e Liturgia.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 99
+
+Fase 99 implementada. O Check-in 2.0 foi iniciado pelo fluxo do responsavel logado, mantendo lider/admin com a operacao atual e dando ao membro comum uma entrada mais simples para Kids.
+
+## Entregue na fase
+
+- Membro comum abre Check-in direto em Kids.
+- Abas administrativas de Check-in ficam ocultas para membro.
+- Responsavel ve criancas vinculadas a sua pessoa.
+- Responsavel seleciona criancas e gera check-in infantil para o culto selecionado.
+- Criancas ja ativas no culto ficam bloqueadas na selecao.
+- Backend valida vinculo familiar antes de permitir check-in por membro.
+- Backend força dados do responsavel logado no registro criado.
+
+## Pendencias da consolidacao
+
+- Criar tela de totem por culto.
+- Gerar/ler QR de pre-check-in no totem.
+- Imprimir etiqueta pelo totem.
+- Cadastro rapido de crianca pelo responsavel.
+- Cadastro rapido de visitante.
+- Alternar camera frontal/traseira.
+
+## Validacao
+
+- `npm run build:api`: pendente por bloqueio do ambiente nesta execucao.
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 100
+
+Fase 100 implementada. O Check-in Kids agora possui uma tela de totem autenticada por culto, voltada para operacao no balcao.
+
+## Entregue na fase
+
+- Rota `/kids-totem/:eventId`.
+- Botao **Totem Kids** no Check-in para o evento selecionado.
+- Dashboard de presentes, retiradas, total e salas em uso.
+- Lista operacional de criancas por culto.
+- Filtro por sala e busca por crianca/responsavel.
+- Preview e impressao de etiqueta individual.
+- Impressao em lote das criancas presentes.
+- Checkout manual pelo operador.
+- Checkout por leitura de QR da etiqueta.
+
+## Pendencias da consolidacao
+
+- QR de pre-check-in gerado pelo responsavel.
+- Leitura do pre-check-in no totem para imprimir etiquetas.
+- Cadastro rapido de visitante e crianca.
+- Alternancia de camera frontal/traseira.
+- Relatorio final do culto.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.

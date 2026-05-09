@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { canAccessModule } from "@ecclesiaos/shared";
 import type { AppModuleKey, CurrentUser } from "@ecclesiaos/shared";
 import {
-  CalendarDays,
   CalendarRange,
   ClipboardCheck,
   ClipboardList,
@@ -47,7 +46,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Inicio", module: "home", view: "home", icon: Home, group: "Operacao" },
-  { label: "Agenda", module: "events", view: "events", icon: CalendarDays, group: "Operacao" },
   { label: "Calendario", module: "calendar", view: "calendar", icon: CalendarRange, group: "Operacao" },
   { label: "Check-in", module: "checkin", view: "checkin", icon: ClipboardCheck, group: "Operacao" },
   { label: "Escalas", module: "serving", view: "serving", icon: ClipboardList, group: "Operacao" },

@@ -157,7 +157,15 @@ export type PermissionAction = "view" | "manage";
 
 const adminOnlyModules: AppModuleKey[] = ["finance", "reports", "users", "audit"];
 
-export const canAccessModule = (role: UserRole, module: AppModuleKey) => !adminOnlyModules.includes(module) || role === "admin";
+export const canAccessModule = (role: UserRole, module: AppModuleKey) => {
+  if (adminOnlyModules.includes(module)) return role === "admin";
+  if (module === "people") return role === "admin" || role === "leader";
+  if (module === "resources") return role === "admin" || role === "leader";
+  if (module === "serviceOps") return role === "admin" || role === "leader";
+  if (module === "messages") return role === "admin" || role === "leader";
+  if (module === "music") return role === "admin" || role === "leader";
+  return true;
+};
 
 export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   if (module === "checkin") return role === "admin" || role === "leader";

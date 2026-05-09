@@ -17,6 +17,7 @@ import { HomePage } from "./HomePage";
 import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { LiturgyPage } from "./LiturgyPage";
+import { KidsTotemPage } from "./KidsTotemPage";
 import { MessagesPage } from "./MessagesPage";
 import { MusicPage } from "./MusicPage";
 import { PeoplePage } from "./PeoplePage";
@@ -62,6 +63,7 @@ const App = () => {
   const [session, setSession] = useState<AuthSession | null>(() => loadStoredSession());
   const [currentView, setCurrentView] = useState<AppView>("home");
   const [churchName, setChurchName] = useState<string>("");
+  const [contextEventId, setContextEventId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.token) return;
@@ -98,9 +100,40 @@ const App = () => {
     setSession(null);
     clearSession();
     setCurrentView("home");
+    setContextEventId(null);
+  };
+
+  const openEventEditor = (eventId: string) => {
+    setContextEventId(eventId);
+    setCurrentView("events");
+  };
+
+  const createEventFromCalendar = () => {
+    setContextEventId(null);
+    setCurrentView("events");
+  };
+
+  const openServiceOperation = (eventId: string) => {
+    setContextEventId(eventId);
+    setCurrentView("serviceOps");
   };
 
   if (!session?.user) return <LoginPage onLogin={handleLogin} />;
+
+  const kidsTotemMatch = window.location.pathname.match(/^\/kids-totem\/([^/]+)$/);
+  if (kidsTotemMatch) {
+    return (
+      <KidsTotemPage
+        token={session.token}
+        user={session.user}
+        eventId={kidsTotemMatch[1]}
+        onBack={() => {
+          window.history.pushState({}, "", "/");
+          setCurrentView("checkin");
+        }}
+      />
+    );
+  }
 
   return (
     <AppLayout currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} user={session.user} churchName={churchName}>
@@ -109,12 +142,12 @@ const App = () => {
       {currentView === "people" && <PeoplePage token={session.token} user={session.user} />}
       {currentView === "groups" && <GroupsPage token={session.token} user={session.user} />}
       {currentView === "attendance" && <AttendancePage token={session.token} user={session.user} />}
-      {currentView === "events" && <EventsPage token={session.token} user={session.user} />}
+      {currentView === "events" && <EventsPage token={session.token} user={session.user} initialEventId={contextEventId} onBackToCalendar={() => setCurrentView("calendar")} />}
       {currentView === "checkin" && <CheckInPage token={session.token} user={session.user} />}
       {currentView === "resources" && <ResourcesPage token={session.token} user={session.user} />}
-      {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} />}
+      {currentView === "calendar" && <CalendarPage token={session.token} user={session.user} onNavigate={setCurrentView} onCreateEvent={createEventFromCalendar} onEditEvent={openEventEditor} onOpenEvent={openServiceOperation} />}
       {currentView === "serving" && <ServingPage token={session.token} user={session.user} />}
-      {currentView === "serviceOps" && <ServiceOpsPage token={session.token} user={session.user} onNavigate={setCurrentView} />}
+      {currentView === "serviceOps" && <ServiceOpsPage token={session.token} user={session.user} onNavigate={setCurrentView} initialEventId={contextEventId} />}
       {currentView === "music" && <MusicPage token={session.token} user={session.user} />}
       {currentView === "liturgy" && <LiturgyPage token={session.token} user={session.user} />}
       {currentView === "forms" && <FormsPage token={session.token} user={session.user} />}

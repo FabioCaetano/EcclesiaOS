@@ -231,3 +231,23 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0095-serving-monthly-leader-view.md`
 - Escalas ganhou visao mensal por equipe com carga por voluntario, resumo de status e abertura direta do plano.
+# Decisao 0096
+
+- `docs/decisions/0096-serving-monthly-polish.md`
+- Passo 5 de Escalas foi fechado com alerta de sobrecarga, exportacao CSV, impressao e feedback de notificacao.
+# Decisao 0097
+
+- `docs/decisions/0097-ux-operational-navigation-calendar.md`
+- UX Operacional 2.0 comeca pelo Calendario como entrada principal da Agenda e restricao de modulos sensiveis para membros.
+# Decisao 0098
+
+- `docs/decisions/0098-calendar-contextual-actions.md`
+- Calendario passa a navegar com contexto de evento para Agenda interna e Culto operacional.
+# Decisao 0099
+
+- `docs/decisions/0099-checkin-guardian-flow.md`
+- Check-in 2.0 comeca permitindo que responsavel logado gere check-in infantil apenas para criancas vinculadas a ele.
+# Decisao 0100
+
+- `docs/decisions/0100-kids-totem.md`
+- Criado Totem Kids autenticado por culto para operar etiquetas, presentes e retiradas.

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { CalendarDays, Plus } from "lucide-react";
+import { ArrowLeft, CalendarDays, Plus } from "lucide-react";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
 import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
@@ -11,6 +11,8 @@ import { Card, EmptyState, PageHeader } from "./ui";
 interface Props {
   token: string;
   user: CurrentUser;
+  initialEventId?: string | null;
+  onBackToCalendar?: () => void;
 }
 
 const registrationStatusLabels: Record<EventRegistrationStatus, string> = {
@@ -54,7 +56,7 @@ const TicketQrCode: React.FC<{ value: string }> = ({ value }) => {
   return src ? <img className="ticket-qr" src={src} alt="QR Code do ingresso" /> : <div className="ticket-qr placeholder" />;
 };
 
-export const EventsPage: React.FC<Props> = ({ token, user }) => {
+export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBackToCalendar }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
@@ -116,6 +118,7 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
   const selectEvent = (event: ChurchEvent) => {
     setSelectedEventId(event.id);
     setEventForm(toEventInput(event));
+    setMonthFilter(event.date.slice(0, 7));
     setStatus("");
   };
 
@@ -124,6 +127,12 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
     setEventForm(emptyEventInput);
     setStatus("");
   };
+
+  useEffect(() => {
+    if (!initialEventId || events.length === 0) return;
+    const event = events.find((item) => item.id === initialEventId);
+    if (event && event.id !== selectedEventId) selectEvent(event);
+  }, [initialEventId, events, selectedEventId]);
 
   const updateField = (field: keyof ChurchEventInput, value: string) => {
     setEventForm((current) => ({
@@ -296,10 +305,19 @@ export const EventsPage: React.FC<Props> = ({ token, user }) => {
         icon={CalendarDays}
         title="Agenda"
         description="Eventos, cultos, inscricoes publicas e check-in de ingressos."
-        actions={user.role === "admin" && (
-          <button className="secondary-button" type="button" onClick={startNewEvent}>
-            <Plus size={16} /> Novo evento
-          </button>
+        actions={(
+          <div className="button-row">
+            {onBackToCalendar && (
+              <button className="secondary-button" type="button" onClick={onBackToCalendar}>
+                <ArrowLeft size={16} /> Calendario
+              </button>
+            )}
+            {user.role === "admin" && (
+              <button className="secondary-button" type="button" onClick={startNewEvent}>
+                <Plus size={16} /> Novo evento
+              </button>
+            )}
+          </div>
         )}
       />
 

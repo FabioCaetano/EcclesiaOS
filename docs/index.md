@@ -4,15 +4,15 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 91 - Check-in Kids Dashboard 2**.
+Fase atual concluida: **Fase 100 - Check-in 2.0: Totem Kids Por Culto**.
 
 Ultimo modulo entregue:
 
-- Check-in Kids ganhou filtros por sala;
-- dashboard lateral de salas e clicavel;
-- ocupacao/capacidade aparece por sala;
-- alertas indicam sala lotada, perto do limite e criancas sem sala definida;
-- build do frontend passou apos a mudanca.
+- nova rota autenticada `/kids-totem/:eventId`;
+- Check-in ganhou botao **Totem Kids** para o culto selecionado;
+- totem exibe presentes, retiradas, salas e etiquetas;
+- totem faz checkout manual ou por QR da etiqueta;
+- build do frontend ainda esta pendente por bloqueio do ambiente nesta execucao.
 
 Ambiente atual:
 
@@ -307,3 +307,23 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-95-serving-monthly-leader-view.md`: visao mensal de escalas por equipe para lider/admin.
 - `docs/decisions/0095-serving-monthly-leader-view.md`: decisao de transformar a matriz em acompanhamento mensal por equipe.
+# Atualizacao - Fase 96
+
+- `docs/phases/phase-96-serving-monthly-polish.md`: polimento final do Passo 5 de Escalas.
+- `docs/decisions/0096-serving-monthly-polish.md`: decisao de fechar Escalas com sobrecarga, CSV, impressao e feedback de notificacao.
+# Atualizacao - Fase 97
+
+- `docs/phases/phase-97-ux-operational-navigation-calendar.md`: inicio da UX Operacional 2.0, removendo Agenda do menu e centralizando criacao/acoes no Calendario.
+- `docs/decisions/0097-ux-operational-navigation-calendar.md`: decisao de usar o Calendario como entrada principal para Agenda e restringir modulos operacionais para membros.
+# Atualizacao - Fase 98
+
+- `docs/phases/phase-98-calendar-contextual-actions.md`: Calendario abre edicao e Culto no contexto do evento clicado.
+- `docs/decisions/0098-calendar-contextual-actions.md`: decisao de manter contexto de evento na navegacao principal.
+# Atualizacao - Fase 99
+
+- `docs/phases/phase-99-checkin-guardian-flow.md`: fluxo inicial do responsavel logado no Check-in Kids.
+- `docs/decisions/0099-checkin-guardian-flow.md`: decisao de permitir check-in infantil por responsavel apenas para criancas vinculadas.
+# Atualizacao - Fase 100
+
+- `docs/phases/phase-100-kids-totem.md`: Totem Kids autenticado por culto.
+- `docs/decisions/0100-kids-totem.md`: decisao de separar a operacao infantil em rota propria por evento.

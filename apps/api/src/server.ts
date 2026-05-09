@@ -2245,7 +2245,7 @@ const handleListChildCheckIns = async (req: IncomingMessage, res: ServerResponse
 };
 
 const handleCreateChildCheckIn = async (req: IncomingMessage, res: ServerResponse) => {
-  const user = await requireModuleManage(req, res, "checkin");
+  const user = await requireUser(req, res);
   if (!user) return;
 
   const body = await readJson<ChildCheckInInput>(req);
@@ -2254,7 +2254,33 @@ const handleCreateChildCheckIn = async (req: IncomingMessage, res: ServerRespons
     return;
   }
 
-  const checkIn = await checkInRepository.createChildCheckIn(sanitizeChildCheckInInput(body));
+  const canManage = user.role === "admin" || user.role === "leader";
+  let input = sanitizeChildCheckInInput(body);
+
+  if (!canManage) {
+    if (!user.personId || !input.childPersonId) {
+      sendError(res, 403, "forbidden", "Responsavel precisa estar vinculado a uma pessoa e a uma crianca cadastrada.");
+      return;
+    }
+
+    const people = await personRepository.list();
+    const child = people.find((person) => person.id === input.childPersonId);
+    const guardian = people.find((person) => person.id === user.personId);
+    if (!child?.guardianPersonIds.includes(user.personId) || !guardian) {
+      sendError(res, 403, "forbidden", "Voce so pode fazer check-in de criancas vinculadas a voce.");
+      return;
+    }
+
+    input = {
+      ...input,
+      childName: `${child.firstName} ${child.lastName}`.trim(),
+      guardianPersonId: guardian.id,
+      guardianName: `${guardian.firstName} ${guardian.lastName}`.trim(),
+      guardianPhone: guardian.phone
+    };
+  }
+
+  const checkIn = await checkInRepository.createChildCheckIn(input);
   await recordAudit(user, "create", "child_checkin", checkIn.id, `Check-in infantil: ${checkIn.childName}`);
   sendJson(res, 201, checkIn);
 };

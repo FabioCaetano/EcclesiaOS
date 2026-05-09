@@ -156,7 +156,8 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
     qr: true
   });
   const [printMode, setPrintMode] = useState<PrintMode>(null);
-  const [activeView, setActiveView] = useState<CheckInView>("events");
+  const [activeView, setActiveView] = useState<CheckInView>((user.role === "admin" || user.role === "leader") ? "events" : "kids");
+  const [selectedGuardianChildIds, setSelectedGuardianChildIds] = useState<string[]>([]);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanInput, setScanInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -486,6 +487,51 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
     return Boolean(child?.guardianPersonIds.includes(user.personId));
   };
 
+  const currentPerson = user.personId ? people.find((person) => person.id === user.personId) || null : null;
+  const guardianChildren = user.personId ? people.filter((person) => person.guardianPersonIds.includes(user.personId)) : [];
+  const guardianActiveCheckIns = childCheckInsForOperation.filter((item) => !item.checkedOutAt && isGuardianAllowed(item));
+  const guardianActiveChildIds = guardianActiveCheckIns.map((item) => item.childPersonId).filter(Boolean);
+
+  const toggleGuardianChild = (personId: string) => {
+    setSelectedGuardianChildIds((current) => current.includes(personId) ? current.filter((id) => id !== personId) : [...current, personId]);
+  };
+
+  const submitGuardianKidsCheckIn = async () => {
+    if (!operationEventId) {
+      setStatus("Selecione o culto para fazer o check-in infantil.");
+      return;
+    }
+    if (!currentPerson || !user.personId) {
+      setStatus("Seu usuario precisa estar vinculado a uma pessoa para usar o check-in infantil.");
+      return;
+    }
+    const children = guardianChildren.filter((child) => selectedGuardianChildIds.includes(child.id) && !guardianActiveChildIds.includes(child.id));
+    if (children.length === 0) {
+      setStatus("Selecione uma crianca ainda nao ativa neste culto.");
+      return;
+    }
+
+    setStatus("Gerando check-in infantil...");
+    try {
+      for (const child of children) {
+        await saveChildCheckIn(token, {
+          eventId: operationEventId,
+          childPersonId: child.id,
+          childName: `${child.firstName} ${child.lastName}`.trim(),
+          guardianPersonId: currentPerson.id,
+          guardianName: `${currentPerson.firstName} ${currentPerson.lastName}`.trim(),
+          guardianPhone: currentPerson.phone,
+          notes: ""
+        });
+      }
+      await refresh();
+      setSelectedGuardianChildIds([]);
+      setStatus("Check-in infantil gerado. Procure o totem para etiqueta e confirmacao de entrada.");
+    } catch {
+      setStatus("Nao foi possivel gerar o check-in infantil.");
+    }
+  };
+
   const guardianMessageLink = (item: ChildCheckIn) => {
     const phone = item.guardianPhone.replace(/\D/g, "");
     const message = encodeURIComponent(`Ola, ${item.guardianName}. A crianca ${item.childName} ainda esta aguardando retirada no ministerio infantil. Codigo: ${item.securityCode}.`);
@@ -519,6 +565,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
           <button className="secondary-button" type="button" onClick={applyOperationEventToForms} disabled={!operationEventId}>
             Usar neste check-in
           </button>
+          {canManage && operationEventId && (
+            <button className="secondary-button" type="button" onClick={() => window.open(`/kids-totem/${operationEventId}`, "_blank", "noopener,noreferrer")}>
+              Totem Kids
+            </button>
+          )}
         </div>
       </div>
 
@@ -544,11 +595,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       )}
 
       <div className="tab-bar" role="tablist" aria-label="Areas de check-in">
-        <button className={activeView === "events" ? "active" : ""} type="button" onClick={() => setActiveView("events")}>Eventos</button>
+        {canManage && <button className={activeView === "events" ? "active" : ""} type="button" onClick={() => setActiveView("events")}>Eventos</button>}
         <button className={activeView === "kids" ? "active" : ""} type="button" onClick={() => setActiveView("kids")}>Kids</button>
-        <button className={activeView === "admin" ? "active" : ""} type="button" onClick={() => setActiveView("admin")}>Administracao kids</button>
-        <button className={activeView === "rooms" ? "active" : ""} type="button" onClick={() => setActiveView("rooms")}>Salas</button>
-        <button className={activeView === "labels" ? "active" : ""} type="button" onClick={() => setActiveView("labels")}>Etiquetas</button>
+        {canManage && <button className={activeView === "admin" ? "active" : ""} type="button" onClick={() => setActiveView("admin")}>Administracao kids</button>}
+        {canManage && <button className={activeView === "rooms" ? "active" : ""} type="button" onClick={() => setActiveView("rooms")}>Salas</button>}
+        {canManage && <button className={activeView === "labels" ? "active" : ""} type="button" onClick={() => setActiveView("labels")}>Etiquetas</button>}
       </div>
 
       {activeView === "admin" && <div className="scanner-panel">
@@ -624,7 +675,61 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
       </div>}
 
       {activeView === "kids" && <div className="report-columns">
-        <form className="person-form" onSubmit={submitChildCheckIn}>
+        {!canManage && (
+          <div className="guardian-checkin-card">
+            <div className="section-heading compact-heading">
+              <div>
+                <h3>Check-in das minhas criancas</h3>
+                <p className="muted">Selecione as criancas que estao com voce neste culto.</p>
+              </div>
+            </div>
+            {!currentPerson && <p className="form-status">Seu usuario ainda nao esta vinculado a uma pessoa.</p>}
+            {guardianChildren.length === 0 ? (
+              <EmptyState icon={ClipboardCheck} title="Nenhuma crianca vinculada" description="Peça para a secretaria vincular seus familiares no cadastro de pessoas." />
+            ) : (
+              <div className="child-choice-list">
+                {guardianChildren.map((child) => {
+                  const active = guardianActiveChildIds.includes(child.id);
+                  const room = suggestedRoomForPerson(child);
+                  return (
+                    <button
+                      className={`child-choice ${selectedGuardianChildIds.includes(child.id) ? "selected" : ""}`}
+                      disabled={active}
+                      key={child.id}
+                      type="button"
+                      onClick={() => toggleGuardianChild(child.id)}
+                    >
+                      <Avatar name={`${child.firstName} ${child.lastName}`} size="sm" tone={active ? "success" : "info"} />
+                      <span>
+                        <strong>{child.firstName} {child.lastName}</strong>
+                        <small>{active ? "Ja esta em check-in" : `${childAge(child)} - ${room}`}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="form-footer">
+              <button type="button" onClick={submitGuardianKidsCheckIn} disabled={selectedGuardianChildIds.length === 0 || !operationEventId}>
+                Gerar check-in
+              </button>
+              <p>{status}</p>
+            </div>
+            {guardianActiveCheckIns.length > 0 && (
+              <div className="guardian-active-list">
+                <h4>Criancas ativas neste culto</h4>
+                {guardianActiveCheckIns.map((item) => (
+                  <p className="report-row" key={item.id}>
+                    <span>{item.childName} - {suggestedRoomForCheckIn(item)}</span>
+                    <strong>{item.securityCode}</strong>
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {canManage && <form className="person-form" onSubmit={submitChildCheckIn}>
           <h3 className="wide-field">Ministerio infantil</h3>
           <label>
             Culto
@@ -665,7 +770,7 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
             {canManage && <button type="submit">Registrar crianca</button>}
             <p>{status}</p>
           </div>
-        </form>
+        </form>}
         <div>
           <div className="section-heading compact-heading">
             <div>

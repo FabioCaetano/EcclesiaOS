@@ -11,6 +11,7 @@ interface Props {
   token: string;
   user: CurrentUser;
   onNavigate: (view: AppView) => void;
+  initialEventId?: string | null;
 }
 
 const todayString = () => new Date().toISOString().slice(0, 10);
@@ -29,7 +30,7 @@ const registrationStatusLabels: Record<string, string> = {
   cancelled: "Cancelada"
 };
 
-export const ServiceOpsPage: React.FC<Props> = ({ token, user, onNavigate }) => {
+export const ServiceOpsPage: React.FC<Props> = ({ token, user, onNavigate, initialEventId }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
@@ -63,12 +64,18 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user, onNavigate }) => 
         setSongs(songData);
         setChecklists(checklistData);
         setRegistrations(registrationData);
-        const nextEvent = eventData.find((event) => event.date >= todayString() && event.type === "service") || eventData.find((event) => event.date >= todayString()) || eventData[0];
+        const contextEvent = initialEventId ? eventData.find((event) => event.id === initialEventId) : null;
+        const nextEvent = contextEvent || eventData.find((event) => event.date >= todayString() && event.type === "service") || eventData.find((event) => event.date >= todayString()) || eventData[0];
         setSelectedEventId((current) => current || nextEvent?.id || "");
         setStatus("");
       })
       .catch(() => setStatus("Nao foi possivel carregar a operacao do culto."));
-  }, [token, user.role]);
+  }, [token, user.role, initialEventId]);
+
+  useEffect(() => {
+    if (!initialEventId || events.length === 0) return;
+    if (events.some((event) => event.id === initialEventId)) setSelectedEventId(initialEventId);
+  }, [initialEventId, events]);
 
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
@@ -98,7 +105,7 @@ export const ServiceOpsPage: React.FC<Props> = ({ token, user, onNavigate }) => 
   }));
   const declinedAssignments = assignments.filter((assignment) => assignment.status === "declined");
   const shortcutActions = [
-    { label: "Agenda", view: "events" as AppView, module: "events" as const, icon: CalendarDays },
+    { label: "Calendario", view: "calendar" as AppView, module: "calendar" as const, icon: CalendarDays },
     { label: "Escalas", view: "serving" as AppView, module: "serving" as const, icon: ClipboardList },
     { label: "Musicas", view: "music" as AppView, module: "music" as const, icon: Music },
     { label: "Liturgia", view: "liturgy" as AppView, module: "liturgy" as const, icon: ListChecks }

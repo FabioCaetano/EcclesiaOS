@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ChurchEvent, ChurchResource, CurrentUser, EventRegistration, RoomReservation } from "@ecclesiaos/shared";
-import { loadEventRegistrations, loadEvents, loadResources, loadRoomReservations } from "./api";
+import { deleteEvent, loadEventRegistrations, loadEvents, loadResources, loadRoomReservations } from "./api";
 import { eventTypeLabels, roomReservationStatusLabels } from "./constants";
 import { Card, EmptyState, PageHeader } from "./ui";
+import type { AppView } from "./types";
 
 interface Props {
   token: string;
   user: CurrentUser;
+  onNavigate?: (view: AppView) => void;
+  onCreateEvent?: () => void;
+  onEditEvent?: (eventId: string) => void;
+  onOpenEvent?: (eventId: string) => void;
 }
 
 type CalendarItem = {
@@ -73,7 +78,7 @@ const formatDate = (date: string) => {
   return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
 };
 
-export const CalendarPage: React.FC<Props> = ({ token, user }) => {
+export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreateEvent, onEditEvent, onOpenEvent }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [resources, setResources] = useState<ChurchResource[]>([]);
@@ -146,9 +151,53 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
   const busyDays = Object.keys(itemsByDate).length;
   const selectedItems = (itemsByDate[selectedDate] || []).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
+  const refreshCalendar = async () => {
+    const [nextEvents, nextRegistrations, nextResources, nextReservations] = await Promise.all([
+      loadEvents(token),
+      user.role === "admin" ? loadEventRegistrations(token) : Promise.resolve([]),
+      loadResources(token),
+      loadRoomReservations(token)
+    ]);
+    setEvents(nextEvents);
+    setRegistrations(nextRegistrations);
+    setResources(nextResources);
+    setReservations(nextReservations);
+  };
+
   const handleMonthChange = (nextMonth: string) => {
     setMonthFilter(nextMonth);
     if (!selectedDate.startsWith(nextMonth)) setSelectedDate(`${nextMonth}-01`);
+  };
+
+  const calendarEventId = (item: CalendarItem) => item.kind === "event" ? item.id.replace(/^event-/, "") : "";
+
+  const handleOpenCalendarItem = (item: CalendarItem) => {
+    if (item.kind === "event") {
+      onOpenEvent?.(calendarEventId(item));
+      return;
+    }
+    onNavigate?.("resources");
+  };
+
+  const handleEditCalendarEvent = (item: CalendarItem) => {
+    const eventId = calendarEventId(item);
+    if (!eventId || user.role !== "admin") return;
+    onEditEvent?.(eventId);
+  };
+
+  const handleDeleteCalendarEvent = async (item: CalendarItem) => {
+    const eventId = calendarEventId(item);
+    if (!eventId || user.role !== "admin") return;
+    if (!window.confirm("Remover este evento da agenda?")) return;
+
+    setStatus("Removendo evento...");
+    try {
+      await deleteEvent(token, eventId);
+      await refreshCalendar();
+      setStatus("Evento removido.");
+    } catch {
+      setStatus("Nao foi possivel remover o evento.");
+    }
   };
 
   return (
@@ -158,6 +207,11 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
         icon={CalendarRange}
         title="Calendario"
         description={monthLabel(monthFilter)}
+        actions={user.role === "admin" && (
+          <button className="secondary-button" type="button" onClick={onCreateEvent}>
+            <Plus size={16} /> Novo evento/agenda
+          </button>
+        )}
       />
 
       <Card className="calendar-panel">
@@ -222,11 +276,28 @@ export const CalendarPage: React.FC<Props> = ({ token, user }) => {
         <div>
           <h3>{formatDate(selectedDate) || "Dia selecionado"}</h3>
           {selectedItems.map((item) => (
-            <button className={`calendar-detail-row ${item.kind} ${item.muted ? "muted-item" : ""}`} key={`selected-${item.id}`} type="button">
-              <span>{item.startTime || "--:--"}{item.endTime ? ` ate ${item.endTime}` : ""}</span>
-              <strong>{item.title}</strong>
-              <small>{item.detail}</small>
-            </button>
+            <div className={`calendar-detail-row ${item.kind} ${item.muted ? "muted-item" : ""}`} key={`selected-${item.id}`}>
+              <button type="button" className="calendar-detail-main" onClick={() => handleOpenCalendarItem(item)}>
+                <span>{item.startTime || "--:--"}{item.endTime ? ` ate ${item.endTime}` : ""}</span>
+                <strong>{item.title}</strong>
+                <small>{item.detail}</small>
+              </button>
+              <div className="calendar-detail-actions">
+                <button className="icon-button" type="button" aria-label="Abrir" onClick={() => handleOpenCalendarItem(item)}>
+                  <ExternalLink size={14} />
+                </button>
+                {item.kind === "event" && user.role === "admin" && (
+                  <button className="icon-button" type="button" aria-label="Editar" onClick={() => handleEditCalendarEvent(item)}>
+                    <Pencil size={14} />
+                  </button>
+                )}
+                {item.kind === "event" && user.role === "admin" && (
+                  <button className="icon-button" type="button" aria-label="Excluir" onClick={() => handleDeleteCalendarEvent(item)}>
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
           ))}
           {selectedItems.length === 0 && (
             <EmptyState

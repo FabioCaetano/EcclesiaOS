@@ -1636,3 +1636,101 @@ Possivel escopo:
 
 - Check-in Eventos 2.
 - Fila de retirada Kids.
+
+# Roadmap - Atualizacao Fase 96
+
+## Concluido
+
+- Fase 96 - Polimento final de Escalas.
+
+## Proxima fase sugerida
+
+- Retomar Passo 3 - Culto operacional com atalhos contextuais por culto.
+
+## Alternativa
+
+- Retomar Passo 4 - Check-in Eventos 2.
+
+## Antes de publicar
+
+- Rodar `npm run build:web` quando o ambiente permitir.
+
+# Roadmap - Atualizacao Fase 97
+
+## Concluido
+
+- Fase 97 - Inicio da UX Operacional 2.0 com Agenda saindo do menu e Calendario assumindo a entrada de eventos/agendas.
+
+## Proxima fase sugerida
+
+- Calendario 2: concluir edicao contextual, abertura do Culto pelo evento e lista de eventos abaixo do Calendario.
+
+## Alternativa
+
+- Check-in 2.0 com pre-registro de criancas, QR por culto e totem operacional.
+
+## Depois
+
+- Liturgia UX.
+- Musicas/Repertorios com biblioteca como foco.
+- Notificacoes internas.
+
+# Roadmap - Atualizacao Fase 98
+
+## Concluido
+
+- Fase 98 - Calendario com navegacao contextual para edicao de evento e Culto operacional.
+
+## Proxima fase sugerida
+
+- Check-in 2.0 com pre-registro de criancas e totem por culto.
+
+## Alternativa
+
+- Calendario 3: lista de eventos abaixo do Calendario e formulario contextual.
+
+## Depois
+
+- Liturgia UX.
+- Musicas/Repertorios com biblioteca como foco.
+- Notificacoes internas.
+
+# Roadmap - Atualizacao Fase 99
+
+## Concluido
+
+- Fase 99 - Fluxo inicial do responsavel no Check-in Kids.
+
+## Proxima fase sugerida
+
+- Check-in Kids Totem: rota operacional por culto, leitura de QR, etiquetas e checkout.
+
+## Alternativa
+
+- Cadastro de criancas pelo responsavel dentro do app.
+
+## Depois
+
+- Check-in Eventos 2.0.
+- Alternancia de camera.
+- Relatorios de Check-in por culto/evento.
+
+# Roadmap - Atualizacao Fase 100
+
+## Concluido
+
+- Fase 100 - Totem Kids autenticado por culto.
+
+## Proxima fase sugerida
+
+- Pre-check-in com QR do responsavel e confirmacao no totem.
+
+## Alternativa
+
+- Cadastro rapido de criancas pelo responsavel.
+
+## Depois
+
+- Alternancia de camera.
+- Check-in Eventos 2.0.
+- Relatorios de Check-in.
