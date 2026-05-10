@@ -179,6 +179,14 @@ h1, h2, h3, h4, p { margin: 0; }
   box-shadow: var(--shadow-lg);
 }
 
+.auth-logo {
+  display: block;
+  width: min(260px, 76%);
+  height: auto;
+  margin: 0 auto var(--space-6);
+  object-fit: contain;
+}
+
 .login-panel h1 {
   margin-bottom: var(--space-3);
   font-size: var(--text-2xl);
@@ -312,15 +320,11 @@ h1, h2, h3, h4, p { margin: 0; }
   color: var(--color-text);
 }
 
-.app-header-brand-mark {
-  width: 32px; height: 32px;
-  display: grid; place-items: center;
-  background: var(--color-brand);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: var(--text-sm);
-  letter-spacing: -0.02em;
+.app-header-brand-logo {
+  width: 96px;
+  height: 42px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .app-header-brand-text {
@@ -404,13 +408,11 @@ h1, h2, h3, h4, p { margin: 0; }
   flex-shrink: 0;
 }
 
-.sidebar-brand-mark {
-  width: 36px; height: 36px;
-  display: grid; place-items: center;
-  background: var(--color-brand);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
+.sidebar-brand-logo {
+  width: 118px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .sidebar-brand-text {

@@ -67,7 +67,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
   return (
     <main className="auth-shell">
       <section className="login-panel">
-        <p className="eyebrow">EcclesiaOS</p>
+        <img className="auth-logo" src="/ecclesia-os-logo-cropped.png" alt="EcclesiaOS" />
         <h1>{mode === "login" ? "Acesse sua conta" : "Crie sua conta"}</h1>
         <p className="lead">{mode === "login" ? "Administradores, lideres, membros e visitantes entram pelo mesmo portal." : registerLead}</p>
 

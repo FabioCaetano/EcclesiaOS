@@ -111,7 +111,7 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
       <div className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`} aria-label="Navegacao">
         <div className="sidebar-brand">
-          <div className="sidebar-brand-mark">E</div>
+          <img className="sidebar-brand-logo" src="/ecclesia-os-logo-cropped.png" alt="EcclesiaOS" />
           <div className="sidebar-brand-text">
             <strong>EcclesiaOS</strong>
             <span>{churchName || "Painel"}</span>
@@ -159,7 +159,7 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
           >
             {sidebarOpen ? <X /> : <Menu />}
           </button>
-          <div className="app-header-brand-mark">E</div>
+          <img className="app-header-brand-logo" src="/ecclesia-os-logo-cropped.png" alt="" aria-hidden="true" />
           <div className="app-header-brand-text">
             <strong>{churchName || "EcclesiaOS"}</strong>
             <small>Painel administrativo</small>
