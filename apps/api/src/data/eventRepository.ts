@@ -19,6 +19,10 @@ const normalizeRequestedTeams = (raw: unknown): string[] => (
   Array.isArray(raw) ? raw.map((value) => String(value || "").trim()).filter(Boolean) : []
 );
 
+const normalizeOperatorPersonIds = (raw: unknown): string[] => (
+  Array.isArray(raw) ? raw.map((value) => String(value || "").trim()).filter(Boolean) : []
+);
+
 const normalizeInput = (input: ChurchEventInput): ChurchEventInput => ({
   title: String(input.title || "").trim(),
   type: normalizeType(input.type),
@@ -32,6 +36,7 @@ const normalizeInput = (input: ChurchEventInput): ChurchEventInput => ({
   recurrenceRule: input.recurrence === "cron" ? String(input.recurrenceRule || "").trim() : "",
   parentEventId: String(input.parentEventId || "").trim(),
   requestedTeamIds: normalizeRequestedTeams(input.requestedTeamIds),
+  operatorPersonIds: normalizeOperatorPersonIds(input.operatorPersonIds),
   registrationEnabled: Boolean(input.registrationEnabled),
   registrationCapacity: Math.max(0, Number(input.registrationCapacity) || 0),
   registrationPrice: Math.max(0, Number(input.registrationPrice) || 0),
@@ -113,6 +118,7 @@ const buildChildFromMaster = (master: ChurchEvent, occurrence: { date: string; s
   recurrenceRule: "",
   parentEventId: master.id,
   requestedTeamIds: [...master.requestedTeamIds],
+  operatorPersonIds: [...(master.operatorPersonIds || [])],
   registrationEnabled: false,
   registrationCapacity: 0,
   registrationPrice: 0,

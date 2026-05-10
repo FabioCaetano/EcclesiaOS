@@ -842,6 +842,7 @@ test("requested teams sync serving plans and leader can only schedule members of
       recurrenceRule: "",
       parentEventId: "",
       requestedTeamIds: [teamId],
+      operatorPersonIds: [],
       registrationEnabled: false,
       registrationCapacity: 0,
       registrationPrice: 0,

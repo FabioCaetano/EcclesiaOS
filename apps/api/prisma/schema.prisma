@@ -88,6 +88,7 @@ model EventRecord {
   recurrenceRule String @default("")
   parentEventId String @default("")
   requestedTeamIds Json @default("[]")
+  operatorPersonIds Json @default("[]")
   registrationEnabled Boolean @default(false)
   registrationCapacity Int @default(0)
   registrationPrice Float @default(0)

@@ -11,6 +11,7 @@ import { ChurchPage } from "./ChurchPage";
 import { CheckInPage } from "./CheckInPage";
 import { FinancePage } from "./FinancePage";
 import { EventsPage } from "./EventsPage";
+import { EventTotemPage } from "./EventTotemPage";
 import { FormsPage } from "./FormsPage";
 import { GroupsPage } from "./GroupsPage";
 import { HomePage } from "./HomePage";
@@ -132,6 +133,21 @@ const App = () => {
         onBack={() => {
           window.history.pushState({}, "", "/");
           setCurrentView("checkin");
+        }}
+      />
+    );
+  }
+
+  const eventTotemMatch = window.location.pathname.match(/^\/event-totem\/([^/]+)$/);
+  if (eventTotemMatch) {
+    return (
+      <EventTotemPage
+        token={session.token}
+        user={session.user}
+        eventId={eventTotemMatch[1]}
+        onBack={() => {
+          window.history.pushState({}, "", "/");
+          setCurrentView("events");
         }}
       />
     );

@@ -172,6 +172,7 @@ const toEvent = (event: {
   recurrenceRule: string;
   parentEventId?: string | null;
   requestedTeamIds?: Prisma.JsonValue;
+  operatorPersonIds?: Prisma.JsonValue;
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;
@@ -189,6 +190,7 @@ const toEvent = (event: {
   recurrenceRule: event.recurrence === "cron" ? event.recurrenceRule || "" : "",
   parentEventId: event.parentEventId || "",
   requestedTeamIds: asStringArray(event.requestedTeamIds ?? []),
+  operatorPersonIds: asStringArray(event.operatorPersonIds ?? []),
   registrationEnabled: event.registrationEnabled,
   registrationCapacity: event.registrationCapacity,
   registrationPrice: event.registrationPrice,
@@ -611,7 +613,8 @@ export const writePrismaData = async (data: DataFile) => {
       await tx.eventRecord.create({
         data: {
           ...event,
-          requestedTeamIds: event.requestedTeamIds as unknown as Prisma.InputJsonValue,
+          requestedTeamIds: (event.requestedTeamIds || []) as unknown as Prisma.InputJsonValue,
+          operatorPersonIds: (event.operatorPersonIds || []) as unknown as Prisma.InputJsonValue,
           createdAt: new Date(event.createdAt),
           updatedAt: new Date(event.updatedAt)
         }
@@ -823,7 +826,8 @@ export const appendPrismaEventsAndServingPlans = async (events: ChurchEvent[], s
       await tx.eventRecord.createMany({
         data: events.map((event) => ({
           ...event,
-          requestedTeamIds: event.requestedTeamIds as unknown as Prisma.InputJsonValue,
+          requestedTeamIds: (event.requestedTeamIds || []) as unknown as Prisma.InputJsonValue,
+          operatorPersonIds: (event.operatorPersonIds || []) as unknown as Prisma.InputJsonValue,
           createdAt: new Date(event.createdAt),
           updatedAt: new Date(event.updatedAt)
         })),

@@ -360,6 +360,7 @@ export interface ChurchEvent {
   recurrenceRule: string;
   parentEventId: string;
   requestedTeamIds: string[];
+  operatorPersonIds: string[];
   registrationEnabled: boolean;
   registrationCapacity: number;
   registrationPrice: number;

@@ -610,6 +610,11 @@ export const CheckInPage: React.FC<Props> = ({ token, user }) => {
               Totem Kids
             </button>
           )}
+          {canManage && operationEventId && selectedOperationEvent?.registrationEnabled && (
+            <button className="secondary-button" type="button" onClick={() => window.open(`/event-totem/${operationEventId}`, "_blank", "noopener,noreferrer")}>
+              Totem evento
+            </button>
+          )}
         </div>
       </div>
 

@@ -4,14 +4,14 @@ Esta e a nota central para acompanhar o desenvolvimento do EcclesiaOS no Obsidia
 
 ## Estado Atual
 
-Fase atual concluida: **Fase 106 - Visitante No Check-in Kids**.
+Fase atual concluida: **Fase 111 - Relatorios Historicos De Eventos**.
 
 Ultimo modulo entregue:
 
-- Login ganhou caminho **Visitante com crianca**;
-- cadastro visitante direciona para Check-in Kids apos criar conta;
-- visitante recebe aviso de acesso limitado dentro do Check-in;
-- criancas cadastradas seguem vinculadas ao responsavel logado;
+- Relatorios ganhou historico de inscricoes e check-ins de eventos;
+- filtros por periodo, evento, status e presenca;
+- indicadores de confirmados, presentes, ausentes, pendentes e receita;
+- exportacao CSV respeita o recorte aplicado;
 - build do frontend ainda esta pendente por bloqueio do ambiente nesta execucao.
 
 Ambiente atual:
@@ -351,3 +351,27 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-106-visitor-kids-checkin.md`: caminho de visitante para Check-in Kids.
 - `docs/decisions/0106-visitor-kids-checkin.md`: decisao de manter visitante como status de pessoa nesta fase.
+# Atualizacao - Fase 107
+
+- `docs/phases/phase-107-event-checkin-totem.md`: totem de check-in de eventos por evento.
+- `docs/decisions/0107-event-checkin-totem.md`: decisao de separar operacao de entrada da administracao da Agenda.
+# Atualizacao - Fase 108
+
+- `docs/phases/phase-108-event-checkin-operator-permission.md`: permissao operacional para lideres no Totem Evento.
+- `docs/decisions/0108-event-checkin-operator-permission.md`: decisao de separar operacao de check-in da administracao da Agenda.
+# Atualizacao - Fase 109
+
+- `docs/phases/phase-109-event-totem-scanner-feedback.md`: feedback e deduplicacao do scanner no Totem Evento.
+- `docs/decisions/0109-event-totem-scanner-feedback.md`: decisao de tratar dupla leitura localmente no totem.
+# Atualizacao - Fase 110
+
+- `docs/phases/phase-110-kids-totem-scanner-feedback.md`: feedback e deduplicacao do scanner no Totem Kids.
+- `docs/decisions/0110-kids-totem-scanner-feedback.md`: decisao de manter consistencia entre totens operacionais.
+# Atualizacao - Fase 111
+
+- `docs/phases/phase-111-event-history-reports.md`: relatorios historicos de eventos na aba Relatorios.
+- `docs/decisions/0111-event-history-reports.md`: decisao de usar dados existentes com filtros client-side.
+# Atualizacao - Fase 112
+
+- `docs/phases/phase-112-event-designated-operators.md`: operadores designados por evento no Totem Evento.
+- `docs/decisions/0112-event-designated-operators.md`: decisao de controlar permissao operacional por pessoa e evento.

@@ -456,6 +456,8 @@ Todos os usuarios autenticados podem listar escalas. O parametro `?groupId=` fil
 
 Eventos passam a ter `requestedTeamIds: string[]` aceitando apenas grupos do tipo `ministry` ou `team`. Quando definido, o backend sincroniza automaticamente um plano de escala vinculado por equipe (`ServingPlan.eventId`). Desmarcar uma equipe remove o plano correspondente apenas se nao tiver atribuicoes; com atribuicoes, o plano permanece. Remover o evento cascateia para os planos vinculados. Eventos cron filhos herdam `requestedTeamIds` do mestre e tambem geram seus planos quando materializados.
 
+Eventos tambem possuem `operatorPersonIds: string[]` para liberar pessoas especificas a operar o Totem Evento. `admin` e `leader` continuam podendo operar globalmente; usuarios comuns so listam inscricoes e fazem check-in quando seu `personId` estiver entre os operadores do evento. Eventos recorrentes materializados herdam os operadores do evento mestre.
+
 Endpoints financeiros:
 
 ```text

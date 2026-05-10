@@ -659,32 +659,6 @@ Fase 96 implementada. O Passo 5 - Escalas recebeu polimento final com sobrecarga
 - `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
 - Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
 
-# Status Atual - Fase 106
-
-Fase 106 implementada. O fluxo de visitante no Check-in Kids agora esta mais explicito na entrada do app.
-
-## Entregue na fase
-
-- Botao **Visitante com crianca** na tela de login.
-- Cadastro de visitante inicia com status `visitor`.
-- Texto do cadastro explica o acesso limitado ao Check-in Kids.
-- Apos cadastro visitante, o app abre diretamente a aba Check-in.
-- Check-in Kids exibe aviso de acesso visitante para pessoa com status `visitor`.
-- Fluxo usa o cadastro de crianca ja existente, mantendo vinculo ao responsavel logado.
-
-## Pendencias da consolidacao
-
-- Cadastro publico unificado de responsavel + criancas.
-- Link compartilhavel dedicado para visitante Kids.
-- Edicao de crianca pelo responsavel.
-- Autorizados adicionais estruturados.
-- Envio de QR por email/WhatsApp.
-
-## Validacao
-
-- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
-- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
-
 # Status Atual - Fase 97
 
 Fase 97 implementada. A UX Operacional 2.0 comecou pela navegacao e pelo Calendario: Agenda saiu do menu lateral e o Calendario passou a ser o ponto de entrada para criar e acionar eventos/agendas.
@@ -919,3 +893,179 @@ Fase 105 implementada. O Totem Kids agora possui relatorio operacional por culto
 
 - `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
 - Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 106
+
+Fase 106 implementada. O fluxo de visitante no Check-in Kids agora esta mais explicito na entrada do app.
+
+## Entregue na fase
+
+- Botao **Visitante com crianca** na tela de login.
+- Cadastro de visitante inicia com status `visitor`.
+- Texto do cadastro explica o acesso limitado ao Check-in Kids.
+- Apos cadastro visitante, o app abre diretamente a aba Check-in.
+- Check-in Kids exibe aviso de acesso visitante para pessoa com status `visitor`.
+- Fluxo usa o cadastro de crianca ja existente, mantendo vinculo ao responsavel logado.
+
+## Pendencias da consolidacao
+
+- Cadastro publico unificado de responsavel + criancas.
+- Link compartilhavel dedicado para visitante Kids.
+- Edicao de crianca pelo responsavel.
+- Autorizados adicionais estruturados.
+- Envio de QR por email/WhatsApp.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 107
+
+Fase 107 implementada. Eventos com inscricao agora possuem um totem operacional autenticado para check-in de participantes.
+
+## Entregue na fase
+
+- Rota `/event-totem/:eventId`.
+- Botao **Totem evento** na area de inscricoes da Agenda.
+- Leitor de QR Code do ingresso com seletor/alternancia de camera.
+- Validacao manual do payload do ingresso.
+- Check-in manual na lista de participantes.
+- Dashboard de inscricoes, esperados, presentes, ausentes e pendentes.
+- Busca e filtros por status operacional.
+- Exportacao CSV do evento.
+- Impressao de relatorio do evento.
+
+## Pendencias da consolidacao
+
+- Permitir operadores/lideres autorizados sem liberar toda Agenda.
+- Relatorios historicos na aba Relatorios.
+- Totem publico por token operacional.
+- Melhor feedback visual/sonoro apos leitura.
+- Lista separada de ausentes ao final do evento.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio do ambiente nesta execucao.
+- Bloqueio observado: `CreateProcessAsUserW failed: 1920`.
+
+# Status Atual - Fase 108
+
+Fase 108 implementada. O Totem Evento agora possui permissao operacional para lideres, sem liberar a administracao completa da Agenda.
+
+## Entregue na fase
+
+- Guarda `requireEventOperator` no backend.
+- Listagem de inscricoes liberada para `admin` e `leader`.
+- Check-in de ingresso liberado para `admin` e `leader`.
+- Atualizacao de status/reenvio/edicao de evento permanecem administrativas.
+- Totem Evento habilita scanner e check-in manual para lideres.
+- Check-in ganhou atalho **Totem evento** para eventos com inscricoes.
+
+## Pendencias da consolidacao
+
+- Operadores designados por evento.
+- Permissao por grupo/ministerio responsavel pelo evento.
+- Token publico temporario para totem sem login.
+- Feedback visual/sonoro apos leitura.
+
+## Validacao
+
+- `npm run db:generate`: concluido.
+- `npm run build:api`: concluido.
+- `npm run build:web`: concluido.
+
+# Status Atual - Fase 109
+
+Fase 109 implementada. O scanner do Totem Evento agora possui feedback operacional e evita dupla leitura imediata do mesmo ingresso.
+
+## Entregue na fase
+
+- Feedback visual para sucesso, erro e leitura repetida.
+- Vibracao best-effort em dispositivos compativeis.
+- Sinal sonoro best-effort quando permitido pelo navegador.
+- Janela curta de deduplicacao por payload lido.
+- Mensagem clara quando a leitura repetida e ignorada.
+
+## Pendencias da consolidacao
+
+- Overlay/mira visual na camera.
+- Preferencia persistida de camera.
+- Configuracao de som/vibracao por usuario.
+- Aplicar padrao semelhante ao Totem Kids.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio/limite do ambiente nesta execucao.
+
+# Status Atual - Fase 110
+
+Fase 110 implementada. O Totem Kids agora possui o mesmo padrao de feedback e deduplicacao do scanner do Totem Evento.
+
+## Entregue na fase
+
+- Feedback visual para sucesso, erro e leitura repetida.
+- Vibracao best-effort em dispositivos compativeis.
+- Sinal sonoro best-effort quando permitido pelo navegador.
+- Janela curta de deduplicacao por QR lido.
+- Mensagem clara quando o QR repetido e ignorado.
+
+## Pendencias da consolidacao
+
+- Overlay/mira visual na camera.
+- Preferencia persistida de camera.
+- Configuracao de som/vibracao por usuario.
+- Historico de leituras recusadas.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio/limite do ambiente nesta execucao.
+
+# Status Atual - Fase 111
+
+Fase 111 implementada. A aba Relatorios agora inclui historico de inscricoes e check-ins de eventos.
+
+## Entregue na fase
+
+- Carregamento de eventos e inscricoes na aba Relatorios.
+- Filtros por periodo, evento, status da inscricao e presenca.
+- Indicadores de eventos, confirmados, presentes, ausentes, pendentes e receita confirmada.
+- Previa das inscricoes filtradas.
+- Exportacao CSV respeitando os filtros aplicados.
+
+## Pendencias da consolidacao
+
+- PDF dedicado.
+- Graficos de evolucao por periodo.
+- Relatorio por operador que fez check-in.
+- Endpoint agregado caso o volume cresca.
+
+## Validacao
+
+- `npm run build:web`: pendente por bloqueio/limite do ambiente nesta execucao.
+
+# Status Atual - Fase 112
+
+Fase 112 implementada. O Totem Evento agora pode ser operado por pessoas designadas diretamente no evento, sem dar permissao completa de Agenda.
+
+## Entregue na fase
+
+- Campo `operatorPersonIds` no contrato compartilhado de eventos.
+- Migration Prisma para `EventRecord.operatorPersonIds`.
+- Formulario de Agenda com selecao de operadores do totem.
+- API filtrando inscricoes para operadores designados.
+- Check-in de ingresso validando operador por evento.
+- Totem Evento liberado para admin, lider ou operador designado.
+- Eventos recorrentes herdando operadores do evento mestre.
+
+## Pendencias da consolidacao
+
+- Rodar migrations/builds no ambiente local ou deploy.
+- Permissao por grupo/ministerio responsavel.
+- Token temporario de totem sem login.
+- Relatorio por operador.
+
+## Validacao
+
+- `npm run build:api`: pendente por bloqueio/limite do ambiente nesta execucao.
+- `npm run build:web`: pendente por bloqueio/limite do ambiente nesta execucao.

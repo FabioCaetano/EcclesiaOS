@@ -2,7 +2,7 @@
 
 ## Contexto Atual
 
-O EcclesiaOS concluiu ate a **Fase 106 - Visitante No Check-in Kids**.
+O EcclesiaOS concluiu ate a **Fase 111 - Relatorios Historicos De Eventos**.
 
 Em 2026-05-07 foi registrado um feedback completo de produto em [[feedback-2026-05-07|Feedback De Produto - 2026-05-07]]. Esse feedback mudou a prioridade imediata: antes de novas automacoes, precisamos estabilizar fluxos que bloqueiam teste real e reduzir confusao nas telas operacionais.
 
@@ -567,3 +567,103 @@ Motivo: a operacao do culto ja tem leitura, execucao e atalhos; o maior ganho op
    - autorizados adicionais;
    - foto opcional;
    - historico por crianca.
+
+# Proximos Passos Apos Fase 107
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Refinar permissao operacional de eventos:
+   - permitir lider/operador designado abrir o Totem Evento;
+   - evitar que operador tenha acesso completo a criacao/edicao da Agenda;
+   - registrar auditoria do operador que fez o check-in.
+3. Melhorar experiencia do scanner:
+   - feedback visual apos leitura;
+   - som/vibracao opcional;
+   - evitar dupla leitura do mesmo ingresso em sequencia.
+4. Relatorios:
+   - levar relatorio historico de eventos para a aba Relatorios;
+   - filtrar por periodo/evento/status;
+   - exportar presentes e ausentes.
+5. Retomar cadastro visitante Kids avancado:
+   - link dedicado;
+   - responsavel + criancas em fluxo guiado.
+
+# Proximos Passos Apos Fase 108
+
+1. Rodar `npm run build:api` e `npm run build:web` quando o ambiente permitir.
+2. Melhorar experiencia do scanner:
+   - feedback visual apos leitura;
+   - som/vibracao opcional;
+   - evitar dupla leitura do mesmo ingresso em sequencia.
+3. Evoluir permissao de operadores:
+   - operador designado por evento;
+   - permissao por grupo/ministerio responsavel;
+   - token temporario para totem sem login.
+4. Relatorios de eventos:
+   - historico na aba Relatorios;
+   - filtros por periodo/evento/status;
+   - exportacao de presentes e ausentes.
+
+# Proximos Passos Apos Fase 109
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Aplicar padrao semelhante ao Totem Kids:
+   - feedback visual por leitura;
+   - prevencao de dupla leitura;
+   - opcional de som/vibracao.
+3. Relatorios de eventos:
+   - historico na aba Relatorios;
+   - filtros por periodo/evento/status;
+   - exportacao de presentes e ausentes.
+4. Operadores por evento:
+   - designar pessoas que podem operar cada evento;
+   - permissao por ministerio/grupo responsavel;
+   - token temporario de totem sem login.
+
+# Proximos Passos Apos Fase 110
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Relatorios de eventos:
+   - historico na aba Relatorios;
+   - filtros por periodo/evento/status;
+   - exportacao de presentes e ausentes.
+3. Evoluir operadores por evento:
+   - designar pessoas que podem operar cada evento;
+   - permissao por ministerio/grupo responsavel;
+   - token temporario de totem sem login.
+4. Melhorar scanners:
+   - overlay/mira visual;
+   - persistir camera preferida;
+   - configuracao de som/vibracao.
+
+# Proximos Passos Apos Fase 111
+
+1. Rodar `npm run build:web` quando o ambiente permitir.
+2. Evoluir operadores por evento:
+   - designar pessoas que podem operar cada evento;
+   - permissao por ministerio/grupo responsavel;
+   - token temporario de totem sem login.
+3. Melhorar scanners:
+   - overlay/mira visual;
+   - persistir camera preferida;
+   - configuracao de som/vibracao.
+4. Relatorios:
+   - PDF dedicado;
+   - graficos por periodo;
+   - relatorio por operador.
+
+# Proximos Passos Apos Fase 112
+
+1. Aplicar a migration `20260510112000_event_operator_person_ids` no banco local/deploy.
+2. Validar fluxo do operador designado:
+   - admin seleciona uma pessoa no evento;
+   - usuario dessa pessoa abre `/event-totem/:eventId`;
+   - API lista apenas inscricoes daquele evento autorizado;
+   - check-in registra o operador logado.
+3. Evoluir permissao operacional:
+   - permissao por grupo/ministerio responsavel;
+   - token temporario para totem sem login;
+   - notificacao ao operador designado.
+4. Melhorar scanners:
+   - overlay/mira visual;
+   - persistir camera preferida;
+   - configuracao de som/vibracao.

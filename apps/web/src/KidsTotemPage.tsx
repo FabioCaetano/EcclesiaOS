@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { ArrowLeft, Camera, ClipboardCheck, Download, Printer, RotateCcw, ScanLine, Search } from "lucide-react";
 import type { ChildCheckIn, ChurchEvent, CurrentUser, KidsRoom, LabelTemplate, PersonProfile } from "@ecclesiaos/shared";
@@ -55,6 +55,8 @@ const labelPresetClass = (template: LabelTemplate): string => (
   template.isContinuous ? "brother-62-continuous" : "brother-62x100"
 );
 
+type ScanFeedback = "idle" | "success" | "warning" | "error";
+
 const childAgeNumber = (person: PersonProfile | null): number | null => {
   if (!person?.birthDate) return null;
   const birth = new Date(`${person.birthDate}T00:00:00`);
@@ -101,6 +103,7 @@ const ChildQrCode: React.FC<{ value: string }> = ({ value }) => {
 const csvEscape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
 export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack }) => {
+  const lastScanRef = useRef({ value: "", at: 0 });
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [rooms, setRooms] = useState<KidsRoom[]>([]);
@@ -111,6 +114,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
   const [selectedRoom, setSelectedRoom] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [scanInput, setScanInput] = useState("");
+  const [scanFeedback, setScanFeedback] = useState<ScanFeedback>("idle");
   const [scannerActive, setScannerActive] = useState(false);
   const [printMode, setPrintMode] = useState<"single" | "batch" | null>(null);
   const [scannedBatchIds, setScannedBatchIds] = useState<string[]>([]);
@@ -221,6 +225,7 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
     const preCheckIn = parseKidsPreCheckInPayload(value);
     if (preCheckIn) {
       if (preCheckIn.eventId !== eventId) {
+        signalScan("error");
         setStatus("QR de check-in pertence a outro culto.");
         return;
       }
@@ -228,27 +233,32 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
         .filter((payloadItem) => eventCheckIns.some((checkIn) => checkIn.id === payloadItem.id && checkIn.securityCode === payloadItem.securityCode && !checkIn.checkedOutAt))
         .map((payloadItem) => payloadItem.id);
       if (validIds.length === 0) {
+        signalScan("warning");
         setStatus("Nenhuma crianca ativa encontrada neste QR.");
         return;
       }
       setScannedBatchIds(validIds);
       setSelectedId(validIds[0]);
+      signalScan("success");
       setStatus(`${validIds.length} crianca(s) carregada(s) do QR. Confira e imprima as etiquetas.`);
       return;
     }
 
     const parsed = parseChildQrPayload(value);
     if (!parsed) {
+      signalScan("error");
       setStatus("QR Code invalido para retirada infantil.");
       return;
     }
 
     const item = eventCheckIns.find((checkIn) => checkIn.id === parsed.id);
     if (!item) {
+      signalScan("error");
       setStatus("QR Code nao pertence a este culto.");
       return;
     }
     if (item.checkedOutAt) {
+      signalScan("warning");
       setStatus("Esta crianca ja teve saida registrada.");
       return;
     }
@@ -257,16 +267,54 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
       await checkOutChild(token, item.id, { securityCode: parsed.securityCode });
       await refresh();
       setSelectedId(item.id);
+      signalScan("success");
       setStatus(`Retirada registrada: ${item.childName}.`);
     } catch {
+      signalScan("error");
       setStatus("Nao foi possivel registrar a retirada.");
     }
   };
 
   const handleQrDecoded = async (rawValue: string) => {
+    const now = Date.now();
+    const normalizedValue = rawValue.trim();
+    if (normalizedValue && lastScanRef.current.value === normalizedValue && now - lastScanRef.current.at < 4500) {
+      signalScan("warning");
+      setStatus("QR Code ja lido agora. Aguarde um instante para tentar novamente.");
+      return;
+    }
+
+    lastScanRef.current = { value: normalizedValue, at: now };
     setScanInput(rawValue);
     await completeCheckoutFromQr(rawValue);
     setScannerActive(false);
+  };
+
+  const signalScan = (kind: Exclude<ScanFeedback, "idle">) => {
+    setScanFeedback(kind);
+    window.setTimeout(() => setScanFeedback("idle"), 1800);
+
+    if ("vibrate" in navigator) {
+      navigator.vibrate(kind === "success" ? [60] : [110, 40, 110]);
+    }
+
+    try {
+      const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextCtor) return;
+      const context = new AudioContextCtor();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = kind === "success" ? 880 : 220;
+      gain.gain.value = 0.04;
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.12);
+      window.setTimeout(() => context.close(), 250);
+    } catch {
+      // Audio feedback is best-effort and may be blocked by the browser.
+    }
   };
 
   const { videoRef, canvasRef, message: scannerStatus, devices: scannerDevices, selectedDeviceId, setSelectedDeviceId, switchCamera } = useQrScanner({
@@ -385,6 +433,13 @@ export const KidsTotemPage: React.FC<Props> = ({ token, user, eventId, onBack })
             </div>
             {scannerActive && <video className="scanner-video" ref={videoRef} muted playsInline />}
             <canvas className="scanner-canvas" ref={canvasRef} />
+            {scanFeedback !== "idle" && (
+              <div className={`scanner-feedback ${scanFeedback}`} role="status">
+                {scanFeedback === "success" && "QR Code lido com sucesso."}
+                {scanFeedback === "warning" && "Leitura repetida ou sem acao ignorada."}
+                {scanFeedback === "error" && "Nao foi possivel validar a leitura."}
+              </div>
+            )}
             <p className="muted">{scannerStatus}</p>
           </section>
 

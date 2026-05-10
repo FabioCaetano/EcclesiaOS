@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { ArrowLeft, CalendarDays, Plus, RotateCcw } from "lucide-react";
-import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
-import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
+import { ArrowLeft, CalendarDays, Plus, RotateCcw, TicketCheck } from "lucide-react";
+import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, PersonProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
+import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadPeople, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
 import { toEventInput } from "./mappers";
 import { useQrScanner } from "./useQrScanner";
@@ -60,6 +60,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
+  const [people, setPeople] = useState<PersonProfile[]>([]);
   const [resources, setResources] = useState<ChurchResource[]>([]);
   const [servingPlans, setServingPlans] = useState<ServingPlan[]>([]);
   const [worshipSets, setWorshipSets] = useState<WorshipSet[]>([]);
@@ -96,6 +97,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
 
   useEffect(() => {
     loadGroups(token).then(setGroups).catch(() => setStatus("Nao foi possivel carregar grupos."));
+    loadPeople(token).then(setPeople).catch(() => setStatus("Nao foi possivel carregar pessoas."));
     loadResources(token).then(setResources).catch(() => setStatus("Nao foi possivel carregar ambientes."));
     loadServingPlans(token).then(setServingPlans).catch(() => setStatus("Nao foi possivel carregar escalas."));
     loadWorshipSets(token).then(setWorshipSets).catch(() => setStatus("Nao foi possivel carregar repertorios."));
@@ -164,6 +166,8 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
   };
 
   const teamGroups = useMemo(() => groups.filter((group) => group.type === "ministry" || group.type === "team"), [groups]);
+  const personName = (person: PersonProfile) => `${person.firstName} ${person.lastName}`.trim();
+  const operatorPeople = useMemo(() => [...people].sort((a, b) => personName(a).localeCompare(personName(b), "pt-BR")), [people]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -444,6 +448,21 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
               </div>
             )}
           </fieldset>
+          <label className="wide-field">
+            Operadores do totem
+            <select
+              multiple
+              disabled={user.role !== "admin"}
+              value={eventForm.operatorPersonIds}
+              onChange={(event) => setEventForm((current) => ({
+                ...current,
+                operatorPersonIds: Array.from(event.target.selectedOptions).map((option) => option.value)
+              }))}
+            >
+              {operatorPeople.map((person) => <option key={person.id} value={person.id}>{personName(person)}</option>)}
+            </select>
+            <span className="muted">Pessoas selecionadas podem operar o totem deste evento sem ganhar acesso administrativo completo.</span>
+          </label>
           <label className="wide-field">Descricao<textarea disabled={user.role !== "admin"} value={eventForm.description} onChange={(event) => updateField("description", event.target.value)} /></label>
           <label className="wide-field">Slug publico<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} value={eventForm.registrationSlug} onChange={(event) => updateField("registrationSlug", event.target.value)} /></label>
           <label className="checkbox-inline wide-field">
@@ -538,7 +557,12 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
               <p className="eyebrow">Inscricoes</p>
               <h2>{selectedEvent.title}</h2>
             </div>
-            <button className="secondary-button" type="button" onClick={() => selectedRegistrationId && window.print()} disabled={!selectedRegistration}>Imprimir recibo</button>
+            <div className="button-row">
+              <button className="secondary-button" type="button" onClick={() => window.open(`/event-totem/${selectedEvent.id}`, "_blank", "noopener,noreferrer")}>
+                <TicketCheck size={16} /> Totem evento
+              </button>
+              <button className="secondary-button" type="button" onClick={() => selectedRegistrationId && window.print()} disabled={!selectedRegistration}>Imprimir recibo</button>
+            </div>
           </div>
 
           <div className="report-grid">

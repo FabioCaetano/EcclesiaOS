@@ -275,3 +275,27 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 
 - `docs/decisions/0106-visitor-kids-checkin.md`
 - Visitante no Check-in Kids usa status de pessoa `visitor`, com entrada propria no login e redirecionamento ao Check-in apos cadastro.
+# Decisao 0107
+
+- `docs/decisions/0107-event-checkin-totem.md`
+- Check-in de eventos ganha rota operacional autenticada por evento, separando entrada do participante da administracao da Agenda.
+# Decisao 0108
+
+- `docs/decisions/0108-event-checkin-operator-permission.md`
+- Lideres podem operar listagem e check-in do Totem Evento sem receber permissao administrativa completa da Agenda.
+# Decisao 0109
+
+- `docs/decisions/0109-event-totem-scanner-feedback.md`
+- Totem Evento passa a tratar feedback e dupla leitura no frontend, sem nova persistencia.
+# Decisao 0110
+
+- `docs/decisions/0110-kids-totem-scanner-feedback.md`
+- Totem Kids passa a usar o mesmo padrao de feedback e deduplicacao local do Totem Evento.
+# Decisao 0111
+
+- `docs/decisions/0111-event-history-reports.md`
+- Relatorios historicos de eventos usam dados existentes de eventos e inscricoes, com filtros client-side e CSV do recorte.
+# Decisao 0112
+
+- `docs/decisions/0112-event-designated-operators.md`
+- Totem Evento passa a aceitar operadores designados por evento via `operatorPersonIds`, sem conceder administracao completa da Agenda.

@@ -1850,3 +1850,117 @@ Possivel escopo:
 
 - Relatorios historicos de Check-in na aba Relatorios.
 - Notificacoes internas.
+
+# Roadmap - Atualizacao Fase 107
+
+## Concluido
+
+- Fase 107 - Totem de Check-in de Eventos com QR, busca, filtros, CSV e impressao.
+
+## Proxima fase sugerida
+
+- Permissao operacional para eventos: liberar o Totem Evento para lideres/operadores designados sem abrir toda a Agenda administrativa.
+
+## Alternativa
+
+- Melhorias de scanner: feedback visual/sonoro e prevencao de dupla leitura.
+
+## Depois
+
+- Relatorios historicos de eventos na aba Relatorios.
+- Cadastro visitante Kids avancado com link dedicado.
+
+# Roadmap - Atualizacao Fase 108
+
+## Concluido
+
+- Fase 108 - Permissao operacional para lideres no Totem Evento.
+
+## Proxima fase sugerida
+
+- Melhorias de scanner: feedback visual/sonoro e prevencao de dupla leitura.
+
+## Alternativa
+
+- Relatorios historicos de eventos na aba Relatorios.
+
+## Depois
+
+- Operadores designados por evento.
+- Token temporario de totem sem login.
+
+# Roadmap - Atualizacao Fase 109
+
+## Concluido
+
+- Fase 109 - Feedback visual/sonoro e prevencao de dupla leitura no Totem Evento.
+
+## Proxima fase sugerida
+
+- Aplicar o mesmo padrao de feedback e deduplicacao ao Totem Kids.
+
+## Alternativa
+
+- Relatorios historicos de eventos na aba Relatorios.
+
+## Depois
+
+- Operadores designados por evento.
+- Token temporario de totem sem login.
+
+# Roadmap - Atualizacao Fase 110
+
+## Concluido
+
+- Fase 110 - Feedback visual/sonoro e prevencao de dupla leitura no Totem Kids.
+
+## Proxima fase sugerida
+
+- Relatorios historicos de eventos na aba Relatorios.
+
+## Alternativa
+
+- Operadores designados por evento.
+
+## Depois
+
+- Overlay/mira visual nos scanners.
+- Preferencia persistida de camera.
+
+# Roadmap - Atualizacao Fase 111
+
+## Concluido
+
+- Fase 111 - Relatorios historicos de eventos com filtros e CSV.
+
+## Proxima fase sugerida
+
+- Operadores designados por evento.
+
+## Alternativa
+
+- Melhorias visuais dos scanners: overlay/mira e camera preferida.
+
+## Depois
+
+- PDF dedicado nos relatorios.
+- Graficos por periodo.
+
+# Roadmap - Atualizacao Fase 112
+
+## Concluido
+
+- Fase 112 - Operadores designados por evento no Totem Evento.
+
+## Proxima fase sugerida
+
+- Permissao por grupo/ministerio responsavel para eventos.
+
+## Alternativa
+
+- Token temporario de totem sem login para operacao em dispositivo compartilhado.
+
+## Depois
+
+- Relatorio por operador.
+- Notificacao automatica para operador selecionado.

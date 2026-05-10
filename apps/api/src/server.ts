@@ -355,6 +355,12 @@ const requireModuleManage = async (req: IncomingMessage, res: ServerResponse, mo
   return user;
 };
 
+const canOperateEventCheckIn = (user: CurrentUser, event: ChurchEvent) => (
+  user.role === "admin"
+  || user.role === "leader"
+  || Boolean(user.personId && event.operatorPersonIds.includes(user.personId))
+);
+
 const recordAudit = async (actor: Awaited<ReturnType<typeof requireUser>>, action: "create" | "update" | "delete", entityType: string, entityId: string, summary: string) => {
   if (!actor) return;
   await auditRepository.create({ action, entityType, entityId, actor, summary });
@@ -1175,6 +1181,7 @@ const sanitizeEventInput = (body: ChurchEventInput): ChurchEventInput => ({
   recurrenceRule: body.recurrence === "cron" ? String(body.recurrenceRule || "").trim() : "",
   parentEventId: String(body.parentEventId || "").trim(),
   requestedTeamIds: Array.isArray(body.requestedTeamIds) ? body.requestedTeamIds.map((value) => String(value || "").trim()).filter(Boolean) : [],
+  operatorPersonIds: Array.isArray(body.operatorPersonIds) ? body.operatorPersonIds.map((value) => String(value || "").trim()).filter(Boolean) : [],
   registrationEnabled: Boolean(body.registrationEnabled),
   registrationCapacity: Math.max(0, Number(body.registrationCapacity) || 0),
   registrationPrice: Math.max(0, Number(body.registrationPrice) || 0),
@@ -1955,10 +1962,24 @@ const handlePublicEventRegistrationCheckIn = async (req: IncomingMessage, res: S
 };
 
 const handleListEventRegistrations = async (req: IncomingMessage, res: ServerResponse) => {
-  const user = await requireModuleManage(req, res, "events");
+  const user = await requireUser(req, res);
   if (!user) return;
 
-  sendJson(res, 200, await eventRegistrationRepository.list());
+  const [registrations, events] = await Promise.all([
+    eventRegistrationRepository.list(),
+    eventRepository.list()
+  ]);
+
+  if (user.role === "admin" || user.role === "leader") {
+    sendJson(res, 200, registrations);
+    return;
+  }
+
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  sendJson(res, 200, registrations.filter((registration) => {
+    const event = eventById.get(registration.eventId);
+    return Boolean(event && canOperateEventCheckIn(user, event));
+  }));
 };
 
 const handleResendEventRegistrationConfirmation = async (req: IncomingMessage, res: ServerResponse, id: string) => {
@@ -2018,12 +2039,29 @@ const handleUpdateEventRegistrationStatus = async (req: IncomingMessage, res: Se
 };
 
 const handleCheckInEventRegistration = async (req: IncomingMessage, res: ServerResponse, id: string) => {
-  const user = await requireModuleManage(req, res, "events");
+  const user = await requireUser(req, res);
   if (!user) return;
 
   const body = await readJson<EventRegistrationCheckInRequest>(req);
   if (!body?.ticketCode) {
     sendError(res, 400, "invalid_json", "Informe o codigo do ingresso.");
+    return;
+  }
+
+  const registrations = await eventRegistrationRepository.list();
+  const registration = registrations.find((item) => item.id === id);
+  if (!registration) {
+    sendError(res, 404, "not_found", "Inscricao nao encontrada.");
+    return;
+  }
+
+  const event = (await eventRepository.list()).find((item) => item.id === registration.eventId);
+  if (!event) {
+    sendError(res, 404, "not_found", "Evento da inscricao nao encontrado.");
+    return;
+  }
+  if (!canOperateEventCheckIn(user, event)) {
+    sendError(res, 403, "forbidden", "Seu perfil nao pode operar check-in deste evento.");
     return;
   }
 

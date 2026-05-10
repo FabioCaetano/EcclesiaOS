@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { BarChart3, Download } from "lucide-react";
-import type { CurrentUser, GroupProfile, PersonProfile } from "@ecclesiaos/shared";
-import { loadGroups, loadPeople } from "./api";
+import type { ChurchEvent, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, PersonProfile } from "@ecclesiaos/shared";
+import { loadEventRegistrations, loadEvents, loadGroups, loadPeople } from "./api";
 import { Card, PageHeader } from "./ui";
 
 interface Props {
@@ -25,6 +25,13 @@ const groupTypeLabels: Record<GroupProfile["type"], string> = {
   ministry: "Ministerio",
   class: "Classe",
   team: "Equipe"
+};
+
+const eventRegistrationStatusLabels: Record<EventRegistrationStatus, string> = {
+  confirmed: "Confirmada",
+  pending_payment: "Pagamento pendente",
+  pending_email_confirmation: "Aguardando email",
+  cancelled: "Cancelada"
 };
 
 const fullName = (person: PersonProfile) => `${person.firstName} ${person.lastName}`.trim();
@@ -56,7 +63,7 @@ const daysUntilBirthday = (birthDate: string, now = new Date()): number | null =
 
 const csvCell = (value: string | number | boolean) => `"${String(value).replace(/"/g, '""')}"`;
 
-const downloadCsv = (people: PersonProfile[], groups: GroupProfile[]) => {
+const downloadPeopleCsv = (people: PersonProfile[], groups: GroupProfile[]) => {
   const ministryNamesByPerson = new Map<string, string[]>();
   groups.forEach((group) => {
     if (group.type !== "ministry" && group.type !== "team") return;
@@ -91,16 +98,63 @@ const downloadCsv = (people: PersonProfile[], groups: GroupProfile[]) => {
   URL.revokeObjectURL(url);
 };
 
+const downloadEventCsv = (rows: EventReportRow[]) => {
+  const csvRows = [
+    ["Evento", "Data", "Nome", "Email", "Telefone", "Quantidade", "Status", "Presenca", "Check-in", "Valor", "Notas"],
+    ...rows.map((row) => [
+      row.eventTitle,
+      row.eventDate,
+      row.registration.name,
+      row.registration.email,
+      row.registration.phone,
+      row.registration.quantity,
+      row.statusLabel,
+      row.presenceLabel,
+      row.registration.checkedInAt,
+      row.registration.amountDue.toFixed(2),
+      row.registration.notes
+    ])
+  ];
+  const csv = csvRows.map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ecclesiaos-eventos-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+type EventPresenceFilter = "all" | "present" | "absent";
+
+interface EventReportRow {
+  event: ChurchEvent;
+  eventTitle: string;
+  eventDate: string;
+  registration: EventRegistration;
+  statusLabel: string;
+  presenceLabel: string;
+}
+
 export const ReportsPage: React.FC<Props> = ({ token }) => {
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [groups, setGroups] = useState<GroupProfile[]>([]);
+  const [events, setEvents] = useState<ChurchEvent[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
+  const [eventStartDate, setEventStartDate] = useState("");
+  const [eventEndDate, setEventEndDate] = useState("");
+  const [eventIdFilter, setEventIdFilter] = useState("all");
+  const [eventStatusFilter, setEventStatusFilter] = useState<EventRegistrationStatus | "all">("all");
+  const [eventPresenceFilter, setEventPresenceFilter] = useState<EventPresenceFilter>("all");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    Promise.all([loadPeople(token), loadGroups(token)])
-      .then(([peopleData, groupData]) => {
+    Promise.all([loadPeople(token), loadGroups(token), loadEvents(token), loadEventRegistrations(token)])
+      .then(([peopleData, groupData, eventData, registrationData]) => {
         setPeople(peopleData);
         setGroups(groupData);
+        setEvents(eventData);
+        setEventRegistrations(registrationData);
         setStatus("");
       })
       .catch(() => setStatus("Nao foi possivel carregar os dados dos relatorios."));
@@ -148,6 +202,43 @@ export const ReportsPage: React.FC<Props> = ({ token }) => {
     return { members, visitors, baptized, withMembershipDate, birthdays, membersByGender, ageBands, ministrySummary };
   }, [people, groups]);
 
+  const eventReport = useMemo(() => {
+    const eventsById = new Map(events.map((event) => [event.id, event]));
+    const rows = eventRegistrations
+      .map((registration): EventReportRow | null => {
+        const event = eventsById.get(registration.eventId);
+        if (!event) return null;
+        return {
+          event,
+          eventTitle: event.title,
+          eventDate: event.date,
+          registration,
+          statusLabel: eventRegistrationStatusLabels[registration.status],
+          presenceLabel: registration.checkedInAt ? "Presente" : "Ausente"
+        };
+      })
+      .filter((row): row is EventReportRow => Boolean(row))
+      .filter((row) => !eventStartDate || row.eventDate >= eventStartDate)
+      .filter((row) => !eventEndDate || row.eventDate <= eventEndDate)
+      .filter((row) => eventIdFilter === "all" || row.event.id === eventIdFilter)
+      .filter((row) => eventStatusFilter === "all" || row.registration.status === eventStatusFilter)
+      .filter((row) => {
+        if (eventPresenceFilter === "present") return Boolean(row.registration.checkedInAt);
+        if (eventPresenceFilter === "absent") return !row.registration.checkedInAt && row.registration.status === "confirmed";
+        return true;
+      })
+      .sort((a, b) => b.eventDate.localeCompare(a.eventDate) || a.eventTitle.localeCompare(b.eventTitle) || a.registration.name.localeCompare(b.registration.name));
+
+    const presentQuantity = rows.filter((row) => row.registration.checkedInAt).reduce((sum, row) => sum + row.registration.quantity, 0);
+    const absentQuantity = rows.filter((row) => !row.registration.checkedInAt && row.registration.status === "confirmed").reduce((sum, row) => sum + row.registration.quantity, 0);
+    const pendingQuantity = rows.filter((row) => row.registration.status === "pending_payment" || row.registration.status === "pending_email_confirmation").reduce((sum, row) => sum + row.registration.quantity, 0);
+    const confirmedQuantity = rows.filter((row) => row.registration.status === "confirmed").reduce((sum, row) => sum + row.registration.quantity, 0);
+    const amountConfirmed = rows.filter((row) => row.registration.status === "confirmed").reduce((sum, row) => sum + row.registration.amountDue, 0);
+    const eventCount = new Set(rows.map((row) => row.event.id)).size;
+
+    return { rows, presentQuantity, absentQuantity, pendingQuantity, confirmedQuantity, amountConfirmed, eventCount };
+  }, [events, eventRegistrations, eventStartDate, eventEndDate, eventIdFilter, eventStatusFilter, eventPresenceFilter]);
+
   return (
     <>
       <PageHeader
@@ -156,7 +247,7 @@ export const ReportsPage: React.FC<Props> = ({ token }) => {
         title="Relatorios"
         description="Indicadores de pessoas, aniversariantes e composicao da membresia."
         actions={(
-          <button className="secondary-button" type="button" onClick={() => downloadCsv(people, groups)}>
+          <button className="secondary-button" type="button" onClick={() => downloadPeopleCsv(people, groups)}>
             <Download size={16} /> Exportar pessoas
           </button>
         )}
@@ -224,6 +315,76 @@ export const ReportsPage: React.FC<Props> = ({ token }) => {
           ))}
         </Card>
       </div>
+
+      <Card>
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Eventos</p>
+            <h2>Historico de inscricoes e check-in</h2>
+            <p className="muted">Filtre eventos por periodo, status e presenca antes de exportar.</p>
+          </div>
+          <button className="secondary-button" type="button" onClick={() => downloadEventCsv(eventReport.rows)} disabled={eventReport.rows.length === 0}>
+            <Download size={16} /> Exportar eventos
+          </button>
+        </div>
+
+        <div className="filter-bar reports-event-filters">
+          <label>Inicio<input type="date" value={eventStartDate} onChange={(event) => setEventStartDate(event.target.value)} /></label>
+          <label>Fim<input type="date" value={eventEndDate} onChange={(event) => setEventEndDate(event.target.value)} /></label>
+          <label>
+            Evento
+            <select value={eventIdFilter} onChange={(event) => setEventIdFilter(event.target.value)}>
+              <option value="all">Todos</option>
+              {events.filter((event) => event.registrationEnabled).map((event) => (
+                <option key={event.id} value={event.id}>{event.date} - {event.title}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Status
+            <select value={eventStatusFilter} onChange={(event) => setEventStatusFilter(event.target.value as EventRegistrationStatus | "all")}>
+              <option value="all">Todos</option>
+              <option value="confirmed">Confirmadas</option>
+              <option value="pending_payment">Pagamento pendente</option>
+              <option value="pending_email_confirmation">Aguardando email</option>
+              <option value="cancelled">Canceladas</option>
+            </select>
+          </label>
+          <label>
+            Presenca
+            <select value={eventPresenceFilter} onChange={(event) => setEventPresenceFilter(event.target.value as EventPresenceFilter)}>
+              <option value="all">Todos</option>
+              <option value="present">Presentes</option>
+              <option value="absent">Ausentes confirmados</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="report-grid">
+          <article><span>Eventos</span><strong>{eventReport.eventCount}</strong></article>
+          <article><span>Confirmados</span><strong>{eventReport.confirmedQuantity}</strong></article>
+          <article><span>Presentes</span><strong>{eventReport.presentQuantity}</strong></article>
+          <article><span>Ausentes</span><strong>{eventReport.absentQuantity}</strong></article>
+          <article><span>Pendentes</span><strong>{eventReport.pendingQuantity}</strong></article>
+          <article><span>Receita confirmada</span><strong>BRL {eventReport.amountConfirmed.toFixed(2)}</strong></article>
+        </div>
+
+        <div className="registration-list reports-event-list">
+          {eventReport.rows.length === 0 ? <p className="muted">Nenhuma inscricao encontrada para os filtros atuais.</p> : eventReport.rows.slice(0, 80).map((row) => (
+            <article className={row.registration.checkedInAt ? "registration-row selected" : "registration-row"} key={row.registration.id}>
+              <button type="button">
+                <strong>{row.registration.name}</strong>
+                <span>{row.eventDate} - {row.eventTitle}</span>
+                <small>{row.statusLabel} - {row.presenceLabel} - {row.registration.quantity} vaga(s)</small>
+                <small>{row.registration.email} {row.registration.phone ? `- ${row.registration.phone}` : ""}</small>
+              </button>
+              <div className="response-actions">
+                <span className={row.registration.checkedInAt ? "status-pill success" : "status-pill muted"}>{row.presenceLabel}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Card>
     </>
   );
 };

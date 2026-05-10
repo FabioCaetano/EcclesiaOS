@@ -148,6 +148,7 @@ const normalizeData = (data: Partial<DataFile>): DataFile => ({
     recurrenceRule: event.recurrence === "cron" ? event.recurrenceRule || "" : "",
     parentEventId: event.parentEventId || "",
     requestedTeamIds: Array.isArray(event.requestedTeamIds) ? event.requestedTeamIds : [],
+    operatorPersonIds: Array.isArray(event.operatorPersonIds) ? event.operatorPersonIds : [],
     registrationEnabled: event.registrationEnabled || false,
     registrationCapacity: event.registrationCapacity || 0,
     registrationPrice: event.registrationPrice || 0,
