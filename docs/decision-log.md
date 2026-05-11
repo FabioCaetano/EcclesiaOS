@@ -134,6 +134,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 104. Modo Execucao do Culto: o modulo Culto passa a ter duas visoes internas, **Operacao** para conferencia completa e **Execucao** para acompanhamento focado durante o culto; dados continuam vindo dos modulos de origem.
 105. Acoes diretas na Execucao do Culto: concluir/reabrir itens de liturgia na aba Culto reutiliza o endpoint existente de `ServiceChecklist`; Liturgia segue como fonte de edicao completa.
 106. Atalhos entre modulos: a aba Culto passa a oferecer atalhos para Agenda, Escalas, Musicas e Liturgia usando a navegacao interna existente e respeitando `canAccessModule`.
+113. UX da Liturgia em linhas: itens da ordem do culto viram grid horizontal `[hora] [item] [responsavel] [notas] [X]` com cabecalho unico; responsavel passa a usar `<input list>` + `<datalist>` (nativo, sem nova dependencia); checkbox "Concluido" sai do editor para nao confundir planejamento com execucao; notas gerais sobem para acima da lista; remocao por icone de lixeira por linha; sem mudancas em backend, banco ou tipos compartilhados.
 
 ## Decisoes Pendentes
 

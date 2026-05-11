@@ -20,12 +20,17 @@ const emptyChecklist: ServiceChecklistInput = {
 
 const eventLabel = (event: ChurchEvent) => `${event.date} ${event.startTime} - ${event.title}`;
 
+const personFullName = (person: PersonProfile) => `${person.firstName} ${person.lastName}`.trim();
+
+const RESPONSIBLE_DATALIST_ID = "liturgy-responsible-options";
+
 export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
   const [checklists, setChecklists] = useState<ServiceChecklist[]>([]);
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [people, setPeople] = useState<PersonProfile[]>([]);
   const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
   const [checklistForm, setChecklistForm] = useState<ServiceChecklistInput>(emptyChecklist);
+  const [responsibleInputs, setResponsibleInputs] = useState<string[]>([]);
   const [status, setStatus] = useState("");
 
   const canManage = canManageModule(user.role, "liturgy");
@@ -42,8 +47,20 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
   }, [token]);
 
   const selectedChecklist = checklists.find((checklist) => checklist.id === selectedChecklistId) || null;
-  const peopleById = useMemo(() => new Map(people.map((person) => [person.id, `${person.firstName} ${person.lastName}`.trim()])), [people]);
+  const peopleById = useMemo(() => new Map(people.map((person) => [person.id, personFullName(person)])), [people]);
+  const peopleByName = useMemo(() => {
+    const map = new Map<string, string>();
+    people.forEach((person) => {
+      const name = personFullName(person);
+      if (name) map.set(name.toLowerCase(), person.id);
+    });
+    return map;
+  }, [people]);
   const upcomingEvents = useMemo(() => [...events].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)).slice(0, 60), [events]);
+
+  const initialResponsibleInputs = (items: ServiceChecklistInput["items"]): string[] => (
+    items.map((item) => (item.responsiblePersonId ? peopleById.get(item.responsiblePersonId) || "" : ""))
+  );
 
   const selectChecklist = (checklist: ServiceChecklist) => {
     setSelectedChecklistId(checklist.id);
@@ -54,12 +71,14 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
       notes: checklist.notes,
       items: checklist.items
     });
+    setResponsibleInputs(initialResponsibleInputs(checklist.items));
     setStatus("");
   };
 
   const startNewChecklist = () => {
     setSelectedChecklistId(null);
     setChecklistForm(emptyChecklist);
+    setResponsibleInputs([]);
     setStatus("");
   };
 
@@ -89,20 +108,34 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
         }
       ]
     }));
+    setResponsibleInputs((current) => [...current, ""]);
   };
 
-  const updateChecklistItem = (index: number, field: keyof ServiceChecklistInput["items"][number], value: string | boolean) => {
+  const updateChecklistField = (index: number, field: "title" | "scheduledTime" | "notes", value: string) => {
     setChecklistForm((current) => ({
       ...current,
       items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item)
     }));
   };
 
+  const updateResponsibleInput = (index: number, raw: string) => {
+    setResponsibleInputs((current) => current.map((value, itemIndex) => itemIndex === index ? raw : value));
+    const trimmed = raw.trim();
+    const matchedId = trimmed ? peopleByName.get(trimmed.toLowerCase()) || "" : "";
+    setChecklistForm((current) => ({
+      ...current,
+      items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, responsiblePersonId: matchedId } : item)
+    }));
+  };
+
   const removeChecklistItem = (index: number) => {
     setChecklistForm((current) => ({
       ...current,
-      items: current.items.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, order: itemIndex + 1 }))
+      items: current.items
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((item, itemIndex) => ({ ...item, order: itemIndex + 1 }))
     }));
+    setResponsibleInputs((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleChecklistSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -136,7 +169,7 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
         eyebrow="Operacao"
         icon={ListChecks}
         title="Liturgia"
-        description="Planejamento e checklist do culto com ordem, responsaveis e acompanhamento."
+        description="Planejamento da ordem do culto com horario, responsavel e notas. Execucao com check de concluido fica para o modo culto."
         actions={canManage && (
           <button className="secondary-button" type="button" onClick={startNewChecklist}><Plus size={16} /> Liturgia</button>
         )}
@@ -150,6 +183,12 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
         <article><span>Concluidos</span><strong>{completedCount}</strong></article>
         <article><span>Permissao</span><strong>{canManage ? "Edicao" : "Leitura"}</strong></article>
       </div>
+
+      <datalist id={RESPONSIBLE_DATALIST_ID}>
+        {people.map((person) => (
+          <option key={person.id} value={personFullName(person)} />
+        ))}
+      </datalist>
 
       <div className="people-layout">
         <Card className="people-list" aria-label="Lista de liturgias">
@@ -175,42 +214,92 @@ export const LiturgyPage: React.FC<Props> = ({ token, user }) => {
           </label>
           <label>Titulo<input disabled={!canManage} value={checklistForm.title} onChange={(event) => setChecklistForm((current) => ({ ...current, title: event.target.value }))} /></label>
           <label>Data<input disabled={!canManage} type="date" value={checklistForm.date} onChange={(event) => setChecklistForm((current) => ({ ...current, date: event.target.value }))} /></label>
-          <div className="wide-field">
+
+          <label className="wide-field">
+            Notas da liturgia
+            <textarea
+              disabled={!canManage}
+              rows={3}
+              placeholder="Avisos gerais, observacoes do culto, links..."
+              value={checklistForm.notes}
+              onChange={(event) => setChecklistForm((current) => ({ ...current, notes: event.target.value }))}
+            />
+          </label>
+
+          <div className="wide-field liturgy-items-table">
             <div className="section-title-row">
               <h3>Ordem do culto</h3>
               {canManage && <button className="secondary-button" type="button" onClick={addChecklistItem}><Plus size={16} /> Item</button>}
             </div>
-            {checklistForm.items.length === 0 ? <p className="muted">Adicione itens da liturgia ou tarefas do culto.</p> : checklistForm.items.map((item, index) => (
-              <div className="checklist-editor-row" key={`${item.id}-${index}`}>
-                <label>
-                  Concluido
-                  <input disabled={!canManage} type="checkbox" checked={item.completed} onChange={(event) => updateChecklistItem(index, "completed", event.target.checked)} />
-                </label>
-                <label>
-                  Horario
-                  <input disabled={!canManage} type="time" value={item.scheduledTime} onChange={(event) => updateChecklistItem(index, "scheduledTime", event.target.value)} />
-                </label>
-                <label>
-                  Item
-                  <input disabled={!canManage} value={item.title} onChange={(event) => updateChecklistItem(index, "title", event.target.value)} />
-                </label>
-                <label>
-                  Responsavel
-                  <select disabled={!canManage} value={item.responsiblePersonId} onChange={(event) => updateChecklistItem(index, "responsiblePersonId", event.target.value)}>
-                    <option value="">Sem responsavel</option>
-                    {people.map((person) => <option key={person.id} value={person.id}>{person.firstName} {person.lastName}</option>)}
-                  </select>
-                </label>
-                <label className="wide-field">
-                  Notas
-                  <input disabled={!canManage} value={item.notes} onChange={(event) => updateChecklistItem(index, "notes", event.target.value)} />
-                </label>
-                <p className="wide-field muted">{item.responsiblePersonId ? `Responsavel: ${peopleById.get(item.responsiblePersonId) || "Pessoa nao encontrada"}` : "Sem responsavel definido"}</p>
-                {canManage && <button className="danger-button wide-field" type="button" onClick={() => removeChecklistItem(index)}><Trash2 size={16} /> Remover item</button>}
+
+            {checklistForm.items.length === 0 ? (
+              <p className="muted">Adicione itens da liturgia. Marcar como concluido fica disponivel no modo culto, depois de salvar.</p>
+            ) : (
+              <div className="liturgy-items-grid" role="table">
+                <div className="liturgy-items-header" role="row">
+                  <span role="columnheader">Hora</span>
+                  <span role="columnheader">Item</span>
+                  <span role="columnheader">Responsavel</span>
+                  <span role="columnheader">Notas</span>
+                  <span role="columnheader" aria-label="Acoes" />
+                </div>
+                {checklistForm.items.map((item, index) => {
+                  const responsibleValue = responsibleInputs[index] ?? (item.responsiblePersonId ? peopleById.get(item.responsiblePersonId) || "" : "");
+                  return (
+                    <div className="liturgy-item-row" role="row" key={`${item.id}-${index}`}>
+                      <input
+                        className="liturgy-item-cell"
+                        aria-label="Horario"
+                        disabled={!canManage}
+                        type="time"
+                        value={item.scheduledTime}
+                        onChange={(event) => updateChecklistField(index, "scheduledTime", event.target.value)}
+                      />
+                      <input
+                        className="liturgy-item-cell"
+                        aria-label="Item"
+                        disabled={!canManage}
+                        placeholder="Ex.: Adoracao, palavra, ofertorio..."
+                        value={item.title}
+                        onChange={(event) => updateChecklistField(index, "title", event.target.value)}
+                      />
+                      <input
+                        className="liturgy-item-cell"
+                        aria-label="Responsavel"
+                        disabled={!canManage}
+                        list={RESPONSIBLE_DATALIST_ID}
+                        placeholder="Buscar pessoa..."
+                        value={responsibleValue}
+                        onChange={(event) => updateResponsibleInput(index, event.target.value)}
+                      />
+                      <input
+                        className="liturgy-item-cell"
+                        aria-label="Notas do item"
+                        disabled={!canManage}
+                        placeholder="Detalhe rapido..."
+                        value={item.notes}
+                        onChange={(event) => updateChecklistField(index, "notes", event.target.value)}
+                      />
+                      {canManage ? (
+                        <button
+                          className="icon-button danger"
+                          type="button"
+                          onClick={() => removeChecklistItem(index)}
+                          aria-label="Remover item"
+                          title="Remover item"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      ) : (
+                        <span />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
-          <label className="wide-field">Notas da liturgia<textarea disabled={!canManage} value={checklistForm.notes} onChange={(event) => setChecklistForm((current) => ({ ...current, notes: event.target.value }))} /></label>
+
           <div className="form-footer">
             {canManage && <button type="submit">{selectedChecklist ? "Salvar liturgia" : "Criar liturgia"}</button>}
             {canManage && selectedChecklist && <button className="danger-button" type="button" onClick={handleDeleteChecklist}><Trash2 size={16} /> Remover</button>}

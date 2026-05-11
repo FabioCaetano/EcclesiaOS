@@ -375,3 +375,8 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-112-event-designated-operators.md`: operadores designados por evento no Totem Evento.
 - `docs/decisions/0112-event-designated-operators.md`: decisao de controlar permissao operacional por pessoa e evento.
+
+# Atualizacao - Fase 113
+
+- `docs/phases/phase-113-liturgy-row-ux.md`: UX da Liturgia em linhas, responsavel pesquisavel, sem "concluido" na criacao, notas acima, lixeira por linha.
+- `docs/decisions/0113-liturgy-row-ux.md`: decisao de reformatar so o frontend sem mexer em backend, banco ou contrato.

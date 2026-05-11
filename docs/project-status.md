@@ -1069,3 +1069,28 @@ Fase 112 implementada. O Totem Evento agora pode ser operado por pessoas designa
 
 - `npm run build:api`: pendente por bloqueio/limite do ambiente nesta execucao.
 - `npm run build:web`: pendente por bloqueio/limite do ambiente nesta execucao.
+
+# Status Atual - Fase 113
+
+Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesquisavel via `<datalist>`, sem "Concluido" no editor e notas gerais em destaque acima da lista.
+
+## Entregue na fase
+
+- `LiturgyPage` reescrita com grid `Hora | Item | Responsavel | Notas | acoes`.
+- Cabecalho unico das colunas em vez de label por campo.
+- Checkbox "Concluido" removido do editor; itens novos nascem `completed: false`.
+- Responsavel pesquisavel com `<input list>` + `<datalist>` populado por `personRepository`.
+- Botao de lixeira por linha substituindo o antigo "Remover item" full-width.
+- Notas da liturgia repositorias acima da ordem do culto.
+- CSS novo (`liturgy-items-grid`, `liturgy-item-row`, `icon-button`) com fallback responsivo abaixo de 900px.
+
+## Pendencias da consolidacao
+
+- Modo execucao da liturgia com cronometro e check de concluido em tempo real.
+- Templates de liturgia reaproveitaveis.
+- Drag-and-drop para reordenar itens.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.

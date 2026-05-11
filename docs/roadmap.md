@@ -1964,3 +1964,22 @@ Possivel escopo:
 
 - Relatorio por operador.
 - Notificacao automatica para operador selecionado.
+
+# Roadmap - Atualizacao Fase 113
+
+## Concluido
+
+- Fase 113 - UX da Liturgia em linhas (responsavel pesquisavel, sem "concluido" na criacao, notas acima, lixeira por linha).
+
+## Proxima fase sugerida
+
+- Calendario de Ambientes (visao mensal das reservas + bloqueio de conflito).
+
+## Alternativa
+
+- Builder de Formularios estilo Google Forms.
+
+## Depois
+
+- Modo execucao da liturgia com cronometro/checklist em tempo real.
+- Templates de liturgia reaproveitaveis.

@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 62 - Confirmacao De Email No Registro Publico De Eventos.
+Fase atual concluida: Fase 113 - UX da Liturgia em linhas.
 
 Estrutura:
 
