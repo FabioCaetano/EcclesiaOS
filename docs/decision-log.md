@@ -135,6 +135,7 @@ Este arquivo lista decisoes permanentes do projeto. Detalhes maiores podem ficar
 105. Acoes diretas na Execucao do Culto: concluir/reabrir itens de liturgia na aba Culto reutiliza o endpoint existente de `ServiceChecklist`; Liturgia segue como fonte de edicao completa.
 106. Atalhos entre modulos: a aba Culto passa a oferecer atalhos para Agenda, Escalas, Musicas e Liturgia usando a navegacao interna existente e respeitando `canAccessModule`.
 113. UX da Liturgia em linhas: itens da ordem do culto viram grid horizontal `[hora] [item] [responsavel] [notas] [X]` com cabecalho unico; responsavel passa a usar `<input list>` + `<datalist>` (nativo, sem nova dependencia); checkbox "Concluido" sai do editor para nao confundir planejamento com execucao; notas gerais sobem para acima da lista; remocao por icone de lixeira por linha; sem mudancas em backend, banco ou tipos compartilhados.
+114. Calendario de Ambientes: pagina Ambientes ganha uma terceira aba (`Calendario`, definida como entrada principal) com grid mensal real (7 colunas Dom-Sab) que reaproveita as reservas ja existentes; cada reserva vira pill colorida com cor derivada de hash deterministico de `resourceId` (paleta de 10); clicar em pill leva para o editor; clicar em dia vazio cria nova reserva pre-preenchida; permissao no frontend alinha-se ao backend usando `canManageModule(user.role, "resources")` (admin + lider); sem mudancas em backend, banco ou tipos compartilhados.
 
 ## Decisoes Pendentes
 

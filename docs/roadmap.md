@@ -1983,3 +1983,23 @@ Possivel escopo:
 
 - Modo execucao da liturgia com cronometro/checklist em tempo real.
 - Templates de liturgia reaproveitaveis.
+
+# Roadmap - Atualizacao Fase 114
+
+## Concluido
+
+- Fase 114 - Calendario de Ambientes (visao mensal de reservas com pills coloridas, atalho para criar/abrir reserva, permissao liberada a lider).
+
+## Proxima fase sugerida
+
+- Builder de Formularios estilo Google Forms.
+
+## Alternativa
+
+- Permissao por grupo/ministerio responsavel para eventos.
+
+## Depois
+
+- Visao semanal/diaria com linha do tempo por hora.
+- Drag-and-drop de reservas no calendario.
+- Export iCal.

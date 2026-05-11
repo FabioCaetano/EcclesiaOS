@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 113 - UX da Liturgia em linhas.
+Fase atual concluida: Fase 114 - Calendario de Ambientes.
 
 Estrutura:
 

@@ -1094,3 +1094,30 @@ Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesqui
 
 - `npm run typecheck`: passou.
 - `npm run build:web`: passou.
+
+# Status Atual - Fase 114
+
+Fase 114 implementada. Ambientes ganhou uma aba **Calendario** como entrada principal: grid mensal real com pills coloridas por ambiente, atalho de criacao por dia clicado e abertura direta do editor ao clicar numa reserva. Permissao foi alinhada ao backend (lider + admin).
+
+## Entregue na fase
+
+- Nova aba `Calendario` virou a primeira da pagina Ambientes.
+- Grid mensal 7 colunas (Dom a Sab) com buffer cinza dos meses adjacentes.
+- Pills de reserva com ate 3 visiveis por dia e `+N` quando ha mais; cancelled em opacidade reduzida.
+- Cor de cada pill derivada de hash deterministico do `resourceId` (paleta de 10).
+- Clicar em pill leva para a aba Reservas com o editor preenchido.
+- Clicar em dia vazio inicia nova reserva pre-preenchendo `date` e `resourceId` filtrado.
+- Filtro de ambiente no proprio cabecalho do calendario.
+- Substituicao de `user.role !== "admin"` por `canManageModule(user.role, "resources")` em todo o `ResourcesPage`.
+- CSS novo (`resources-calendar-grid`, `resources-calendar-day`, `resources-calendar-pill`) com modo compacto em <720px.
+
+## Pendencias da consolidacao
+
+- Visao semanal/diaria com linha do tempo por hora.
+- Drag-and-drop para reagendar reservas.
+- Export iCal/Google Calendar.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
