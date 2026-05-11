@@ -2003,3 +2003,23 @@ Possivel escopo:
 - Visao semanal/diaria com linha do tempo por hora.
 - Drag-and-drop de reservas no calendario.
 - Export iCal.
+
+# Roadmap - Atualizacao Fase 115
+
+## Concluido
+
+- Fase 115 - Builder de Formularios (campos em linhas com reordenacao, chips de opcoes, responsaveis pesquisaveis, preview do publico, configuracoes recolhiveis).
+
+## Proxima fase sugerida
+
+- Permissao por grupo/ministerio responsavel para eventos.
+
+## Alternativa
+
+- Integracao real com API WhatsApp em lote.
+
+## Depois
+
+- Drag-and-drop para reordenar campos.
+- Novos tipos (radio, escala, arquivo).
+- Logica condicional em formularios.

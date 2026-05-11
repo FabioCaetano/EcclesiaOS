@@ -1095,6 +1095,34 @@ Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesqui
 - `npm run typecheck`: passou.
 - `npm run build:web`: passou.
 
+# Status Atual - Fase 115
+
+Fase 115 implementada. Formularios ganhou builder estilo Google Forms: campos em linhas compactas com reordenacao, chips para opcoes de `select`, responsaveis pesquisaveis via `<datalist>` e preview do publico colapsavel. Sem mudancas em backend, banco ou contrato compartilhado.
+
+## Entregue na fase
+
+- `FormsPage` reescrita com `forms-fields-list` em grid horizontal `[label] [tipo] [obrigatorio] [↑↓] [X]`.
+- Botoes ↑/↓ trocam posicao com o vizinho e renumeram `order`.
+- Mudar tipo para algo diferente de `select` zera as opcoes para evitar inconsistencia.
+- Opcoes de `select` viram chips editaveis com input por opcao, `+ Opcao` e X.
+- Responsaveis pesquisaveis via `<input list>` + `<datalist>` populado por `personRepository`; chips removiveis exibem os selecionados; mensagem de erro se a pessoa digitada nao existe.
+- Card colapsavel `Preview do publico` renderiza cada campo com o input apropriado (texto, textarea, email, telefone, numero, data, select, checkbox).
+- Bloco `Configuracoes` colapsavel agrupa slug e link publico, limpando o topo da pagina.
+- CSS novo (`forms-builder`, `forms-fields-list`, `forms-field-row`, `forms-field-options`, `forms-chip`, `collapsible-card`, `forms-preview`).
+- Modo compacto abaixo de 900px com cabecalho oculto e linhas em coluna.
+
+## Pendencias da consolidacao
+
+- Drag-and-drop para reordenar campos.
+- Tipos de campo novos (radio, escala, arquivo).
+- Logica condicional ("se A entao mostre B").
+- Templates de formulario reaproveitaveis.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
+
 # Status Atual - Fase 114
 
 Fase 114 implementada. Ambientes ganhou uma aba **Calendario** como entrada principal: grid mensal real com pills coloridas por ambiente, atalho de criacao por dia clicado e abertura direta do editor ao clicar numa reserva. Permissao foi alinhada ao backend (lider + admin).

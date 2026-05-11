@@ -385,3 +385,8 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-114-resources-calendar.md`: nova aba Calendario em Ambientes com grid mensal, pills coloridas por ambiente, atalho para criar/abrir reserva.
 - `docs/decisions/0114-resources-calendar.md`: decisao de derivar cor por hash de `resourceId` e habilitar lider via `canManageModule("resources")`.
+
+# Atualizacao - Fase 115
+
+- `docs/phases/phase-115-forms-builder.md`: builder de Formularios com campos em linhas, reordenacao por setas, chips de opcoes para `select`, responsaveis pesquisaveis e preview do publico.
+- `docs/decisions/0115-forms-builder.md`: decisao de reformatar so o frontend reaproveitando o padrao das Fases 113 e 114.

@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Download, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Eye, EyeOff, FileText, Plus, Settings, Trash2, X } from "lucide-react";
 import { canManageModule } from "@ecclesiaos/shared";
 import type { CurrentUser, CustomForm, CustomFormField, CustomFormInput, CustomFormResponse, PersonProfile } from "@ecclesiaos/shared";
 import { deleteCustomForm, loadCustomFormResponses, loadCustomForms, loadPeople, saveCustomForm } from "./api";
 import { Card, PageHeader } from "./ui";
+
+const PEOPLE_DATALIST_ID = "forms-people-options";
+
+const personFullName = (person: PersonProfile) => `${person.firstName} ${person.lastName}`.trim();
 
 interface Props {
   token: string;
@@ -96,6 +100,9 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
   const [responseStartDate, setResponseStartDate] = useState("");
   const [responseEndDate, setResponseEndDate] = useState("");
   const [status, setStatus] = useState("");
+  const [responsibleInput, setResponsibleInput] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const canManage = canManageModule(user.role, "forms");
 
@@ -172,13 +179,36 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
     setResponseEndDate("");
   };
 
-  const toggleResponsible = (personId: string) => {
+  const peopleByName = useMemo(() => {
+    const map = new Map<string, string>();
+    people.forEach((person) => {
+      const name = personFullName(person);
+      if (name) map.set(name.toLowerCase(), person.id);
+    });
+    return map;
+  }, [people]);
+
+  const removeResponsible = (personId: string) => {
     setFormState((current) => ({
       ...current,
-      responsiblePersonIds: current.responsiblePersonIds.includes(personId)
-        ? current.responsiblePersonIds.filter((id) => id !== personId)
-        : [...current.responsiblePersonIds, personId]
+      responsiblePersonIds: current.responsiblePersonIds.filter((id) => id !== personId)
     }));
+  };
+
+  const submitResponsibleInput = () => {
+    const trimmed = responsibleInput.trim();
+    if (!trimmed) return;
+    const matchedId = peopleByName.get(trimmed.toLowerCase());
+    if (!matchedId) {
+      setStatus("Pessoa nao encontrada na lista.");
+      return;
+    }
+    setFormState((current) => current.responsiblePersonIds.includes(matchedId)
+      ? current
+      : { ...current, responsiblePersonIds: [...current.responsiblePersonIds, matchedId] }
+    );
+    setResponsibleInput("");
+    setStatus("");
   };
 
   const addField = () => {
@@ -189,6 +219,44 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
     setFormState((current) => ({
       ...current,
       fields: current.fields.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item)
+    }));
+  };
+
+  const moveField = (index: number, direction: -1 | 1) => {
+    setFormState((current) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= current.fields.length) return current;
+      const next = [...current.fields];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return {
+        ...current,
+        fields: next.map((field, idx) => ({ ...field, order: idx + 1 }))
+      };
+    });
+  };
+
+  const addFieldOption = (index: number) => {
+    setFormState((current) => ({
+      ...current,
+      fields: current.fields.map((item, itemIndex) => itemIndex === index ? { ...item, options: [...item.options, ""] } : item)
+    }));
+  };
+
+  const updateFieldOption = (fieldIndex: number, optionIndex: number, value: string) => {
+    setFormState((current) => ({
+      ...current,
+      fields: current.fields.map((item, itemIndex) => itemIndex === fieldIndex
+        ? { ...item, options: item.options.map((option, optIdx) => optIdx === optionIndex ? value : option) }
+        : item)
+    }));
+  };
+
+  const removeFieldOption = (fieldIndex: number, optionIndex: number) => {
+    setFormState((current) => ({
+      ...current,
+      fields: current.fields.map((item, itemIndex) => itemIndex === fieldIndex
+        ? { ...item, options: item.options.filter((_, optIdx) => optIdx !== optionIndex) }
+        : item)
     }));
   };
 
@@ -269,25 +337,48 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
           ))}
         </Card>
 
-        <form className="person-form" onSubmit={handleSubmit}>
-          <label>Titulo<input disabled={!canManage} value={formState.title} onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))} /></label>
-          <label>Slug<input disabled={!canManage} value={formState.slug} onChange={(event) => setFormState((current) => ({ ...current, slug: event.target.value }))} /></label>
-          <label className="wide-field">Descricao<textarea disabled={!canManage} value={formState.description} onChange={(event) => setFormState((current) => ({ ...current, description: event.target.value }))} /></label>
+        <form className="person-form forms-builder" onSubmit={handleSubmit}>
+          <label className="wide-field forms-builder-title">
+            Titulo
+            <input disabled={!canManage} placeholder="Titulo visivel para quem responde" value={formState.title} onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))} />
+          </label>
+          <label className="wide-field">
+            Descricao
+            <textarea disabled={!canManage} rows={2} placeholder="Resumo opcional acima do formulario..." value={formState.description} onChange={(event) => setFormState((current) => ({ ...current, description: event.target.value }))} />
+          </label>
           <label className="checkbox-inline wide-field">
             <input disabled={!canManage} type="checkbox" checked={formState.isActive} onChange={(event) => setFormState((current) => ({ ...current, isActive: event.target.checked }))} />
             Formulario ativo
           </label>
 
-          <fieldset className="wide-field requested-teams">
+          <datalist id={PEOPLE_DATALIST_ID}>
+            {people.map((person) => <option key={person.id} value={personFullName(person)} />)}
+          </datalist>
+
+          <fieldset className="wide-field forms-responsibles">
             <legend>Responsaveis</legend>
-            <div className="checkbox-grid">
-              {people.map((person) => (
-                <label key={person.id}>
-                  <input disabled={!canManage} type="checkbox" checked={formState.responsiblePersonIds.includes(person.id)} onChange={() => toggleResponsible(person.id)} />
-                  {person.firstName} {person.lastName}
-                </label>
+            <div className="forms-people-chips">
+              {formState.responsiblePersonIds.length === 0 ? <span className="muted">Nenhum responsavel selecionado.</span> : formState.responsiblePersonIds.map((personId) => (
+                <span className="forms-chip" key={personId}>
+                  {peopleById.get(personId) || "Pessoa removida"}
+                  {canManage && <button className="forms-chip-remove" type="button" aria-label="Remover responsavel" onClick={() => removeResponsible(personId)}><X size={12} /></button>}
+                </span>
               ))}
             </div>
+            {canManage && (
+              <div className="forms-people-input">
+                <input
+                  list={PEOPLE_DATALIST_ID}
+                  placeholder="Buscar pessoa..."
+                  value={responsibleInput}
+                  onChange={(event) => setResponsibleInput(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitResponsibleInput(); } }}
+                />
+                <button className="secondary-button" type="button" onClick={submitResponsibleInput} disabled={!responsibleInput.trim()}>
+                  <Plus size={14} /> Adicionar
+                </button>
+              </div>
+            )}
           </fieldset>
 
           <div className="wide-field">
@@ -295,32 +386,111 @@ export const FormsPage: React.FC<Props> = ({ token, user }) => {
               <h3>Campos</h3>
               {canManage && <button className="secondary-button" type="button" onClick={addField}><Plus size={16} /> Campo</button>}
             </div>
-            {formState.fields.length === 0 ? <p className="muted">Adicione campos para publicar este formulario.</p> : formState.fields.map((field, index) => (
-              <div className="checklist-editor-row" key={`${field.id}-${index}`}>
-                <label>Campo<input disabled={!canManage} value={field.label} onChange={(event) => updateField(index, "label", event.target.value)} /></label>
-                <label>
-                  Tipo
-                  <select disabled={!canManage} value={field.type} onChange={(event) => updateField(index, "type", event.target.value)}>
-                    {Object.entries(fieldTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </label>
-                <label className="checkbox-inline">
-                  <input disabled={!canManage} type="checkbox" checked={field.required} onChange={(event) => updateField(index, "required", event.target.checked)} />
-                  Obrigatorio
-                </label>
-                <label>Opcoes<input disabled={!canManage || field.type !== "select"} value={field.options.join(", ")} onChange={(event) => updateField(index, "options", event.target.value.split(",").map((option) => option.trim()).filter(Boolean))} /></label>
-                {canManage && <button className="danger-button wide-field" type="button" onClick={() => removeField(index)}><Trash2 size={16} /> Remover campo</button>}
+            {formState.fields.length === 0 ? <p className="muted">Adicione campos para publicar este formulario.</p> : (
+              <div className="forms-fields-list">
+                <div className="forms-fields-header">
+                  <span>Campo</span>
+                  <span>Tipo</span>
+                  <span>Obrigatorio</span>
+                  <span aria-label="Ordem" />
+                  <span aria-label="Acoes" />
+                </div>
+                {formState.fields.map((field, index) => (
+                  <div className="forms-field-block" key={`${field.id}-${index}`}>
+                    <div className="forms-field-row">
+                      <input className="forms-field-cell" disabled={!canManage} placeholder="Pergunta..." value={field.label} onChange={(event) => updateField(index, "label", event.target.value)} />
+                      <select className="forms-field-cell" disabled={!canManage} value={field.type} onChange={(event) => {
+                        const nextType = event.target.value as CustomFormField["type"];
+                        updateField(index, "type", nextType);
+                        if (nextType !== "select") {
+                          updateField(index, "options", []);
+                        }
+                      }}>
+                        {Object.entries(fieldTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                      <label className="checkbox-inline forms-field-required">
+                        <input disabled={!canManage} type="checkbox" checked={field.required} onChange={(event) => updateField(index, "required", event.target.checked)} />
+                        <span>Obrigatorio</span>
+                      </label>
+                      <div className="forms-field-order">
+                        <button type="button" className="icon-button" aria-label="Mover para cima" disabled={!canManage || index === 0} onClick={() => moveField(index, -1)} title="Mover para cima"><ChevronUp size={14} /></button>
+                        <button type="button" className="icon-button" aria-label="Mover para baixo" disabled={!canManage || index === formState.fields.length - 1} onClick={() => moveField(index, 1)} title="Mover para baixo"><ChevronDown size={14} /></button>
+                      </div>
+                      {canManage ? (
+                        <button type="button" className="icon-button danger" aria-label="Remover campo" onClick={() => removeField(index)} title="Remover campo"><Trash2 size={14} /></button>
+                      ) : <span />}
+                    </div>
+                    {field.type === "select" && (
+                      <div className="forms-field-options">
+                        <span className="muted">Opcoes</span>
+                        {field.options.length === 0 && <span className="muted">Adicione ao menos uma opcao.</span>}
+                        {field.options.map((option, optionIndex) => (
+                          <span className="forms-option-chip" key={optionIndex}>
+                            <input disabled={!canManage} value={option} placeholder="Texto da opcao" onChange={(event) => updateFieldOption(index, optionIndex, event.target.value)} />
+                            {canManage && <button type="button" className="forms-chip-remove" aria-label="Remover opcao" onClick={() => removeFieldOption(index, optionIndex)}><X size={12} /></button>}
+                          </span>
+                        ))}
+                        {canManage && <button type="button" className="secondary-button" onClick={() => addFieldOption(index)}><Plus size={14} /> Opcao</button>}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
-          {publicLink && (
-            <div className="receipt-preview wide-field">
-              <h3>Link publico</h3>
-              <p><span>URL</span><strong>{publicLink}</strong></p>
-              <p><span>Responsaveis</span><strong>{formState.responsiblePersonIds.map((id) => peopleById.get(id)).filter(Boolean).join(", ") || "Nenhum"}</strong></p>
-            </div>
-          )}
+          <div className="wide-field collapsible-card">
+            <button type="button" className="collapsible-toggle" onClick={() => setShowPreview((current) => !current)}>
+              {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span>Preview do publico</span>
+              {showPreview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showPreview && (
+              <div className="forms-preview">
+                <h3>{formState.title || "Sem titulo"}</h3>
+                {formState.description && <p className="muted">{formState.description}</p>}
+                {formState.fields.length === 0 ? <p className="muted">Sem campos.</p> : formState.fields.map((field) => (
+                  <label className="forms-preview-field" key={`preview-${field.id}-${field.order}`}>
+                    <span>{field.label || "Sem rotulo"}{field.required ? " *" : ""}</span>
+                    {field.type === "textarea" ? <textarea disabled rows={2} placeholder="Resposta..." /> :
+                      field.type === "select" ? (
+                        <select disabled>
+                          <option value="">Selecione</option>
+                          {field.options.map((option, idx) => <option key={idx} value={option}>{option}</option>)}
+                        </select>
+                      ) :
+                      field.type === "checkbox" ? <input type="checkbox" disabled /> :
+                      <input
+                        type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                        disabled
+                        placeholder="Resposta..."
+                      />
+                    }
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="wide-field collapsible-card">
+            <button type="button" className="collapsible-toggle" onClick={() => setShowSettings((current) => !current)}>
+              <Settings size={14} />
+              <span>Configuracoes</span>
+              {showSettings ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showSettings && (
+              <div className="collapsible-body">
+                <label>Slug<input disabled={!canManage} value={formState.slug} onChange={(event) => setFormState((current) => ({ ...current, slug: event.target.value }))} /></label>
+                {publicLink && (
+                  <div className="receipt-preview">
+                    <h3>Link publico</h3>
+                    <p><span>URL</span><strong>{publicLink}</strong></p>
+                    <p><span>Responsaveis</span><strong>{formState.responsiblePersonIds.map((id) => peopleById.get(id)).filter(Boolean).join(", ") || "Nenhum"}</strong></p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="form-footer">
             {canManage && <button type="submit">{selectedForm ? "Salvar formulario" : "Criar formulario"}</button>}
