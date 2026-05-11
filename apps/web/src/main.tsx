@@ -64,6 +64,7 @@ const App = () => {
   const [session, setSession] = useState<AuthSession | null>(() => loadStoredSession());
   const [currentView, setCurrentView] = useState<AppView>("home");
   const [churchName, setChurchName] = useState<string>("");
+  const [churchLogo, setChurchLogo] = useState<string>("");
   const [contextEventId, setContextEventId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,11 +85,18 @@ const App = () => {
   useEffect(() => {
     if (!session?.token) {
       setChurchName("");
+      setChurchLogo("");
       return;
     }
     loadChurchProfile(session.token)
-      .then((profile) => setChurchName(profile.name))
-      .catch(() => setChurchName(""));
+      .then((profile) => {
+        setChurchName(profile.name);
+        setChurchLogo(profile.logoDataUrl || "");
+      })
+      .catch(() => {
+        setChurchName("");
+        setChurchLogo("");
+      });
   }, [session?.token]);
 
   const handleLogin = (nextSession: AuthSession) => {
@@ -154,7 +162,7 @@ const App = () => {
   }
 
   return (
-    <AppLayout currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} user={session.user} churchName={churchName}>
+    <AppLayout currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} user={session.user} churchName={churchName} churchLogo={churchLogo} token={session.token}>
       {currentView === "home" && <HomePage token={session.token} user={session.user} />}
       {currentView === "church" && <ChurchPage token={session.token} user={session.user} />}
       {currentView === "people" && <PeoplePage token={session.token} user={session.user} />}

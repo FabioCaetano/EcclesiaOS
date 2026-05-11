@@ -1,4 +1,4 @@
-import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, GuardianChildInput, KidsRoom, KidsRoomInput, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
+import type { AttendanceInput, AttendanceRecord, AuditLogEntry, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfile, ChurchProfileUpdate, ChurchResource, ChurchResourceInput, CronGenerationResult, CurrentUser, CustomForm, CustomFormInput, CustomFormResponse, CustomFormSubmissionInput, EmailStatus, EventCheckIn, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransaction, FinancialTransactionInput, GroupInput, GroupProfile, GuardianChildInput, KidsRoom, KidsRoomInput, LabelLayout, LabelTemplate, LabelTemplateInput, LoginRequest, MessageTemplate, MessageTemplateInput, NotificationItem, PeopleMessage, PeopleMessageInput, PeopleMessageResponse, PersonBlockOut, PersonBlockOutInput, PersonInput, PersonProfile, PublicChurchInfo, RegisterRequest, ResetPasswordResponse, RoomReservation, RoomReservationInput, ServiceChecklist, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingNotification, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, Song, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSet, WorshipSetInput, YouTubeFeed, YouTubeFeedError } from "@ecclesiaos/shared";
 
 export type YouTubeVideosResponse = YouTubeFeed | YouTubeFeedError;
 
@@ -167,6 +167,12 @@ export const loadChurchProfile = async (token: string): Promise<ChurchProfile> =
 
   if (!response.ok) throw new Error("church-load-failed");
   return response.json() as Promise<ChurchProfile>;
+};
+
+export const loadPublicChurchInfo = async (): Promise<PublicChurchInfo> => {
+  const response = await fetch(`${apiBaseUrl}/public/church-info`);
+  if (!response.ok) return { name: "", logoDataUrl: "" };
+  return response.json() as Promise<PublicChurchInfo>;
 };
 
 export const loadLabelTemplates = async (token: string, layout?: LabelLayout): Promise<LabelTemplate[]> => {
@@ -897,6 +903,15 @@ export const loadServingNotifications = async (token: string): Promise<ServingNo
 
   if (!response.ok) throw new Error("serving-notifications-load-failed");
   return response.json() as Promise<ServingNotification[]>;
+};
+
+export const loadNotifications = async (token: string): Promise<NotificationItem[]> => {
+  const response = await fetch(`${apiBaseUrl}/notifications`, {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) throw new Error("notifications-load-failed");
+  return response.json() as Promise<NotificationItem[]>;
 };
 
 export const loadFinancialTransactions = async (token: string): Promise<FinancialTransaction[]> => {

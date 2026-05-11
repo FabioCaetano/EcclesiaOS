@@ -12,5 +12,6 @@ export const defaultChurch: ChurchProfile = {
   city: "Cidade",
   state: "Estado",
   postalCode: "00000-000",
-  country: "Brasil"
+  country: "Brasil",
+  logoDataUrl: ""
 };

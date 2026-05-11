@@ -2023,3 +2023,63 @@ Possivel escopo:
 - Drag-and-drop para reordenar campos.
 - Novos tipos (radio, escala, arquivo).
 - Logica condicional em formularios.
+
+# Roadmap - Atualizacao Fase 116
+
+## Concluido
+
+- Fase 116 - Permissao de evento por grupo/ministerio responsavel (lider edita eventos do proprio grupo sem virar admin do modulo).
+
+## Proxima fase sugerida
+
+- Centro de notificacoes interno.
+
+## Alternativa
+
+- Integracao real com WhatsApp em lote (depende de provedor/custos).
+
+## Depois
+
+- Permissao por pessoa individual em evento.
+- Hierarquia de delegado dentro do grupo.
+- Permissao de exclusao para lider (com confirmacao extra).
+
+# Roadmap - Atualizacao Fase 117
+
+## Concluido
+
+- Fase 117 - Centro de notificacoes interno (sino no header, agregador derivado, marcacao de lida via localStorage).
+
+## Proxima fase sugerida
+
+- Upload de logo da igreja para personalizar tela.
+
+## Alternativa
+
+- Integracao real com WhatsApp em lote.
+
+## Depois
+
+- Persistir notificacoes lidas no banco.
+- Push real (web push/email).
+- Acoes inline no painel (aceitar/recusar escala).
+
+# Roadmap - Atualizacao Fase 118
+
+## Concluido
+
+- Fase 118 - Upload de logo da igreja com base64 no `ChurchProfile.logoDataUrl`, aplicado em sidebar, header e login via endpoint publico.
+
+## Proxima fase sugerida
+
+- Importacao CSV de pessoas em lote (criando pessoa + usuario).
+
+## Alternativa
+
+- Integracao real com WhatsApp em lote.
+
+## Depois
+
+- Cropper de imagem.
+- Multiplos logos (claro/escuro).
+- Logo aplicado em etiquetas/relatorios.

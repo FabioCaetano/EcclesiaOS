@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { AuthSession, RegisterRequest } from "@ecclesiaos/shared";
-import { login, register } from "./api";
+import { loadPublicChurchInfo, login, register } from "./api";
 import { demoAccounts, emptyRegisterRequest } from "./constants";
+
+const DEFAULT_LOGO_SRC = "/ecclesia-os-logo-cropped.png";
 
 interface Props {
   onLogin: (session: AuthSession) => void;
@@ -15,6 +17,18 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
   const [registerForm, setRegisterForm] = useState<RegisterRequest>(visitorKidsEntry ? { ...emptyRegisterRequest, status: "visitor" } : emptyRegisterRequest);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [churchInfo, setChurchInfo] = useState<{ name: string; logoDataUrl: string }>({ name: "", logoDataUrl: "" });
+
+  useEffect(() => {
+    let active = true;
+    loadPublicChurchInfo()
+      .then((info) => { if (active) setChurchInfo(info); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  const logoSrc = churchInfo.logoDataUrl || DEFAULT_LOGO_SRC;
+  const altLabel = churchInfo.name || "EcclesiaOS";
   const registerLead = registerForm.status === "visitor"
     ? "Crie uma conta de visitante para cadastrar criancas e gerar o QR do Check-in Kids."
     : "Novos membros entram como membros ate revisao administrativa.";
@@ -67,7 +81,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
   return (
     <main className="auth-shell">
       <section className="login-panel">
-        <img className="auth-logo" src="/ecclesia-os-logo-cropped.png" alt="EcclesiaOS" />
+        <img className="auth-logo" src={logoSrc} alt={altLabel} />
         <h1>{mode === "login" ? "Acesse sua conta" : "Crie sua conta"}</h1>
         <p className="lead">{mode === "login" ? "Administradores, lideres, membros e visitantes entram pelo mesmo portal." : registerLead}</p>
 

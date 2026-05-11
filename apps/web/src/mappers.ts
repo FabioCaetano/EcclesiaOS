@@ -11,7 +11,8 @@ export const toChurchUpdate = (profile: ChurchProfile): ChurchProfileUpdate => (
   city: profile.city,
   state: profile.state,
   postalCode: profile.postalCode,
-  country: profile.country
+  country: profile.country,
+  logoDataUrl: profile.logoDataUrl || ""
 });
 
 export const toPersonInput = (person: PersonProfile): PersonInput => ({

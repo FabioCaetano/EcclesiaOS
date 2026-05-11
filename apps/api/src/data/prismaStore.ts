@@ -153,9 +153,10 @@ const toEventRecurrence = (recurrence: string): EventRecurrence => (
   recurrence === "weekly" || recurrence === "monthly" || recurrence === "cron" ? recurrence : "none"
 );
 
-const toChurch = (church: Omit<ChurchProfile, "youtubeChannelUrl"> & { youtubeChannelUrl?: string }): ChurchProfile => ({
+const toChurch = (church: Omit<ChurchProfile, "youtubeChannelUrl" | "logoDataUrl"> & { youtubeChannelUrl?: string; logoDataUrl?: string }): ChurchProfile => ({
   ...church,
-  youtubeChannelUrl: church.youtubeChannelUrl || ""
+  youtubeChannelUrl: church.youtubeChannelUrl || "",
+  logoDataUrl: church.logoDataUrl || ""
 });
 
 const toEvent = (event: {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { ArrowLeft, CalendarDays, Plus, RotateCcw, TicketCheck } from "lucide-react";
+import { canEditEvent, leadsAnyGroup } from "@ecclesiaos/shared";
 import type { ChurchEvent, ChurchEventInput, ChurchResource, CurrentUser, EventRegistration, EventRegistrationStatus, GroupProfile, PersonProfile, ServiceChecklist, ServingPlan, WorshipSet } from "@ecclesiaos/shared";
 import { apiBaseUrl, checkInEventRegistration, deleteEvent, generateEventOccurrences, loadEmailStatus, loadEventRegistrations, loadEvents, loadGroups, loadPeople, loadResources, loadServiceChecklists, loadServingPlans, loadWorshipSets, resendEventRegistrationConfirmation, saveEvent, updateEventRegistrationStatus } from "./api";
 import { emptyEventInput, eventTypeLabels, recurrenceLabels } from "./constants";
@@ -171,7 +172,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (user.role !== "admin") return;
+    if (!canEdit) return;
 
     if (!eventForm.title.trim()) {
       setStatus("Informe o titulo do evento.");
@@ -236,6 +237,13 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
   const groupName = (groupId: string) => groups.find((group) => group.id === groupId)?.name || "Sem grupo";
   const registrationCount = (eventId: string) => registrations.filter((registration) => registration.eventId === eventId && registration.status !== "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
+  const canEdit = useMemo(() => {
+    if (user.role === "admin") return true;
+    if (user.role !== "leader") return false;
+    if (selectedEvent) return canEditEvent(user, selectedEvent, groups);
+    return leadsAnyGroup(user, groups);
+  }, [user, selectedEvent, groups]);
+  const isAdmin = user.role === "admin";
   const selectedPublicLink = selectedEvent?.registrationSlug ? `${window.location.origin}/register/${selectedEvent.registrationSlug}` : "";
   const selectedCheckInLink = selectedEvent?.registrationSlug ? `${window.location.origin}/event-checkin/${selectedEvent.registrationSlug}` : "";
   const selectedEventRegistrations = registrations.filter((registration) => registration.eventId === selectedEventId);
@@ -316,7 +324,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
                 <ArrowLeft size={16} /> Calendario
               </button>
             )}
-            {user.role === "admin" && (
+            {(isAdmin || leadsAnyGroup(user, groups)) && (
               <button className="secondary-button" type="button" onClick={startNewEvent}>
                 <Plus size={16} /> Novo evento
               </button>
@@ -358,7 +366,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
             <EmptyState
               icon={CalendarDays}
               title="Sem eventos no periodo"
-              description={user.role === "admin" ? "Crie um novo evento ou troque o filtro de mes." : "Nenhum evento cadastrado para o filtro atual."}
+              description={isAdmin ? "Crie um novo evento ou troque o filtro de mes." : "Nenhum evento cadastrado para o filtro atual."}
             />
           ) : filteredEvents.map((event) => (
             <button className={event.id === selectedEventId ? "person-row selected" : "person-row"} key={event.id} type="button" onClick={() => selectEvent(event)}>
@@ -374,19 +382,19 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
         </div>
 
         <form className="person-form" onSubmit={handleSubmit}>
-          <label>Titulo<input disabled={user.role !== "admin"} value={eventForm.title} onChange={(event) => updateField("title", event.target.value)} /></label>
+          <label>Titulo<input disabled={!canEdit} value={eventForm.title} onChange={(event) => updateField("title", event.target.value)} /></label>
           <label>
             Tipo
-            <select disabled={user.role !== "admin"} value={eventForm.type} onChange={(event) => updateField("type", event.target.value)}>
+            <select disabled={!canEdit} value={eventForm.type} onChange={(event) => updateField("type", event.target.value)}>
               {Object.entries(eventTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
-          <label>Data<input disabled={user.role !== "admin"} type="date" value={eventForm.date} onChange={(event) => updateField("date", event.target.value)} /></label>
-          <label>Inicio<input disabled={user.role !== "admin"} type="time" value={eventForm.startTime} onChange={(event) => updateField("startTime", event.target.value)} /></label>
-          <label>Fim<input disabled={user.role !== "admin"} type="time" value={eventForm.endTime} onChange={(event) => updateField("endTime", event.target.value)} /></label>
+          <label>Data<input disabled={!canEdit} type="date" value={eventForm.date} onChange={(event) => updateField("date", event.target.value)} /></label>
+          <label>Inicio<input disabled={!canEdit} type="time" value={eventForm.startTime} onChange={(event) => updateField("startTime", event.target.value)} /></label>
+          <label>Fim<input disabled={!canEdit} type="time" value={eventForm.endTime} onChange={(event) => updateField("endTime", event.target.value)} /></label>
           <label>
             Ambiente
-            <select disabled={user.role !== "admin"} value={eventForm.location} onChange={(event) => updateField("location", event.target.value)}>
+            <select disabled={!canEdit} value={eventForm.location} onChange={(event) => updateField("location", event.target.value)}>
               <option value="">Sem ambiente definido</option>
               {resources.filter((resource) => resource.isActive).map((resource) => (
                 <option key={resource.id} value={resource.name}>{resource.name}{resource.location ? ` - ${resource.location}` : ""}</option>
@@ -403,27 +411,27 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
           </datalist>
           <label>
             Recorrencia
-            <select disabled={user.role !== "admin"} value={eventForm.recurrence} onChange={(event) => updateField("recurrence", event.target.value)}>
+            <select disabled={!canEdit} value={eventForm.recurrence} onChange={(event) => updateField("recurrence", event.target.value)}>
               {Object.entries(recurrenceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
-          <label>Repetir ate<input disabled={user.role !== "admin" || eventForm.recurrence === "none"} type="date" value={eventForm.recurrenceUntil} onChange={(event) => updateField("recurrenceUntil", event.target.value)} /></label>
+          <label>Repetir ate<input disabled={!canEdit || eventForm.recurrence === "none"} type="date" value={eventForm.recurrenceUntil} onChange={(event) => updateField("recurrenceUntil", event.target.value)} /></label>
           {eventForm.recurrence === "cron" && (
-            <label className="wide-field">Expressao cron<input disabled={user.role !== "admin"} value={eventForm.recurrenceRule} onChange={(event) => updateField("recurrenceRule", event.target.value)} placeholder="0 0 * * 0#1" /></label>
+            <label className="wide-field">Expressao cron<input disabled={!canEdit} value={eventForm.recurrenceRule} onChange={(event) => updateField("recurrenceRule", event.target.value)} placeholder="0 0 * * 0#1" /></label>
           )}
           <label>
             Inscricoes
-            <select disabled={user.role !== "admin"} value={eventForm.registrationEnabled ? "yes" : "no"} onChange={(event) => updateField("registrationEnabled", event.target.value === "yes" ? "true" : "")}>
+            <select disabled={!canEdit} value={eventForm.registrationEnabled ? "yes" : "no"} onChange={(event) => updateField("registrationEnabled", event.target.value === "yes" ? "true" : "")}>
               <option value="no">Fechadas</option>
               <option value="yes">Abertas</option>
             </select>
           </label>
-          <label>Limite<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} type="number" min="0" value={eventForm.registrationCapacity} onChange={(event) => updateField("registrationCapacity", event.target.value)} /></label>
-          <label>Valor<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} type="number" min="0" step="0.01" value={eventForm.registrationPrice} onChange={(event) => updateField("registrationPrice", event.target.value)} /></label>
-          <label>Moeda<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} value={eventForm.registrationCurrency} onChange={(event) => updateField("registrationCurrency", event.target.value)} /></label>
+          <label>Limite<input disabled={!canEdit || !eventForm.registrationEnabled} type="number" min="0" value={eventForm.registrationCapacity} onChange={(event) => updateField("registrationCapacity", event.target.value)} /></label>
+          <label>Valor<input disabled={!canEdit || !eventForm.registrationEnabled} type="number" min="0" step="0.01" value={eventForm.registrationPrice} onChange={(event) => updateField("registrationPrice", event.target.value)} /></label>
+          <label>Moeda<input disabled={!canEdit || !eventForm.registrationEnabled} value={eventForm.registrationCurrency} onChange={(event) => updateField("registrationCurrency", event.target.value)} /></label>
           <label>
             Grupo
-            <select disabled={user.role !== "admin"} value={eventForm.groupId} onChange={(event) => updateField("groupId", event.target.value)}>
+            <select disabled={!canEdit} value={eventForm.groupId} onChange={(event) => updateField("groupId", event.target.value)}>
               <option value="">Agenda geral</option>
               {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
             </select>
@@ -438,7 +446,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
                   <label key={group.id}>
                     <input
                       type="checkbox"
-                      disabled={user.role !== "admin"}
+                      disabled={!canEdit}
                       checked={eventForm.requestedTeamIds.includes(group.id)}
                       onChange={() => toggleRequestedTeam(group.id)}
                     />
@@ -452,7 +460,7 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
             Operadores do totem
             <select
               multiple
-              disabled={user.role !== "admin"}
+              disabled={!canEdit}
               value={eventForm.operatorPersonIds}
               onChange={(event) => setEventForm((current) => ({
                 ...current,
@@ -463,12 +471,12 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
             </select>
             <span className="muted">Pessoas selecionadas podem operar o totem deste evento sem ganhar acesso administrativo completo.</span>
           </label>
-          <label className="wide-field">Descricao<textarea disabled={user.role !== "admin"} value={eventForm.description} onChange={(event) => updateField("description", event.target.value)} /></label>
-          <label className="wide-field">Slug publico<input disabled={user.role !== "admin" || !eventForm.registrationEnabled} value={eventForm.registrationSlug} onChange={(event) => updateField("registrationSlug", event.target.value)} /></label>
+          <label className="wide-field">Descricao<textarea disabled={!canEdit} value={eventForm.description} onChange={(event) => updateField("description", event.target.value)} /></label>
+          <label className="wide-field">Slug publico<input disabled={!canEdit || !eventForm.registrationEnabled} value={eventForm.registrationSlug} onChange={(event) => updateField("registrationSlug", event.target.value)} /></label>
           <label className="checkbox-inline wide-field">
             <input
               type="checkbox"
-              disabled={user.role !== "admin" || !eventForm.registrationEnabled || !emailConfigured}
+              disabled={!canEdit || !eventForm.registrationEnabled || !emailConfigured}
               checked={eventForm.registrationRequiresEmailConfirmation}
               onChange={(event) => updateField("registrationRequiresEmailConfirmation", event.target.checked ? "true" : "")}
             />
@@ -540,12 +548,12 @@ export const EventsPage: React.FC<Props> = ({ token, user, initialEventId, onBac
           )}
 
           <div className="form-footer">
-            {user.role === "admin" && <button type="submit">{selectedEventId ? "Salvar evento" : "Criar evento"}</button>}
-            {user.role === "admin" && selectedEventId && eventForm.recurrence !== "none" && !eventForm.parentEventId && (
+            {canEdit && <button type="submit">{selectedEventId ? "Salvar evento" : "Criar evento"}</button>}
+            {isAdmin && selectedEventId && eventForm.recurrence !== "none" && !eventForm.parentEventId && (
               <button className="secondary-button" type="button" onClick={handleGenerateOccurrences}>Gerar ocorrencias</button>
             )}
-            {user.role === "admin" && selectedEventId && <button className="danger-button" type="button" onClick={handleDelete}>Remover</button>}
-            <p>{user.role === "admin" ? status : "Somente administradores podem alterar eventos."}</p>
+            {isAdmin && selectedEventId && <button className="danger-button" type="button" onClick={handleDelete}>Remover</button>}
+            <p>{canEdit ? status : "Voce nao e responsavel por este evento."}</p>
           </div>
         </form>
       </div>

@@ -24,6 +24,7 @@ import {
   X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { NotificationCenter } from "./NotificationCenter";
 import { roleLabels } from "./constants";
 import type { AppView } from "./types";
 
@@ -34,7 +35,11 @@ interface Props {
   onLogout: () => void;
   user: CurrentUser;
   churchName?: string;
+  churchLogo?: string;
+  token?: string;
 }
+
+const DEFAULT_LOGO_SRC = "/ecclesia-os-logo-cropped.png";
 
 interface NavItem {
   label: string;
@@ -75,7 +80,8 @@ const initials = (name: string): string => {
   return `${first}${last}`.toUpperCase();
 };
 
-export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, onLogout, user, churchName }) => {
+export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, onLogout, user, churchName, churchLogo, token }) => {
+  const logoSrc = churchLogo || DEFAULT_LOGO_SRC;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const visibleNavItems = navItems.filter((item) => canAccessModule(user.role, item.module));
@@ -111,7 +117,7 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
       <div className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`} aria-label="Navegacao">
         <div className="sidebar-brand">
-          <img className="sidebar-brand-logo" src="/ecclesia-os-logo-cropped.png" alt="EcclesiaOS" />
+          <img className="sidebar-brand-logo" src={logoSrc} alt={churchName || "EcclesiaOS"} />
           <div className="sidebar-brand-text">
             <strong>EcclesiaOS</strong>
             <span>{churchName || "Painel"}</span>
@@ -159,13 +165,14 @@ export const AppLayout: React.FC<Props> = ({ children, currentView, onNavigate, 
           >
             {sidebarOpen ? <X /> : <Menu />}
           </button>
-          <img className="app-header-brand-logo" src="/ecclesia-os-logo-cropped.png" alt="" aria-hidden="true" />
+          <img className="app-header-brand-logo" src={logoSrc} alt="" aria-hidden="true" />
           <div className="app-header-brand-text">
             <strong>{churchName || "EcclesiaOS"}</strong>
             <small>Painel administrativo</small>
           </div>
         </div>
         <div className="app-header-actions">
+          {token && <NotificationCenter token={token} user={user} onNavigate={onNavigate} />}
           <button
             type="button"
             className="app-header-user"

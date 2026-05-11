@@ -331,6 +331,206 @@ test("admin can create events while member cannot", async () => {
   assert.equal(audit.body?.some((log) => log.entityType === "event" && log.action === "create"), true);
 });
 
+test("leader responsavel cria e edita seu evento sem virar admin de modulo", async () => {
+  const leaderPersonId = leaderSession.user.personId;
+  assert.ok(leaderPersonId, "lider precisa ter personId");
+
+  // Admin cria um ministerio liderado pelo lider
+  const createdGroup = await requestJson<{ id: string }>("/groups", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      name: "Ministerio Lider 116",
+      type: "ministry",
+      description: "Ministerio para teste de permissao",
+      leaderPersonId,
+      memberPersonIds: [leaderPersonId],
+      servicePositions: [],
+      memberServicePositions: {}
+    })
+  });
+  assert.equal(createdGroup.response.status, 201);
+  const groupId = createdGroup.body?.id || "";
+  assert.ok(groupId);
+
+  // Lider cria evento apontando para o grupo que ele lidera
+  const createdEvent = await requestJson<{ id: string; groupId: string; requestedTeamIds: string[] }>("/events", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Evento do lider 116",
+      type: "meeting",
+      date: "2026-07-01",
+      startTime: "19:00",
+      endTime: "20:00",
+      location: "Sala",
+      groupId,
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      requestedTeamIds: [],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: "Criado pelo lider"
+    })
+  });
+  assert.equal(createdEvent.response.status, 201);
+  const eventId = createdEvent.body?.id || "";
+  assert.ok(eventId);
+  assert.equal(createdEvent.body?.groupId, groupId);
+
+  // Membro nao pode criar
+  const forbidden = await requestJson<{ error: string }>("/events", {
+    method: "POST",
+    headers: authHeaders(memberSession),
+    body: JSON.stringify({
+      title: "Tentativa do membro",
+      type: "meeting",
+      date: "2026-07-02",
+      startTime: "19:00",
+      endTime: "20:00",
+      location: "",
+      groupId: "",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      requestedTeamIds: [],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: ""
+    })
+  });
+  assert.equal(forbidden.response.status, 403);
+
+  // Lider sem grupo nao pode criar (admin remove o lider do grupo)
+  await requestJson("/groups/" + groupId, {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      name: "Ministerio Lider 116",
+      type: "ministry",
+      description: "Ministerio para teste de permissao",
+      leaderPersonId: "per_admin",
+      memberPersonIds: [leaderPersonId],
+      servicePositions: [],
+      memberServicePositions: {}
+    })
+  });
+
+  const blocked = await requestJson<{ error: string }>("/events", {
+    method: "POST",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Sem grupo do lider",
+      type: "meeting",
+      date: "2026-07-03",
+      startTime: "19:00",
+      endTime: "20:00",
+      location: "",
+      groupId,
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      requestedTeamIds: [],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: ""
+    })
+  });
+  assert.equal(blocked.response.status, 403);
+
+  // Lider tenta editar evento apos perder lideranca (perdeu acesso ao evento)
+  const cannotEdit = await requestJson<{ error: string }>("/events/" + eventId, {
+    method: "PUT",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Tentativa de edicao",
+      type: "meeting",
+      date: "2026-07-01",
+      startTime: "20:00",
+      endTime: "21:00",
+      location: "Sala",
+      groupId,
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      requestedTeamIds: [],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: ""
+    })
+  });
+  assert.equal(cannotEdit.response.status, 403);
+
+  // Lider nao pode deletar (mesmo com lideranca)
+  await requestJson("/groups/" + groupId, {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      name: "Ministerio Lider 116",
+      type: "ministry",
+      description: "Ministerio para teste de permissao",
+      leaderPersonId,
+      memberPersonIds: [leaderPersonId],
+      servicePositions: [],
+      memberServicePositions: {}
+    })
+  });
+
+  // Lider edita evento (agora pode) e tenta trocar groupId para outro grupo -> backend preserva groupId
+  const editAttempt = await requestJson<{ groupId: string; title: string }>("/events/" + eventId, {
+    method: "PUT",
+    headers: authHeaders(leaderSession),
+    body: JSON.stringify({
+      title: "Editado pelo lider",
+      type: "meeting",
+      date: "2026-07-01",
+      startTime: "20:30",
+      endTime: "22:00",
+      location: "Sala",
+      groupId: "grp_001",
+      recurrence: "none",
+      recurrenceUntil: "",
+      recurrenceRule: "",
+      requestedTeamIds: [],
+      registrationEnabled: false,
+      registrationCapacity: 0,
+      registrationPrice: 0,
+      registrationCurrency: "BRL",
+      registrationSlug: "",
+      description: ""
+    })
+  });
+  assert.equal(editAttempt.response.status, 200);
+  assert.equal(editAttempt.body?.title, "Editado pelo lider");
+  assert.equal(editAttempt.body?.groupId, groupId, "lider nao pode trocar groupId");
+
+  const cannotDelete = await requestJson<{ error: string }>("/events/" + eventId, {
+    method: "DELETE",
+    headers: authHeaders(leaderSession)
+  });
+  assert.equal(cannotDelete.response.status, 403);
+
+  // Admin deleta
+  const deleted = await requestJson<{ ok: boolean }>("/events/" + eventId, {
+    method: "DELETE",
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(deleted.response.status, 200);
+});
+
 test("public event registration respects capacity and payment status", async () => {
   const event = await requestJson<{ registrationSlug: string }>("/events", {
     method: "POST",
@@ -1128,6 +1328,91 @@ test("admin and leader can send people messages while member can only read", asy
     body: JSON.stringify({ subject: "Vazio", body: "", channel: "manual", recipientPersonIds: [] })
   });
   assert.equal(noRecipients.response.status, 400);
+});
+
+test("church logo upload aceita PNG pequeno e rejeita tamanhos/tipos invalidos", async () => {
+  const publicInfo = await requestJson<{ name: string; logoDataUrl: string }>("/public/church-info");
+  assert.equal(publicInfo.response.status, 200);
+  assert.equal(typeof publicInfo.body?.name, "string");
+
+  const currentProfile = await requestJson<{ name: string; email: string; phone: string; website: string; youtubeChannelUrl: string; addressLine1: string; addressLine2: string; city: string; state: string; postalCode: string; country: string; logoDataUrl: string }>("/church/profile", {
+    headers: authHeaders(adminSession)
+  });
+  assert.equal(currentProfile.response.status, 200);
+  const baseProfile = currentProfile.body || {} as Record<string, string>;
+
+  const validPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+  const saved = await requestJson<{ logoDataUrl: string }>("/church/profile", {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ ...baseProfile, logoDataUrl: validPng })
+  });
+  assert.equal(saved.response.status, 200);
+  assert.equal(saved.body?.logoDataUrl, validPng);
+
+  const publicAfter = await requestJson<{ logoDataUrl: string }>("/public/church-info");
+  assert.equal(publicAfter.body?.logoDataUrl, validPng);
+
+  // Limpa para nao quebrar outros testes
+  await requestJson("/church/profile", {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ ...baseProfile, logoDataUrl: "" })
+  });
+
+  const invalidMime = await requestJson<{ error: string }>("/church/profile", {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ ...baseProfile, logoDataUrl: "data:image/gif;base64,R0lGODlh" })
+  });
+  assert.equal(invalidMime.response.status, 400);
+
+  const oversizeBody = "A".repeat(105 * 1024);
+  const oversize = await requestJson<{ error: string }>("/church/profile", {
+    method: "PUT",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({ ...baseProfile, logoDataUrl: `data:image/png;base64,${oversizeBody}` })
+  });
+  assert.equal(oversize.response.status, 400);
+});
+
+test("notifications endpoint requires auth and agrega itens de varios modulos", async () => {
+  const anonymous = await requestJson<{ error: string }>("/notifications");
+  assert.equal(anonymous.response.status, 401);
+
+  const empty = await requestJson<unknown[]>("/notifications", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(empty.response.status, 200);
+  assert.equal(Array.isArray(empty.body), true);
+
+  // Cria plano de servico com atribuicao pendente para o membro
+  const memberPersonId = memberSession.user.personId;
+  assert.ok(memberPersonId);
+  const planResp = await requestJson<{ id: string }>("/serving-plans", {
+    method: "POST",
+    headers: authHeaders(adminSession),
+    body: JSON.stringify({
+      title: "Plano notif 117",
+      date: "2099-12-31",
+      groupId: "grp_001",
+      eventId: "",
+      notes: "",
+      assignments: [
+        { id: "", personId: memberPersonId, role: "Recepcao", status: "pending", notes: "", reminderSentAt: "" }
+      ]
+    })
+  });
+  assert.equal(planResp.response.status, 201);
+
+  const withPending = await requestJson<Array<{ kind: string; link: { module: string; entityId?: string } }>>("/notifications", {
+    headers: authHeaders(memberSession)
+  });
+  assert.equal(withPending.response.status, 200);
+  const servingItem = (withPending.body || []).find((item) => item.kind === "serving_pending");
+  assert.ok(servingItem, "deve agregar serving_pending");
+  assert.equal(servingItem?.link.module, "serving");
+  assert.equal(servingItem?.link.entityId, planResp.body?.id);
 });
 
 test("public event registration confirmation rejects invalid tokens", async () => {

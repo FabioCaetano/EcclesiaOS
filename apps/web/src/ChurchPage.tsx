@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { Download, Heart, Plus, Printer, QrCode, Tag } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Download, Heart, Image as ImageIcon, Plus, Printer, QrCode, Tag, Upload, X } from "lucide-react";
 import QRCode from "qrcode";
+import { MAX_LOGO_DATA_URL_BYTES, validateLogoDataUrl } from "@ecclesiaos/shared";
 import type { ChurchProfile, ChurchProfileUpdate, CurrentUser, LabelLayout, LabelTemplate, LabelTemplateInput } from "@ecclesiaos/shared";
 import { deleteLabelTemplate, loadChurchProfile, loadLabelTemplates, saveLabelTemplate, updateChurchProfile } from "./api";
 import { toChurchUpdate } from "./mappers";
 import { Card, EmptyState, PageHeader } from "./ui";
+
+const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = () => reject(reader.error || new Error("read-error"));
+  reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+  reader.readAsDataURL(file);
+});
 
 interface Props {
   token: string;
@@ -45,6 +53,7 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
   const [templateStatus, setTemplateStatus] = useState("");
   const [printingTemplate, setPrintingTemplate] = useState<LabelTemplate | null>(null);
   const [visitorQrSrc, setVisitorQrSrc] = useState("");
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = user.role === "admin";
   const visitorUrl = `${window.location.origin}/visitor`;
@@ -104,6 +113,35 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
 
   const updateChurchField = (field: keyof ChurchProfileUpdate, value: string) => {
     setChurchForm((current) => current ? { ...current, [field]: value } : current);
+  };
+
+  const handleLogoFile = async (file: File | undefined) => {
+    if (!file || !churchForm) return;
+    setChurchStatus("Lendo arquivo...");
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const check = validateLogoDataUrl(dataUrl);
+      if (!check.ok) {
+        const message = check.reason === "size"
+          ? `Arquivo passa de 100 KB (atual: ${(dataUrl.length / 1024).toFixed(1)} KB). Reduza antes de enviar.`
+          : check.reason === "mime"
+            ? "Use PNG, JPEG, SVG ou WebP."
+            : "Arquivo invalido.";
+        setChurchStatus(message);
+        return;
+      }
+      setChurchForm((current) => current ? { ...current, logoDataUrl: dataUrl } : current);
+      setChurchStatus("Pre-visualizando. Clique em Salvar cadastro para aplicar.");
+    } catch {
+      setChurchStatus("Nao foi possivel ler o arquivo.");
+    }
+  };
+
+  const removeLogo = () => {
+    if (!churchForm) return;
+    setChurchForm({ ...churchForm, logoDataUrl: "" });
+    if (logoInputRef.current) logoInputRef.current.value = "";
+    setChurchStatus("Logo removido. Clique em Salvar cadastro para aplicar.");
   };
 
   const handleChurchSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -209,6 +247,57 @@ export const ChurchPage: React.FC<Props> = ({ token, user }) => {
         <p className="muted">{churchStatus || "Carregando cadastro..."}</p>
       )}
       </Card>
+
+      {churchForm && (
+        <Card className="church-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow"><ImageIcon size={12} />Identidade visual</p>
+              <h2>Logo da igreja</h2>
+            </div>
+          </div>
+          <div className="church-logo-block">
+            <div className="church-logo-preview">
+              {churchForm.logoDataUrl ? (
+                <img src={churchForm.logoDataUrl} alt="Logo da igreja" />
+              ) : (
+                <div className="church-logo-placeholder">Sem logo personalizado.<br /><span className="muted">Usaremos o logo padrao do EcclesiaOS.</span></div>
+              )}
+            </div>
+            <div className="church-logo-info">
+              <p className="muted">Formatos aceitos: PNG, JPEG, SVG ou WebP. Limite: 100 KB ({(MAX_LOGO_DATA_URL_BYTES / 1024).toFixed(0)} KB).</p>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                disabled={!isAdmin}
+                onChange={(event) => handleLogoFile(event.target.files?.[0])}
+                style={{ display: "none" }}
+              />
+              <div className="response-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!isAdmin}
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  <Upload size={14} /> {churchForm.logoDataUrl ? "Trocar logo" : "Subir logo"}
+                </button>
+                {churchForm.logoDataUrl && (
+                  <button
+                    className="danger-outline-button"
+                    type="button"
+                    disabled={!isAdmin}
+                    onClick={removeLogo}
+                  >
+                    <X size={14} /> Remover logo
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="church-panel">
       <div className="section-heading">

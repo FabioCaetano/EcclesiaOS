@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { canAccessModule, canManageModule, substituteMessageVariables } from "@ecclesiaos/shared";
+import { canAccessModule, canCreateEventDraft, canEditEvent, canManageModule, substituteMessageVariables, validateLogoDataUrl } from "@ecclesiaos/shared";
 import type { AppModuleKey, AttendanceInput, AuthErrorResponse, AuthSession, ChangePasswordRequest, ChildCheckIn, ChildCheckInInput, ChildCheckOutRequest, ChurchEvent, ChurchEventInput, ChurchProfileUpdate, ChurchResourceInput, CurrentUser, CustomFormFieldType, CustomFormInput, CustomFormSubmissionInput, EmailStatus, EventCheckInInput, EventRegistration, EventRegistrationCheckInRequest, EventRegistrationConfirmInput, EventRegistrationConfirmResponse, EventRegistrationInput, EventRegistrationResendConfirmationResponse, EventRegistrationSelfCheckInRequest, EventRegistrationStatusUpdate, FinancialTransactionInput, GroupInput, GroupProfile, GuardianChildInput, HealthResponse, KidsRoomInput, LabelLayout, LabelTemplateInput, LoginRequest, MessageTemplateInput, PasswordResetGenericResponse, PeopleMessageDelivery, PeopleMessageInput, PeopleMessageResponse, PersonBlockOutInput, PersonInput, RegisterRequest, RequestPasswordResetInput, ResetPasswordInput, ResetPasswordResponse, RoomReservationInput, ServiceChecklistInput, ServingAssignmentStatusResponse, ServingAssignmentStatusUpdate, ServingPlan, ServingPlanInput, ServingSubstituteApplyInput, ServingSubstituteApplyResponse, SongInput, SubstituteSuggestion, UserInput, VisitorRegistrationInput, VisitorRegistrationResponse, WorshipSetInput } from "@ecclesiaos/shared";
 import { auditRepository } from "./data/auditRepository.js";
 import { attendanceRepository } from "./data/attendanceRepository.js";
@@ -16,6 +16,7 @@ import { customFormRepository } from "./data/customFormRepository.js";
 import { groupRepository } from "./data/groupRepository.js";
 import { kidsRoomRepository } from "./data/kidsRoomRepository.js";
 import { labelTemplateRepository } from "./data/labelTemplateRepository.js";
+import { computeNotifications } from "./notifications.js";
 import { messageTemplateRepository } from "./data/messageTemplateRepository.js";
 import { musicRepository } from "./data/musicRepository.js";
 import { peopleMessageRepository } from "./data/peopleMessageRepository.js";
@@ -630,7 +631,8 @@ const sanitizeChurchUpdate = (body: ChurchProfileUpdate): ChurchProfileUpdate =>
   city: String(body.city || "").trim(),
   state: String(body.state || "").trim(),
   postalCode: String(body.postalCode || "").trim(),
-  country: String(body.country || "").trim()
+  country: String(body.country || "").trim(),
+  logoDataUrl: String(body.logoDataUrl || "").trim()
 });
 
 const handleUpdateChurchProfile = async (req: IncomingMessage, res: ServerResponse) => {
@@ -643,8 +645,25 @@ const handleUpdateChurchProfile = async (req: IncomingMessage, res: ServerRespon
     return;
   }
 
-  const profile = await churchRepository.updateProfile(sanitizeChurchUpdate(body));
+  const sanitized = sanitizeChurchUpdate(body);
+  const logoCheck = validateLogoDataUrl(sanitized.logoDataUrl);
+  if (!logoCheck.ok) {
+    const message = logoCheck.reason === "size"
+      ? "Logo da igreja excede 100 KB. Reduza o arquivo antes de enviar."
+      : logoCheck.reason === "mime"
+        ? "Formato do logo nao aceito. Use PNG, JPEG, SVG ou WebP."
+        : "Formato do logo invalido.";
+    sendError(res, 400, "invalid_json", message);
+    return;
+  }
+
+  const profile = await churchRepository.updateProfile(sanitized);
   sendJson(res, 200, profile);
+};
+
+const handleGetPublicChurchInfo = async (_req: IncomingMessage, res: ServerResponse) => {
+  const profile = await churchRepository.getProfile();
+  sendJson(res, 200, { name: profile.name, logoDataUrl: profile.logoDataUrl || "" });
 };
 
 const sanitizePersonInput = (body: PersonInput): PersonInput => ({
@@ -2084,8 +2103,12 @@ const handleCheckInEventRegistration = async (req: IncomingMessage, res: ServerR
 };
 
 const handleCreateEvent = async (req: IncomingMessage, res: ServerResponse) => {
-  const user = await requireAdmin(req, res);
+  const user = await requireUser(req, res);
   if (!user) return;
+  if (user.role !== "admin" && user.role !== "leader") {
+    sendError(res, 403, "forbidden", "Apenas admin ou lider responsavel pode criar eventos.");
+    return;
+  }
 
   const body = await readJson<ChurchEventInput>(req);
   const validationMessage = validateEventInput(body);
@@ -2096,7 +2119,14 @@ const handleCreateEvent = async (req: IncomingMessage, res: ServerResponse) => {
 
   try {
     if (!body) return;
-    const event = await eventRepository.create(sanitizeEventInput(body));
+    const sanitized = sanitizeEventInput(body);
+    const groups = await groupRepository.list();
+    if (!canCreateEventDraft(user, sanitized, groups)) {
+      sendError(res, 403, "forbidden", "Voce precisa ser lider do grupo principal ou de uma equipe solicitada.");
+      return;
+    }
+
+    const event = await eventRepository.create(sanitized);
     await recordAudit(user, "create", "event", event.id, `Evento criado: ${event.title}`);
     sendJson(res, 201, event);
   } catch (error) {
@@ -2105,8 +2135,12 @@ const handleCreateEvent = async (req: IncomingMessage, res: ServerResponse) => {
 };
 
 const handleUpdateEvent = async (req: IncomingMessage, res: ServerResponse, id: string) => {
-  const user = await requireAdmin(req, res);
+  const user = await requireUser(req, res);
   if (!user) return;
+  if (user.role !== "admin" && user.role !== "leader") {
+    sendError(res, 403, "forbidden", "Apenas admin ou lider responsavel pode editar eventos.");
+    return;
+  }
 
   const body = await readJson<ChurchEventInput>(req);
   const validationMessage = validateEventInput(body);
@@ -2117,7 +2151,24 @@ const handleUpdateEvent = async (req: IncomingMessage, res: ServerResponse, id: 
 
   try {
     if (!body) return;
-    const event = await eventRepository.update(id, sanitizeEventInput(body));
+    const existing = (await eventRepository.list()).find((event) => event.id === id);
+    if (!existing) {
+      sendError(res, 404, "not_found", "Evento nao encontrado.");
+      return;
+    }
+
+    const groups = await groupRepository.list();
+    if (!canEditEvent(user, existing, groups)) {
+      sendError(res, 403, "forbidden", "Voce nao e responsavel por este evento.");
+      return;
+    }
+
+    const sanitized = sanitizeEventInput(body);
+    const finalInput = user.role === "admin"
+      ? sanitized
+      : { ...sanitized, groupId: existing.groupId, requestedTeamIds: [...existing.requestedTeamIds], operatorPersonIds: [...existing.operatorPersonIds] };
+
+    const event = await eventRepository.update(id, finalInput);
     if (!event) {
       sendError(res, 404, "not_found", "Evento nao encontrado.");
       return;
@@ -2823,6 +2874,13 @@ const handleListServingNotifications = async (req: IncomingMessage, res: ServerR
   sendJson(res, 200, notifications);
 };
 
+const handleListNotifications = async (req: IncomingMessage, res: ServerResponse) => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const items = await computeNotifications(user);
+  sendJson(res, 200, items);
+};
+
 const sanitizeFinancialTransactionInput = (body: FinancialTransactionInput): FinancialTransactionInput => ({
   date: String(body.date || "").trim(),
   type: body.type === "expense" ? "expense" : "income",
@@ -2989,6 +3047,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/church/profile") {
     void handleGetChurchProfile(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/public/church-info") {
+    void handleGetPublicChurchInfo(req, res);
     return;
   }
 
@@ -3440,6 +3503,11 @@ export const createEcclesiaServer = () => createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/serving-notifications") {
     void handleListServingNotifications(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/notifications") {
+    void handleListNotifications(req, res);
     return;
   }
 

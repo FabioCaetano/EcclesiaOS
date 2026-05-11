@@ -390,3 +390,18 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-115-forms-builder.md`: builder de Formularios com campos em linhas, reordenacao por setas, chips de opcoes para `select`, responsaveis pesquisaveis e preview do publico.
 - `docs/decisions/0115-forms-builder.md`: decisao de reformatar so o frontend reaproveitando o padrao das Fases 113 e 114.
+
+# Atualizacao - Fase 116
+
+- `docs/phases/phase-116-event-responsible-permission.md`: lider responsavel por grupo/ministerio passa a editar/criar eventos do proprio grupo sem virar admin do modulo.
+- `docs/decisions/0116-event-responsible-permission.md`: decisao de reaproveitar `groupId` e `requestedTeamIds` em vez de criar novo campo, e bloquear mudanca desses campos por nao-admin para evitar escalada.
+
+# Atualizacao - Fase 117
+
+- `docs/phases/phase-117-notification-center.md`: sino de notificacoes no header com agregador derivado (escalas pendentes, substituto necessario, eventos proximos, inscricoes aguardando email) e marcacao de lida via localStorage.
+- `docs/decisions/0117-notification-center.md`: decisao de manter o centro derivado on-demand e local storage para lidas, sem persistir tabela de notifications no banco.
+
+# Atualizacao - Fase 118
+
+- `docs/phases/phase-118-church-logo-upload.md`: upload de logo da igreja com data URL base64 no `ChurchProfile.logoDataUrl`, aplicado em sidebar, header e login via endpoint publico `/public/church-info`.
+- `docs/decisions/0118-church-logo-upload.md`: decisao de armazenar como data URL no proprio profile (limite 100 KB) em vez de filesystem ou storage externo.

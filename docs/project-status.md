@@ -1095,6 +1095,94 @@ Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesqui
 - `npm run typecheck`: passou.
 - `npm run build:web`: passou.
 
+# Status Atual - Fase 118
+
+Fase 118 implementada. Admin pode subir o logo da igreja em **Igreja > Logo da igreja**; o app aplica em sidebar, header e tela de login (via endpoint publico). Limite 100 KB, formatos PNG/JPEG/SVG/WebP. Sem storage externo, sem nova credencial.
+
+## Entregue na fase
+
+- Campo `ChurchProfile.logoDataUrl: string` no `@ecclesiaos/shared` + util compartilhado `validateLogoDataUrl()` e constantes `ALLOWED_LOGO_MIME`/`MAX_LOGO_DATA_URL_BYTES`.
+- Migration Prisma `20260511120000_church_logo` adicionando `logoDataUrl String @default("")` em `ChurchProfileRecord`.
+- `sanitizeChurchUpdate` valida prefixo data URL e tamanho; rejeita com 400 caso invalido.
+- Novo endpoint **publico** `GET /public/church-info` retorna `{ name, logoDataUrl }`.
+- Bloco "Logo da igreja" no `ChurchPage` com `<input type="file">`, preview, botoes "Subir logo" / "Trocar logo" / "Remover logo".
+- `AppLayout` aceita `churchLogo?` e troca os assets da sidebar e do header quando presente; fallback para `/ecclesia-os-logo-cropped.png`.
+- `LoginPage` carrega `loadPublicChurchInfo` no mount e usa logo + nome da igreja como `alt`.
+- `main.tsx` guarda `churchLogo` e passa para `AppLayout`.
+- CSS novo (`church-logo-block`, `church-logo-preview`, `church-logo-placeholder`, `church-logo-info`) com layout responsivo.
+- Teste HTTP cobre `/public/church-info`, aceite de PNG pequeno, rejeicao de MIME nao permitido e rejeicao de payload > 100 KB.
+
+## Pendencias da consolidacao
+
+- Cropper/editor de imagem no upload.
+- Multiplos logos (claro/escuro, splash).
+- Logo aplicado em etiquetas/relatorios PDF.
+- Foto de perfil de pessoa em "Minha conta".
+- Aplicar migration no Neon (deploy).
+
+## Validacao
+
+- `npm run db:generate`: passou.
+- `npm run typecheck`: passou.
+- `npm run test`: 42/43 passam. Falha unica e teste pre-existente `authenticated list endpoints...` em `/resources`, sinalizada como tarefa separada.
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 117
+
+Fase 117 implementada. Sino no header agora abre painel de notificacoes que agrega quatro fontes derivadas (escalas pendentes, substitutos necessarios, eventos proximos, inscricoes aguardando email). Marcacao de lida via localStorage por usuario. Sem mudancas em banco nem novo tipo de tabela.
+
+## Entregue na fase
+
+- Tipos `NotificationKind` e `NotificationItem` em `@ecclesiaos/shared`.
+- Modulo `apps/api/src/notifications.ts` com `computeNotifications(user)` agregando 4 fontes.
+- Endpoint `GET /notifications` autenticado.
+- Componente `NotificationCenter` (sino + badge + painel) com refresh automatico a cada 60s.
+- `AppLayout` recebe `token` opcional e renderiza o sino quando logado.
+- `loadNotifications` em `apps/web/src/api.ts`.
+- localStorage `ecclesiaos:notifications:lastReadAt:<userId>` controla badge.
+- CSS novo (`notification-center`, `notification-bell`, `notification-panel`, `notification-group`, `notification-item`).
+- Teste HTTP cobre 401 sem token, lista vazia, e agregacao de `serving_pending` para o membro logado.
+
+## Pendencias da consolidacao
+
+- Persistir leitura no banco (multi-dispositivo).
+- Acoes inline no painel (aceitar/recusar escala direto).
+- Push real (web push, email digest).
+- Filtrar por tipo, historico longo.
+- Corrigir teste pre-existente `authenticated list endpoints...` para `/resources` (regressao de antes da Fase 116).
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run test`: 41/42 passam. Falha unica e teste pre-existente `authenticated list endpoints...` em `/resources`, sinalizada como tarefa separada.
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 116
+
+Fase 116 implementada. Lideres de grupo/ministerio agora conseguem criar e editar os eventos que sao do proprio grupo ou de equipes solicitadas, sem ganhar acesso completo ao modulo Eventos. Backend faz a verificacao via novo helper compartilhado e impede escalada de permissao em mudanca de `groupId`/`requestedTeamIds`. Excluir continua admin-only.
+
+## Entregue na fase
+
+- Helpers compartilhados `isUserResponsibleForEvent`, `canEditEvent`, `canCreateEventDraft`, `leadsAnyGroup` em `@ecclesiaos/shared`.
+- `handleCreateEvent`: aceita admin ou lider responsavel pelo draft; retorna 403 caso contrario.
+- `handleUpdateEvent`: aceita admin ou lider responsavel pelo evento atual; quando ator nao e admin, preserva `groupId`, `requestedTeamIds` e `operatorPersonIds` originais, bloqueando escalada.
+- `handleDeleteEvent` segue admin-only.
+- `EventsPage` (frontend) usa `canEdit` derivado dos mesmos helpers; botao "Novo evento" liberado quando o usuario lidera pelo menos um grupo; botoes Remover e Gerar ocorrencias continuam restritos a admin.
+- Teste HTTP novo cobre criacao por lider, bloqueio para membro, perda de lideranca, tentativa de trocar `groupId` (revertida) e bloqueio de delete por lider.
+
+## Pendencias da consolidacao
+
+- Permissao por pessoa individual independente de grupo.
+- Hierarquia de delegado dentro do grupo.
+- Liberar exclusao com confirmacao extra para lider.
+- Corrigir teste pre-existente `authenticated list endpoints...` para `/resources` (regressao de antes da Fase 116).
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run test`: 40/41 (a unica falha e teste antigo `authenticated list endpoints...` para `/resources`, regressao pre-existente sinalizada como tarefa separada).
+- `npm run build:web`: passou.
+
 # Status Atual - Fase 115
 
 Fase 115 implementada. Formularios ganhou builder estilo Google Forms: campos em linhas compactas com reordenacao, chips para opcoes de `select`, responsaveis pesquisaveis via `<datalist>` e preview do publico colapsavel. Sem mudancas em backend, banco ou contrato compartilhado.

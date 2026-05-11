@@ -20,6 +20,7 @@ model ChurchProfileRecord {
   state        String
   postalCode   String
   country      String
+  logoDataUrl  String @default("")
 }
 
 model UserRecord {

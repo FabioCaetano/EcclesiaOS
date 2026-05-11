@@ -178,6 +178,65 @@ export const canManageModule = (role: UserRole, module: AppModuleKey) => {
   return role === "admin";
 };
 
+export interface EventResponsibilityActor {
+  role: UserRole;
+  personId?: string;
+}
+
+export interface EventResponsibilityTarget {
+  groupId: string;
+  requestedTeamIds: string[];
+}
+
+export interface EventResponsibilityGroup {
+  id: string;
+  leaderPersonId: string;
+}
+
+const leadsGroup = (personId: string, groupId: string, groups: EventResponsibilityGroup[]): boolean => {
+  if (!groupId || !personId) return false;
+  const group = groups.find((entry) => entry.id === groupId);
+  return Boolean(group && group.leaderPersonId === personId);
+};
+
+export const isUserResponsibleForEvent = (
+  user: EventResponsibilityActor,
+  event: EventResponsibilityTarget,
+  groups: EventResponsibilityGroup[]
+): boolean => {
+  if (!user.personId) return false;
+  if (event.groupId && leadsGroup(user.personId, event.groupId, groups)) return true;
+  return event.requestedTeamIds.some((teamId) => leadsGroup(user.personId as string, teamId, groups));
+};
+
+export const canEditEvent = (
+  user: EventResponsibilityActor,
+  event: EventResponsibilityTarget,
+  groups: EventResponsibilityGroup[]
+): boolean => {
+  if (user.role === "admin") return true;
+  if (user.role !== "leader") return false;
+  return isUserResponsibleForEvent(user, event, groups);
+};
+
+export const canCreateEventDraft = (
+  user: EventResponsibilityActor,
+  draft: EventResponsibilityTarget,
+  groups: EventResponsibilityGroup[]
+): boolean => {
+  if (user.role === "admin") return true;
+  if (user.role !== "leader") return false;
+  return isUserResponsibleForEvent(user, draft, groups);
+};
+
+export const leadsAnyGroup = (
+  user: EventResponsibilityActor,
+  groups: EventResponsibilityGroup[]
+): boolean => {
+  if (!user.personId) return false;
+  return groups.some((group) => group.leaderPersonId === user.personId);
+};
+
 export type AuditAction = "create" | "update" | "delete";
 
 export interface AuditLogEntry {
@@ -228,9 +287,31 @@ export interface ChurchProfile {
   state: string;
   postalCode: string;
   country: string;
+  logoDataUrl: string;
 }
 
 export type ChurchProfileUpdate = Omit<ChurchProfile, "id">;
+
+export interface PublicChurchInfo {
+  name: string;
+  logoDataUrl: string;
+}
+
+export const ALLOWED_LOGO_MIME = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"] as const;
+export const MAX_LOGO_DATA_URL_BYTES = 100 * 1024;
+
+export type AllowedLogoMime = typeof ALLOWED_LOGO_MIME[number];
+
+const LOGO_DATA_URL_RE = /^data:(image\/(?:png|jpeg|svg\+xml|webp));base64,([A-Za-z0-9+/=]+)$/;
+
+export const validateLogoDataUrl = (value: string): { ok: true } | { ok: false; reason: "empty" | "format" | "mime" | "size" } => {
+  if (!value) return { ok: true };
+  const match = LOGO_DATA_URL_RE.exec(value);
+  if (!match) return { ok: false, reason: "format" };
+  if (!ALLOWED_LOGO_MIME.includes(match[1] as AllowedLogoMime)) return { ok: false, reason: "mime" };
+  if (value.length > MAX_LOGO_DATA_URL_BYTES) return { ok: false, reason: "size" };
+  return { ok: true };
+};
 
 export type PersonStatus = "member" | "visitor";
 export type PersonGender = "female" | "male" | "unspecified";
@@ -516,6 +597,22 @@ export interface ServingNotification {
   message: string;
   status: ServingAssignmentStatus;
   date: string;
+}
+
+export type NotificationKind = "serving_pending" | "serving_declined" | "event_upcoming" | "registration_email_pending";
+
+export interface NotificationLink {
+  module: AppModuleKey;
+  entityId?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  message: string;
+  createdAt: string;
+  link: NotificationLink;
 }
 
 export interface Song {

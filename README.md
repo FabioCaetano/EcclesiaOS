@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 115 - Builder de Formularios.
+Fase atual concluida: Fase 118 - Upload de logo da igreja.
 
 Estrutura:
 
