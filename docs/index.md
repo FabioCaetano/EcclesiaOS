@@ -405,3 +405,18 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-118-church-logo-upload.md`: upload de logo da igreja com data URL base64 no `ChurchProfile.logoDataUrl`, aplicado em sidebar, header e login via endpoint publico `/public/church-info`.
 - `docs/decisions/0118-church-logo-upload.md`: decisao de armazenar como data URL no proprio profile (limite 100 KB) em vez de filesystem ou storage externo.
+
+# Atualizacao - Fase 119
+
+- `docs/phases/phase-119-calendar-event-popup.md`: popup de acoes (Abrir Culto / Editar agenda / Excluir agenda) direto no pin do calendario; +Novo evento liberado para lider que lidera algum grupo.
+- `docs/decisions/0119-calendar-event-popup.md`: decisao de usar popover contextual em vez de modal/painel lateral; reaproveita helpers da Fase 116.
+
+# Atualizacao - Fase 120
+
+- `docs/phases/phase-120-groups-positions-ux.md`: pagina Grupos com chips editaveis de Posicoes, busca de membros via datalist, atribuicao de posicao por toggle no chip do membro, visibilidade restrita aos grupos do usuario.
+- `docs/decisions/0120-groups-positions-ux.md`: decisao de filtrar visibilidade no frontend (sem mudar backend) para nao quebrar outros modulos que precisam da lista completa de grupos.
+
+# Atualizacao - Fase 121
+
+- `docs/phases/phase-121-labels-dedicated-tab.md`: nova aba **Etiquetas** no grupo Sistema (admin-only), com `LabelsPage` extraido do bloco que vivia em `ChurchPage`.
+- `docs/decisions/0121-labels-dedicated-tab.md`: decisao de criar view dedicada em vez de jogar dentro de Check-in, mantendo a aba Igreja focada em cadastro e logo.

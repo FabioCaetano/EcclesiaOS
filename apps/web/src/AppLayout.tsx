@@ -18,6 +18,7 @@ import {
   Music,
   ScrollText,
   Sparkles,
+  Tag,
   Users,
   UsersRound,
   Wallet,
@@ -67,6 +68,7 @@ const navItems: NavItem[] = [
   { label: "Relatorios", module: "reports", view: "reports", icon: BarChart3, group: "Sistema" },
   { label: "Usuarios", module: "users", view: "users", icon: UsersRound, group: "Sistema" },
   { label: "Auditoria", module: "audit", view: "audit", icon: ScrollText, group: "Sistema" },
+  { label: "Etiquetas", module: "labels", view: "labels", icon: Tag, group: "Sistema" },
   { label: "Minha conta", module: "account", view: "account", icon: KeyRound, group: "Sistema" }
 ];
 

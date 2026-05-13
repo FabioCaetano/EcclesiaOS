@@ -1,0 +1,30 @@
+C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228
+      throw new PrismaClientKnownRequestError(message, {
+            ^
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.churchProfileRecord.findFirst()` invocation in
+C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\src\data\prismaStore.ts:437:32
+
+  434 
+  435 export const readPrismaData = async (): Promise<DataFile> => {
+  436   const [church, users, people, groups, attendance, events, eventCheckIns, childCheckIns, kidsRooms, eventRegistrations, resources, roomReservations, servingPlans, songs, worshipSets, serviceChecklists, customForms, customFormResponses, financialTransactions, auditLogs, labelTemplates, peopleMessages, personBlockOuts, passwordResetTokens, messageTemplates] = await Promise.all([
+→ 437     prisma.churchProfileRecord.findFirst(
+The column `ChurchProfileRecord.logoDataUrl` does not exist in the current database.
+    at ei.handleRequestError (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async Promise.all (index 0)
+    at async readPrismaData (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\src\data\prismaStore.ts:436:362)
+    at async Object.getProfile (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\src\data\churchRepository.ts:6:18)
+    at async handleGetPublicChurchInfo (C:\Users\fabio\Documents\Projetos\EclesiaOS\EcclesiaOS\apps\api\src\server.ts:665:19) {
+  code: 'P2022',
+  meta: {
+    modelName: 'ChurchProfileRecord',
+    column: 'ChurchProfileRecord.logoDataUrl'
+  },
+  clientVersion: '6.19.3'
+}
+
+Node.js v25.8.2

@@ -2083,3 +2083,61 @@ Possivel escopo:
 - Cropper de imagem.
 - Multiplos logos (claro/escuro).
 - Logo aplicado em etiquetas/relatorios.
+
+# Roadmap - Atualizacao Fase 119
+
+## Concluido
+
+- Fase 119 - Popup de acoes no calendario (Abrir Culto/Editar/Excluir direto no pin do evento; +Novo evento liberado para lider).
+
+## Proxima fase sugerida
+
+- Item 10: Grupos com Posicoes (CRUD de posicao + busca de membro + atribuir).
+
+## Alternativa
+
+- Item 3: Escala — fase de diagnostico com proposta de redesign.
+
+## Depois
+
+- Item 12: Mover etiquetas/impressora para fora da aba Igreja.
+- Item 9: Pessoas com Familiares pesquisaveis + esconder de membro.
+- Item 17: Mover Indisponibilidade para Escala.
+
+# Roadmap - Atualizacao Fase 120
+
+## Concluido
+
+- Fase 120 - Grupos com Posicoes (chips editaveis, busca de membros via datalist, atribuicao de posicao por chip do membro, visibilidade restrita aos grupos que o usuario participa).
+
+## Proxima fase sugerida
+
+- Item 12: Mover etiquetas/impressora para fora da aba Igreja.
+
+## Alternativa
+
+- Item 9: Pessoas com Familiares pesquisaveis + esconder de membro.
+
+## Depois
+
+- Item 17: Mover Indisponibilidade para fora de Minha conta.
+- Item 3: Escala — diagnostico e redesign.
+
+# Roadmap - Atualizacao Fase 121
+
+## Concluido
+
+- Fase 121 - Aba Etiquetas dedicada (grupo Sistema, admin-only) movendo todo o CRUD de templates Brother da aba Igreja para `LabelsPage`.
+
+## Proxima fase sugerida
+
+- Item 9: Pessoas com Familiares pesquisaveis + esconder de membro.
+
+## Alternativa
+
+- Item 17: Mover Indisponibilidade para fora de Minha conta.
+
+## Depois
+
+- Item 3: Escala — diagnostico e redesign.
+- Item 4: Culto execucao por pessoa autorizada do evento.

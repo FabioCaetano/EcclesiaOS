@@ -23,7 +23,7 @@ export type UserInput = {
   personId: string;
 };
 
-export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "serviceOps" | "music" | "liturgy" | "forms" | "finance" | "reports" | "users" | "audit" | "account" | "messages";
+export type AppModuleKey = "home" | "church" | "people" | "groups" | "attendance" | "events" | "checkin" | "resources" | "calendar" | "serving" | "serviceOps" | "music" | "liturgy" | "forms" | "finance" | "reports" | "users" | "audit" | "account" | "messages" | "labels";
 
 export type MessageChannel = "email" | "whatsapp" | "manual";
 
@@ -155,7 +155,7 @@ export interface VisitorRegistrationResponse {
 
 export type PermissionAction = "view" | "manage";
 
-const adminOnlyModules: AppModuleKey[] = ["finance", "reports", "users", "audit"];
+const adminOnlyModules: AppModuleKey[] = ["finance", "reports", "users", "audit", "labels"];
 
 export const canAccessModule = (role: UserRole, module: AppModuleKey) => {
   if (adminOnlyModules.includes(module)) return role === "admin";

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarRange, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
-import type { ChurchEvent, ChurchResource, CurrentUser, EventRegistration, RoomReservation } from "@ecclesiaos/shared";
-import { deleteEvent, loadEventRegistrations, loadEvents, loadResources, loadRoomReservations } from "./api";
+import { CalendarRange, ExternalLink, Headphones, Pencil, Plus, Trash2, X } from "lucide-react";
+import { canEditEvent, leadsAnyGroup } from "@ecclesiaos/shared";
+import type { ChurchEvent, ChurchResource, CurrentUser, EventRegistration, GroupProfile, RoomReservation } from "@ecclesiaos/shared";
+import { deleteEvent, loadEventRegistrations, loadEvents, loadGroups, loadResources, loadRoomReservations } from "./api";
 import { eventTypeLabels, roomReservationStatusLabels } from "./constants";
 import { Card, EmptyState, PageHeader } from "./ui";
 import type { AppView } from "./types";
@@ -83,28 +84,53 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [resources, setResources] = useState<ChurchResource[]>([]);
   const [reservations, setReservations] = useState<RoomReservation[]>([]);
+  const [groups, setGroups] = useState<GroupProfile[]>([]);
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [viewMode, setViewMode] = useState<CalendarViewMode>("month");
   const [typeFilter, setTypeFilter] = useState<"all" | "event" | "reservation">("all");
   const [resourceFilter, setResourceFilter] = useState("");
   const [status, setStatus] = useState("");
+  const [activeItemId, setActiveItemId] = useState<string>("");
 
   useEffect(() => {
     Promise.all([
       loadEvents(token),
       user.role === "admin" ? loadEventRegistrations(token) : Promise.resolve([]),
       loadResources(token),
-      loadRoomReservations(token)
+      loadRoomReservations(token),
+      loadGroups(token)
     ])
-      .then(([nextEvents, nextRegistrations, nextResources, nextReservations]) => {
+      .then(([nextEvents, nextRegistrations, nextResources, nextReservations, nextGroups]) => {
         setEvents(nextEvents);
         setRegistrations(nextRegistrations);
         setResources(nextResources);
         setReservations(nextReservations);
+        setGroups(nextGroups);
       })
       .catch(() => setStatus("Nao foi possivel carregar o calendario."));
   }, [token, user.role]);
+
+  useEffect(() => {
+    if (!activeItemId) return;
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveItemId("");
+    };
+    const onClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(".calendar-popover") || target.closest(".calendar-item-wrapper")) return;
+      setActiveItemId("");
+    };
+    window.addEventListener("keydown", onEsc);
+    window.addEventListener("mousedown", onClickOutside);
+    return () => {
+      window.removeEventListener("keydown", onEsc);
+      window.removeEventListener("mousedown", onClickOutside);
+    };
+  }, [activeItemId]);
+
+  const canCreateEvent = user.role === "admin" || (user.role === "leader" && leadsAnyGroup(user, groups));
 
   const resourceName = (id: string) => resources.find((resource) => resource.id === id)?.name || "Ambiente removido";
   const registrationCount = (eventId: string) => registrations.filter((registration) => registration.eventId === eventId && registration.status !== "cancelled").reduce((sum, registration) => sum + registration.quantity, 0);
@@ -152,17 +178,21 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
   const selectedItems = (itemsByDate[selectedDate] || []).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const refreshCalendar = async () => {
-    const [nextEvents, nextRegistrations, nextResources, nextReservations] = await Promise.all([
+    const [nextEvents, nextRegistrations, nextResources, nextReservations, nextGroups] = await Promise.all([
       loadEvents(token),
       user.role === "admin" ? loadEventRegistrations(token) : Promise.resolve([]),
       loadResources(token),
-      loadRoomReservations(token)
+      loadRoomReservations(token),
+      loadGroups(token)
     ]);
     setEvents(nextEvents);
     setRegistrations(nextRegistrations);
     setResources(nextResources);
     setReservations(nextReservations);
+    setGroups(nextGroups);
   };
+
+  const isAdmin = user.role === "admin";
 
   const handleMonthChange = (nextMonth: string) => {
     setMonthFilter(nextMonth);
@@ -170,8 +200,17 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
   };
 
   const calendarEventId = (item: CalendarItem) => item.kind === "event" ? item.id.replace(/^event-/, "") : "";
+  const eventById = (id: string) => events.find((event) => event.id === id) || null;
+
+  const canEditItemEvent = (item: CalendarItem): boolean => {
+    if (item.kind !== "event") return false;
+    const event = eventById(calendarEventId(item));
+    if (!event) return false;
+    return canEditEvent(user, event, groups);
+  };
 
   const handleOpenCalendarItem = (item: CalendarItem) => {
+    setActiveItemId("");
     if (item.kind === "event") {
       onOpenEvent?.(calendarEventId(item));
       return;
@@ -180,14 +219,15 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
   };
 
   const handleEditCalendarEvent = (item: CalendarItem) => {
-    const eventId = calendarEventId(item);
-    if (!eventId || user.role !== "admin") return;
-    onEditEvent?.(eventId);
+    setActiveItemId("");
+    if (!canEditItemEvent(item)) return;
+    onEditEvent?.(calendarEventId(item));
   };
 
   const handleDeleteCalendarEvent = async (item: CalendarItem) => {
+    setActiveItemId("");
     const eventId = calendarEventId(item);
-    if (!eventId || user.role !== "admin") return;
+    if (!eventId || !isAdmin) return;
     if (!window.confirm("Remover este evento da agenda?")) return;
 
     setStatus("Removendo evento...");
@@ -200,6 +240,50 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
     }
   };
 
+  const handleItemClick = (item: CalendarItem, day: string) => {
+    setSelectedDate(day);
+    setActiveItemId((current) => current === item.id ? "" : item.id);
+  };
+
+  const renderPopover = (item: CalendarItem) => {
+    if (activeItemId !== item.id) return null;
+    const canEdit = canEditItemEvent(item);
+    return (
+      <div className="calendar-popover" role="dialog" aria-label={`Acoes de ${item.title}`} onClick={(e) => e.stopPropagation()}>
+        <header>
+          <strong>{item.title}</strong>
+          <button type="button" className="icon-button" aria-label="Fechar" onClick={() => setActiveItemId("")}>
+            <X size={14} />
+          </button>
+        </header>
+        <p className="muted">{item.startTime || "--:--"}{item.endTime ? ` ate ${item.endTime}` : ""} - {item.detail}</p>
+        <div className="calendar-popover-actions">
+          {item.kind === "event" ? (
+            <>
+              <button type="button" className="secondary-button" onClick={() => handleOpenCalendarItem(item)}>
+                <Headphones size={14} /> Abrir Culto
+              </button>
+              {canEdit && (
+                <button type="button" className="secondary-button" onClick={() => handleEditCalendarEvent(item)}>
+                  <Pencil size={14} /> Editar agenda
+                </button>
+              )}
+              {isAdmin && (
+                <button type="button" className="danger-outline-button" onClick={() => handleDeleteCalendarEvent(item)}>
+                  <Trash2 size={14} /> Excluir agenda
+                </button>
+              )}
+            </>
+          ) : (
+            <button type="button" className="secondary-button" onClick={() => handleOpenCalendarItem(item)}>
+              <ExternalLink size={14} /> Abrir Ambientes
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <PageHeader
@@ -207,7 +291,7 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
         icon={CalendarRange}
         title="Calendario"
         description={monthLabel(monthFilter)}
-        actions={user.role === "admin" && (
+        actions={canCreateEvent && (
           <button className="secondary-button" type="button" onClick={onCreateEvent}>
             <Plus size={16} /> Novo evento/agenda
           </button>
@@ -260,11 +344,18 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
             <strong>{day.day}</strong>
             <div>
               {(itemsByDate[day.date] || []).slice(0, 3).map((item) => (
-                <button className={`calendar-item ${item.kind} ${item.muted ? "muted-item" : ""}`} key={item.id} type="button" onClick={() => setSelectedDate(day.date)}>
-                  <span>{item.startTime || "--:--"}</span>
-                  <b>{item.title}</b>
-                  <small>{item.detail}</small>
-                </button>
+                <div className="calendar-item-wrapper" key={item.id}>
+                  <button
+                    className={`calendar-item ${item.kind} ${item.muted ? "muted-item" : ""} ${activeItemId === item.id ? "active" : ""}`}
+                    type="button"
+                    onClick={() => handleItemClick(item, day.date)}
+                  >
+                    <span>{item.startTime || "--:--"}</span>
+                    <b>{item.title}</b>
+                    <small>{item.detail}</small>
+                  </button>
+                  {renderPopover(item)}
+                </div>
               ))}
               {(itemsByDate[day.date] || []).length > 3 && <small className="calendar-more">+{itemsByDate[day.date].length - 3} item(ns)</small>}
             </div>
@@ -276,27 +367,17 @@ export const CalendarPage: React.FC<Props> = ({ token, user, onNavigate, onCreat
         <div>
           <h3>{formatDate(selectedDate) || "Dia selecionado"}</h3>
           {selectedItems.map((item) => (
-            <div className={`calendar-detail-row ${item.kind} ${item.muted ? "muted-item" : ""}`} key={`selected-${item.id}`}>
-              <button type="button" className="calendar-detail-main" onClick={() => handleOpenCalendarItem(item)}>
+            <div className={`calendar-item-wrapper calendar-detail-row ${item.kind} ${item.muted ? "muted-item" : ""}`} key={`selected-${item.id}`}>
+              <button
+                type="button"
+                className="calendar-detail-main"
+                onClick={() => setActiveItemId((current) => current === item.id ? "" : item.id)}
+              >
                 <span>{item.startTime || "--:--"}{item.endTime ? ` ate ${item.endTime}` : ""}</span>
                 <strong>{item.title}</strong>
                 <small>{item.detail}</small>
               </button>
-              <div className="calendar-detail-actions">
-                <button className="icon-button" type="button" aria-label="Abrir" onClick={() => handleOpenCalendarItem(item)}>
-                  <ExternalLink size={14} />
-                </button>
-                {item.kind === "event" && user.role === "admin" && (
-                  <button className="icon-button" type="button" aria-label="Editar" onClick={() => handleEditCalendarEvent(item)}>
-                    <Pencil size={14} />
-                  </button>
-                )}
-                {item.kind === "event" && user.role === "admin" && (
-                  <button className="icon-button" type="button" aria-label="Excluir" onClick={() => handleDeleteCalendarEvent(item)}>
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
+              {renderPopover(item)}
             </div>
           ))}
           {selectedItems.length === 0 && (

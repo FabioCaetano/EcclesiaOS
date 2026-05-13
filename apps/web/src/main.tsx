@@ -19,6 +19,7 @@ import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { LiturgyPage } from "./LiturgyPage";
 import { KidsTotemPage } from "./KidsTotemPage";
+import { LabelsPage } from "./LabelsPage";
 import { MessagesPage } from "./MessagesPage";
 import { MusicPage } from "./MusicPage";
 import { PeoplePage } from "./PeoplePage";
@@ -181,6 +182,7 @@ const App = () => {
       {currentView === "reports" && <ReportsPage token={session.token} user={session.user} />}
       {currentView === "users" && <UsersPage token={session.token} user={session.user} />}
       {currentView === "audit" && <AuditPage token={session.token} user={session.user} />}
+      {currentView === "labels" && <LabelsPage token={session.token} user={session.user} />}
       {currentView === "account" && <AccountPage token={session.token} user={session.user} />}
       {currentView === "messages" && <MessagesPage token={session.token} user={session.user} />}
     </AppLayout>

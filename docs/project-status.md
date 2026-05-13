@@ -1095,6 +1095,84 @@ Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesqui
 - `npm run typecheck`: passou.
 - `npm run build:web`: passou.
 
+# Status Atual - Fase 121
+
+Fase 121 implementada. Etiquetas e impressoras agora vivem numa aba dedicada **Etiquetas** no grupo Sistema (admin-only), separada do cadastro da igreja. `ChurchPage` ficou focada em dados, logo e QR de visitantes.
+
+## Entregue na fase
+
+- `AppModuleKey` ganha `"labels"` em `@ecclesiaos/shared`; `adminOnlyModules` inclui `"labels"`.
+- `AppView` ganha `"labels"` em `apps/web/src/types.ts`.
+- `apps/web/src/LabelsPage.tsx` novo (extracao integral): CRUD de `LabelTemplate`, formulario, imprimir teste, render `@page` dinamico.
+- Entrada `{ label: "Etiquetas", module: "labels", view: "labels", icon: Tag, group: "Sistema" }` no menu (`AppLayout.tsx`).
+- Roteamento `currentView === "labels" && <LabelsPage ... />` em `main.tsx`.
+- `ChurchPage.tsx` perdeu state/handlers de template e o JSX inteiro do bloco de etiquetas; imports limpos.
+- Endpoints `/label-templates` no backend permanecem.
+
+## Pendencias da consolidacao
+
+- Preview interativo da etiqueta antes de imprimir.
+- Suporte a impressoras nao-Brother.
+- Layouts personalizados pelo admin.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 120
+
+Fase 120 implementada. `GroupsPage` foi reescrita: Posicoes agora sao chips editaveis (em vez de textarea com `\n`), Membros sao adicionados via busca com `<datalist>` (em vez de checkbox de todas as pessoas), atribuicao de posicao acontece dentro do chip do membro com toggles clicaveis. Visibilidade da pagina foi restringida no frontend — lider/membro so ve grupos onde lidera ou e membro.
+
+## Entregue na fase
+
+- Helper local `groupIsVisibleTo(group, user)` aplica filtro de visibilidade na pagina Grupos.
+- Chips editaveis para `servicePositions` com botao `+ Posicao` e X de remover. Remover uma posicao limpa-a tambem de `memberServicePositions`.
+- Busca de pessoas via `<input list="groups-people-options">` + `<datalist>`; Enter ou botao `Adicionar` confirma; pessoa inexistente mostra mensagem clara.
+- Cada membro vira `.group-member-chip` com nome + toggles das posicoes do grupo (multi-select). Remover membro tira de `memberPersonIds` e zera `memberServicePositions[personId]`.
+- Label "Posicoes de servico" vira "Posicoes" quando `type === "ministry" || type === "team"`.
+- No `handleGroupSubmit`, posicoes vazias sao filtradas e `memberServicePositions` sao normalizadas para nao referenciar posicoes inexistentes.
+- CSS novo (`groups-positions`, `group-position-chip`, `groups-members-grid`, `group-member-chip`, `group-position-toggle`).
+- Sem mudancas em backend, banco ou tipos compartilhados.
+
+## Pendencias da consolidacao
+
+- Drag-and-drop para reordenar posicoes.
+- Limite numerico por posicao.
+- Filtro server-side de `GET /groups` para non-admins.
+- Sub-grupos / hierarquia.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
+
+# Status Atual - Fase 119
+
+Fase 119 implementada. Clicar em um evento ou reserva no calendario agora abre um popup contextual com acoes (Abrir Culto / Editar agenda / Excluir agenda para eventos; Abrir Ambientes para reservas), respeitando as permissoes da Fase 116. Botao "+ Novo evento/agenda" agora aparece para qualquer usuario que possa criar evento — admin ou lider de algum grupo.
+
+## Entregue na fase
+
+- `CalendarPage` carrega `groups` para usar `canEditEvent` e `leadsAnyGroup` do `@ecclesiaos/shared`.
+- Estado `activeItemId` controla qual item esta com popover aberto.
+- ESC + click fora (verificando `.calendar-popover`/`.calendar-item-wrapper` via `closest`) fecham o popover.
+- Cada pill do grid mensal e cada linha da lista do dia foram envolvidas em `.calendar-item-wrapper` para posicionamento relativo.
+- Funcao `renderPopover(item)` monta o popover com cabecalho, resumo (hora + detalhe) e acoes condicionais.
+- Botoes inline da lista do dia foram substituidos por um clique unico que abre o mesmo popover.
+- Botao "+ Novo evento/agenda" usa `canCreateEvent = isAdmin || leadsAnyGroup`.
+- CSS novo (`.calendar-item-wrapper`, `.calendar-item.active`, `.calendar-popover`, `.calendar-popover-actions`) com modo compacto em <720px.
+
+## Pendencias da consolidacao
+
+- Drag-and-drop para mover evento.
+- Edicao inline no popover.
+- Criar reserva pelo popover.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
+
 # Status Atual - Fase 118
 
 Fase 118 implementada. Admin pode subir o logo da igreja em **Igreja > Logo da igreja**; o app aplica em sidebar, header e tela de login (via endpoint publico). Limite 100 KB, formatos PNG/JPEG/SVG/WebP. Sem storage externo, sem nova credencial.
