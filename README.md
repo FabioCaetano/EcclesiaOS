@@ -29,7 +29,7 @@ Este projeto nasce como uma reimplementacao propria, inspirada na arquitetura mo
 
 ## Estado Atual
 
-Fase atual concluida: Fase 121 - Aba Etiquetas dedicada.
+Fase atual concluida: Fase 122 - Familiares pesquisaveis em Pessoas.
 
 Estrutura:
 

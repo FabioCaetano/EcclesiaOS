@@ -2141,3 +2141,22 @@ Possivel escopo:
 
 - Item 3: Escala — diagnostico e redesign.
 - Item 4: Culto execucao por pessoa autorizada do evento.
+
+# Roadmap - Atualizacao Fase 122
+
+## Concluido
+
+- Fase 122 - Familiares pesquisaveis em Pessoas (chips + `<datalist>` substituindo checkbox-grid; nomenclatura passa de "Responsaveis vinculados" para "Familiares"; visibilidade de membro ja restrita por `canAccessModule("people")`).
+
+## Proxima fase sugerida
+
+- Item 17: Mover Indisponibilidade para fora de Minha conta.
+
+## Alternativa
+
+- Item 3: Escala — diagnostico e redesign.
+
+## Depois
+
+- Item 4: Culto execucao por pessoa autorizada do evento.
+- Item 14: Relatorios com preview.

@@ -1095,6 +1095,32 @@ Fase 113 implementada. A Liturgia agora usa linhas compactas, responsavel pesqui
 - `npm run typecheck`: passou.
 - `npm run build:web`: passou.
 
+# Status Atual - Fase 122
+
+Fase 122 implementada. A pagina Pessoas agora trata os antigos "Responsaveis vinculados" como **Familiares**, com chips e busca via `<datalist>` em vez de checkbox-grid. Visibilidade da aba ja era restrita a admin e lider em `canAccessModule("people")` — confirmado e mantido.
+
+## Entregue na fase
+
+- `PeoplePage` renomeia legend e descricao da pagina para refletir "Familiares".
+- Lista de chips removiveis dos familiares vinculados.
+- Busca via `<input list="people-familiares-options">` + `<datalist>` populado por `personRepository` (exceto a propria pessoa em edicao).
+- Botao "Adicionar" e Enter confirmam; pessoa nao encontrada mostra mensagem clara; vinculo a si mesma e bloqueado.
+- Reset de `familiarSearch` ao trocar de pessoa selecionada.
+- CSS novo `.people-familiares` reaproveitando `.forms-chip`, `.forms-chip-remove`, `.forms-people-input`, `.forms-people-chips` (Fase 115).
+- Campo `guardianPersonIds: string[]` no contrato compartilhado permanece — sem migration, sem mudanca de backend.
+
+## Pendencias da consolidacao
+
+- Tipo de relacao (pai/mae/conjuge/irmao).
+- Vinculacao bidirecional automatica.
+- Filtros por familia.
+- Importacao de familias em lote.
+
+## Validacao
+
+- `npm run typecheck`: passou.
+- `npm run build:web`: passou.
+
 # Status Atual - Fase 121
 
 Fase 121 implementada. Etiquetas e impressoras agora vivem numa aba dedicada **Etiquetas** no grupo Sistema (admin-only), separada do cadastro da igreja. `ChurchPage` ficou focada em dados, logo e QR de visitantes.

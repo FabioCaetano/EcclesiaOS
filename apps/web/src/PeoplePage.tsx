@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Plus, Printer, Users } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Plus, Printer, Users, X } from "lucide-react";
 import type { CurrentUser, GroupProfile, LabelTemplate, PersonInput, PersonProfile } from "@ecclesiaos/shared";
 import { deletePerson, loadGroups, loadLabelTemplates, loadPeople, savePerson } from "./api";
 import { emptyPersonInput } from "./constants";
 import { toPersonInput } from "./mappers";
 import { Card, EmptyState, PageHeader } from "./ui";
+
+const FAMILIARES_DATALIST_ID = "people-familiares-options";
+
+const personFullName = (person: PersonProfile) => `${person.firstName} ${person.lastName}`.trim();
 
 interface Props {
   token: string;
@@ -28,6 +32,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
   const [peopleStatus, setPeopleStatus] = useState("");
   const [visitorTemplate, setVisitorTemplate] = useState<LabelTemplate | null>(null);
   const [printingPerson, setPrintingPerson] = useState<PersonProfile | null>(null);
+  const [familiarSearch, setFamiliarSearch] = useState("");
 
   const refreshPeople = async () => setPeople(await loadPeople(token));
 
@@ -60,12 +65,14 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
     setSelectedPersonId(person.id);
     setPersonForm(toPersonInput(person));
     setPeopleStatus("");
+    setFamiliarSearch("");
   };
 
   const startNewPerson = () => {
     setSelectedPersonId(null);
     setPersonForm(emptyPersonInput);
     setPeopleStatus("");
+    setFamiliarSearch("");
   };
 
   const updatePersonField = (field: keyof PersonInput, value: string) => {
@@ -83,16 +90,51 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
     }).join("; ");
   };
 
-  const toggleGuardian = (personId: string) => {
+  const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
+  const peopleByName = useMemo(() => {
+    const map = new Map<string, string>();
+    people.forEach((person) => {
+      const name = personFullName(person);
+      if (name) map.set(name.toLowerCase(), person.id);
+    });
+    return map;
+  }, [people]);
+
+  const familiarCandidates = useMemo(() => (
+    people.filter((person) => person.id !== selectedPersonId)
+  ), [people, selectedPersonId]);
+
+  const addFamiliar = (personId: string) => {
+    if (!personId) return;
     setPersonForm((current) => {
       const currentIds = current.guardianPersonIds || [];
-      return {
-        ...current,
-        guardianPersonIds: currentIds.includes(personId)
-          ? currentIds.filter((id) => id !== personId)
-          : [...currentIds, personId]
-      };
+      if (currentIds.includes(personId)) return current;
+      return { ...current, guardianPersonIds: [...currentIds, personId] };
     });
+  };
+
+  const removeFamiliar = (personId: string) => {
+    setPersonForm((current) => ({
+      ...current,
+      guardianPersonIds: (current.guardianPersonIds || []).filter((id) => id !== personId)
+    }));
+  };
+
+  const submitFamiliarSearch = () => {
+    const trimmed = familiarSearch.trim();
+    if (!trimmed) return;
+    const matchedId = peopleByName.get(trimmed.toLowerCase());
+    if (!matchedId) {
+      setPeopleStatus("Pessoa nao encontrada.");
+      return;
+    }
+    if (matchedId === selectedPersonId) {
+      setPeopleStatus("Voce nao pode vincular a propria pessoa como familiar.");
+      return;
+    }
+    addFamiliar(matchedId);
+    setFamiliarSearch("");
+    setPeopleStatus("");
   };
 
   const handlePersonSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -131,7 +173,7 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
         eyebrow="Cadastro"
         icon={Users}
         title="Pessoas"
-        description="Cadastro central de membros, visitantes e responsaveis vinculados a criancas."
+        description="Cadastro central de membros, visitantes e familiares."
         actions={user.role === "admin" && (
           <button className="secondary-button" type="button" onClick={startNewPerson}>
             <Plus size={16} /> Nova pessoa
@@ -191,19 +233,52 @@ export const PeoplePage: React.FC<Props> = ({ token, user }) => {
           </label>
           <label className="wide-field">Ministerios que serve<input disabled value={selectedPersonId ? ministrySummary(selectedPersonId) : "Selecione uma pessoa para ver ministerios vinculados"} /></label>
           <label className="wide-field">Notas<textarea disabled={user.role !== "admin"} value={personForm.notes} onChange={(event) => updatePersonField("notes", event.target.value)} /></label>
-          <fieldset className="member-picker">
-            <legend>Responsaveis vinculados</legend>
-            {people.filter((person) => person.id !== selectedPersonId).map((person) => (
-              <label key={person.id}>
+          <fieldset className="people-familiares wide-field">
+            <legend>Familiares</legend>
+            <datalist id={FAMILIARES_DATALIST_ID}>
+              {familiarCandidates.map((person) => <option key={person.id} value={personFullName(person)} />)}
+            </datalist>
+            <div className="forms-people-chips">
+              {(personForm.guardianPersonIds || []).length === 0 ? (
+                <span className="muted">Nenhum familiar vinculado.</span>
+              ) : (personForm.guardianPersonIds || []).map((familiarId) => {
+                const familiar = peopleById.get(familiarId);
+                return (
+                  <span className="forms-chip" key={familiarId}>
+                    {familiar ? personFullName(familiar) : "Pessoa removida"}
+                    {user.role === "admin" && (
+                      <button
+                        className="forms-chip-remove"
+                        type="button"
+                        aria-label="Remover familiar"
+                        onClick={() => removeFamiliar(familiarId)}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+            {user.role === "admin" && (
+              <div className="forms-people-input">
                 <input
-                  checked={(personForm.guardianPersonIds || []).includes(person.id)}
-                  disabled={user.role !== "admin"}
-                  type="checkbox"
-                  onChange={() => toggleGuardian(person.id)}
+                  list={FAMILIARES_DATALIST_ID}
+                  placeholder="Buscar pessoa pelo nome..."
+                  value={familiarSearch}
+                  onChange={(event) => setFamiliarSearch(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitFamiliarSearch(); } }}
                 />
-                {person.firstName} {person.lastName}
-              </label>
-            ))}
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={submitFamiliarSearch}
+                  disabled={!familiarSearch.trim()}
+                >
+                  <Plus size={14} /> Adicionar
+                </button>
+              </div>
+            )}
           </fieldset>
 
           <div className="form-footer">

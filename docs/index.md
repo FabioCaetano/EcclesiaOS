@@ -420,3 +420,8 @@ Recomendacao atual: testar a Fase 88 no ambiente local com banco real e seguir p
 
 - `docs/phases/phase-121-labels-dedicated-tab.md`: nova aba **Etiquetas** no grupo Sistema (admin-only), com `LabelsPage` extraido do bloco que vivia em `ChurchPage`.
 - `docs/decisions/0121-labels-dedicated-tab.md`: decisao de criar view dedicada em vez de jogar dentro de Check-in, mantendo a aba Igreja focada em cadastro e logo.
+
+# Atualizacao - Fase 122
+
+- `docs/phases/phase-122-people-familiares-search.md`: bloco "Familiares" pesquisavel em `PeoplePage` substituindo "Responsaveis vinculados" com checkbox-grid.
+- `docs/decisions/0122-people-familiares-search.md`: decisao de manter o campo `guardianPersonIds` no contrato e mudar apenas a UX (chips + `<datalist>`); visibilidade ja restrita pelo `canAccessModule("people")`.
